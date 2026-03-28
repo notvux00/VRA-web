@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
-import { LayoutDashboard, Users, Calendar, Settings, HelpCircle, Bell, Menu, X, LogOut, Search, Sun, Moon, ChevronDown, User as UserIcon, PlayCircle, Building, ShieldCheck, BarChart3, Stethoscope } from "lucide-react";
+import { LayoutDashboard, Users, Calendar, Settings, HelpCircle, Bell, Menu, X, LogOut, Search, Sun, Moon, ChevronDown, User as UserIcon, PlayCircle, Building, ShieldCheck, BarChart3, Stethoscope, Baby, History } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { removeSession } from "@/app/actions/auth";
 import { collection, query, where, getDocs, limit, orderBy, startAt, endAt } from "firebase/firestore";
@@ -20,7 +20,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
-  const { user, centerName } = useAuth();
+  const { user, centerName, role } = useAuth();
   
   const menuRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -88,27 +88,37 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const parentNavigation = [
     { name: "Tổng quan", href: "/dashboard/parent", icon: LayoutDashboard },
+    { name: "Hồ sơ của trẻ", href: "/dashboard/parent/children", icon: Baby },
+    { name: "Lịch sử học", href: "/dashboard/parent/history", icon: History },
   ];
 
   const therapistNavigation = [
     { name: "Trang chủ", href: "/dashboard/therapist", icon: LayoutDashboard },
+    { name: "Danh sách Trẻ", href: "/dashboard/therapist/children", icon: Users },
+    { name: "Lịch trị liệu", href: "/dashboard/therapist/schedule", icon: Calendar },
+    { name: "Báo cáo", href: "/dashboard/therapist/reports", icon: BarChart3 },
   ];
 
   const adminNavigation = [
     { name: "Tổng quan", href: "/dashboard/admin", icon: ShieldCheck },
     { name: "Trung tâm", href: "/dashboard/admin/centers", icon: Building },
+    { name: "Tài khoản", href: "/dashboard/admin/users", icon: Users },
+    { name: "Thống kê", href: "/dashboard/admin/stats", icon: BarChart3 },
   ];
 
   const centerNavigation = [
-    { name: "Tổng quan", href: "/dashboard/center", icon: Building },
+    { name: "Tổng quan", href: "/dashboard/center", icon: LayoutDashboard },
+    { name: "Chuyên gia", href: "/dashboard/center/staff", icon: Stethoscope },
+    { name: "Trẻ em", href: "/dashboard/center/children", icon: Baby },
+    { name: "Báo cáo", href: "/dashboard/center/reports", icon: BarChart3 },
   ];
 
   let navigation = parentNavigation;
-  if (isTherapist) navigation = therapistNavigation;
-  if (isAdmin) navigation = adminNavigation;
-  if (isCenter) navigation = centerNavigation;
+  if (role === "therapist") navigation = therapistNavigation;
+  if (role === "admin") navigation = adminNavigation;
+  if (role === "center") navigation = centerNavigation;
 
-  const roleName = isAdmin ? "Quản trị viên" : isCenter ? "Quản lý Trung tâm" : isTherapist ? "Chuyên gia" : "Phụ huynh";
+  const roleName = role === "admin" ? "Quản trị viên" : role === "center" ? "Quản lý Trung tâm" : role === "therapist" ? "Chuyên gia" : "Phụ huynh";
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black text-zinc-900 dark:text-zinc-100 flex overflow-hidden font-sans transition-colors duration-300">
@@ -135,7 +145,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                </svg>
              </div>
               <span className="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-br from-zinc-900 to-zinc-500 dark:from-white dark:to-zinc-400 truncate max-w-[150px]">
-                {isCenter && centerName ? centerName : "VRA"}
+                {role === "center" && centerName ? centerName : "VRA"}
               </span>
           </div>
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white">
@@ -181,7 +191,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Menu size={24} />
             </button>
             
-            {isAdmin && (
+            {role === "admin" && (
               <div className="hidden sm:flex items-center relative" ref={searchRef}>
                 <Search className="w-5 h-5 text-zinc-400 dark:text-zinc-500 absolute left-3" />
                 <input 
