@@ -20,7 +20,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
-  const { user, centerName, role } = useAuth();
+  const { user, centerName, role, userName } = useAuth();
   
   const menuRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -82,7 +82,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     await removeSession();
   };
 
-  const isTherapist = pathname.includes("/dashboard/therapist");
+  const isExpert = pathname.includes("/dashboard/Expert");
   const isAdmin = pathname.includes("/dashboard/admin");
   const isCenter = pathname.includes("/dashboard/center");
 
@@ -92,33 +92,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: "Lịch sử học", href: "/dashboard/parent/history", icon: History },
   ];
 
-  const therapistNavigation = [
-    { name: "Trang chủ", href: "/dashboard/therapist", icon: LayoutDashboard },
-    { name: "Danh sách Trẻ", href: "/dashboard/therapist/children", icon: Users },
-    { name: "Lịch trị liệu", href: "/dashboard/therapist/schedule", icon: Calendar },
-    { name: "Báo cáo", href: "/dashboard/therapist/reports", icon: BarChart3 },
+  const expertNavigation = [
+    { name: "Trang chủ", href: "/dashboard/expert", icon: LayoutDashboard },
+    { name: "Danh sách Trẻ", href: "/dashboard/expert/children", icon: Users },
+    { name: "Lịch trị liệu", href: "/dashboard/expert/schedule", icon: Calendar },
+    { name: "Bài học", href: "/dashboard/expert/lessons", icon: PlayCircle },
+    { name: "Báo cáo", href: "/dashboard/expert/reports", icon: BarChart3 },
   ];
 
   const adminNavigation = [
     { name: "Tổng quan", href: "/dashboard/admin", icon: ShieldCheck },
     { name: "Trung tâm", href: "/dashboard/admin/centers", icon: Building },
-    { name: "Tài khoản", href: "/dashboard/admin/users", icon: Users },
-    { name: "Thống kê", href: "/dashboard/admin/stats", icon: BarChart3 },
   ];
 
   const centerNavigation = [
     { name: "Tổng quan", href: "/dashboard/center", icon: LayoutDashboard },
-    { name: "Chuyên gia", href: "/dashboard/center/staff", icon: Stethoscope },
+    { name: "Chuyên gia", href: "/dashboard/center/experts", icon: Stethoscope },
     { name: "Trẻ em", href: "/dashboard/center/children", icon: Baby },
     { name: "Báo cáo", href: "/dashboard/center/reports", icon: BarChart3 },
   ];
 
   let navigation = parentNavigation;
-  if (role === "therapist") navigation = therapistNavigation;
+  if (role === "expert") navigation = expertNavigation;
   if (role === "admin") navigation = adminNavigation;
   if (role === "center") navigation = centerNavigation;
 
-  const roleName = role === "admin" ? "Quản trị viên" : role === "center" ? "Quản lý Trung tâm" : role === "therapist" ? "Chuyên gia" : "Phụ huynh";
+  const roleName = role === "admin" ? "Quản trị viên" : role === "center" ? "Quản lý Trung tâm" : role === "expert" ? "Chuyên gia" : "Phụ huynh";
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black text-zinc-900 dark:text-zinc-100 flex overflow-hidden font-sans transition-colors duration-300">
@@ -276,7 +275,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               >
                 <div className="text-right hidden sm:block">
                   <div className="text-sm font-semibold text-zinc-900 dark:text-white truncate max-w-[120px]">
-                    {user?.displayName || user?.email?.split('@')[0] || roleName}
+                    {userName || roleName}
                   </div>
                   <div className="text-xs text-zinc-500 capitalize">{roleName}</div>
                 </div>

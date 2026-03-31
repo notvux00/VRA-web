@@ -4,34 +4,34 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Settings, UserPlus, Plus, Loader2 } from "lucide-react";
 import CenterOverviewStats from "./_components/CenterOverviewStats";
-import TherapistRoster from "./_components/TherapistRoster";
+import ExpertRoster from "./_components/ExpertRoster";
 import ChildList from "./_components/ChildList";
-import AddTherapistModal from "./_components/AddTherapistModal";
+import AddExpertModal from "./_components/AddExpertModal";
 import AddChildModal from "./_components/AddChildModal";
-import { getCenterStats, getCenterStaff, getCenterChildren } from "@/app/actions/center";
+import { getCenterStats, getCenterExperts, getCenterChildren } from "@/app/actions/center";
 
 export default function CenterDashboard() {
   const { centerName, centerId } = useAuth();
   const [stats, setStats] = useState<any>(null);
-  const [staff, setStaff] = useState<any[]>([]);
+  const [experts, setExperts] = useState<any[]>([]);
   const [children, setChildren] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
-  const [isAddTherapistOpen, setIsAddTherapistOpen] = useState(false);
+  const [isAddExpertOpen, setIsAddExpertOpen] = useState(false);
   const [isAddChildOpen, setIsAddChildOpen] = useState(false);
 
   const fetchData = async () => {
     if (!centerId) return;
     setLoading(true);
     try {
-      const [statsRes, staffRes, childrenRes] = await Promise.all([
+      const [statsRes, expertRes, childrenRes] = await Promise.all([
         getCenterStats(centerId),
-        getCenterStaff(centerId),
+        getCenterExperts(centerId),
         getCenterChildren(centerId)
       ]);
 
       if (statsRes.success) setStats(statsRes.stats);
-      if (staffRes.success) setStaff(staffRes.staff || []);
+      if (expertRes.success) setExperts(expertRes.expert || []);
       if (childrenRes.success) setChildren(childrenRes.children || []);
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
@@ -68,7 +68,7 @@ export default function CenterDashboard() {
             <span>Thêm trẻ em</span>
           </button>
           <button 
-            onClick={() => setIsAddTherapistOpen(true)}
+            onClick={() => setIsAddExpertOpen(true)}
             className="bg-blue-600 hover:bg-blue-700 border border-blue-500 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 text-sm font-medium transition-all shadow-lg shadow-blue-500/20"
           >
             <UserPlus size={16} />
@@ -80,13 +80,13 @@ export default function CenterDashboard() {
       <CenterOverviewStats stats={stats} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <TherapistRoster staff={staff} onRefresh={fetchData} />
-        <ChildList children={children} staff={staff} onRefresh={fetchData} />
+        <ExpertRoster expert={expert} onRefresh={fetchData} />
+        <ChildList children={children} expert={expert} onRefresh={fetchData} />
       </div>
 
-      <AddTherapistModal 
-        isOpen={isAddTherapistOpen} 
-        onClose={() => setIsAddTherapistOpen(false)} 
+      <AddExpertModal 
+        isOpen={isAddExpertOpen} 
+        onClose={() => setIsAddExpertOpen(false)} 
         onSuccess={fetchData}
       />
       

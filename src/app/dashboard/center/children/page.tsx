@@ -5,13 +5,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Baby, UserPlus, Loader2, ArrowLeft, Search } from "lucide-react";
 import ChildList from "../_components/ChildList";
 import AddChildModal from "../_components/AddChildModal";
-import { getCenterChildren, getCenterStaff } from "@/app/actions/center";
+import { getCenterChildren, getCenterExperts } from "@/app/actions/center";
 import Link from "next/link";
 
 export default function CenterChildrenPage() {
   const { centerId, centerName } = useAuth();
   const [children, setChildren] = useState<any[]>([]);
-  const [staff, setStaff] = useState<any[]>([]);
+  const [experts, setExperts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -20,12 +20,12 @@ export default function CenterChildrenPage() {
     if (!centerId) return;
     setLoading(true);
     try {
-      const [childRes, staffRes] = await Promise.all([
+      const [childRes, expertRes] = await Promise.all([
         getCenterChildren(centerId),
-        getCenterStaff(centerId)
+        getCenterExperts(centerId)
       ]);
       if (childRes.success) setChildren(childRes.children || []);
-      if (staffRes.success) setStaff(staffRes.staff || []);
+      if (expertRes.success) setExperts(expertRes.expert || []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -78,7 +78,7 @@ export default function CenterChildrenPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
-          <ChildList children={filteredChildren} staff={staff} onRefresh={fetchData} />
+          <ChildList children={filteredChildren} expert={expert} onRefresh={fetchData} />
           
           {/* Quick Info Box */}
           <div className="hidden xl:block bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/10 dark:to-blue-900/10 border border-purple-100 dark:border-purple-800/30 rounded-3xl p-8 sticky top-24">

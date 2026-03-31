@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 import { UserPlus, X, Mail, Lock, User, Briefcase, Loader2, AlertCircle, CheckCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { createTherapist } from "@/app/actions/center";
+import { createExpert } from "@/app/actions/center";
 
-interface AddTherapistModalProps {
+interface AddExpertModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export default function AddTherapistModal({ isOpen, onClose, onSuccess }: AddTherapistModalProps) {
+export default function AddExpertModal({ isOpen, onClose, onSuccess }: AddExpertModalProps) {
   const { centerId } = useAuth();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
@@ -31,7 +31,7 @@ export default function AddTherapistModal({ isOpen, onClose, onSuccess }: AddThe
     setMessage({ type: "", text: "" });
 
     try {
-      const result = await createTherapist(centerId, formData);
+      const result = await createExpert(centerId, formData);
       if (result.success) {
         setMessage({ type: "success", text: "Tạo tài khoản chuyên gia thành công!" });
         setFormData({ name: "", email: "", password: "", specialization: "" });

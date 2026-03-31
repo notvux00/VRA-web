@@ -5,7 +5,7 @@ interface Center {
   name: string;
   email: string;
   status: string;
-  therapistCount?: number;
+  ExpertCount?: number;
 }
 
 interface CentersTableProps {
@@ -56,7 +56,7 @@ export default function CentersTable({ centers, loading, onToggleStatus, onDelet
                   </td>
                   <td className="px-6 py-5 text-center">
                     <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-lg border border-zinc-200 dark:border-zinc-700">
-                      {center.therapistCount || 0}
+                      {center.ExpertCount || 0}
                     </span>
                   </td>
                   <td className="px-6 py-5 text-center">

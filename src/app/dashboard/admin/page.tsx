@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { Plus } from "lucide-react";
 import { getCenters, createCenter, getGlobalStats, updateCenterStatus, deleteCenter } from "@/app/actions/auth";
 import StatCards from "./_components/StatCards";
-import AnalyticCharts from "./_components/AnalyticCharts";
 import CentersTable from "./_components/CentersTable";
 import CreateCenterModal from "./_components/CreateCenterModal";
 
@@ -12,7 +11,7 @@ const EMPTY_CENTER = { name: "", managerName: "", email: "", password: "", addre
 
 export default function AdminDashboard() {
   const [centers, setCenters] = useState<any[]>([]);
-  const [stats, setStats] = useState({ totalCenters: 0, totalTherapists: 0, totalChildren: 0, totalSessions: 0 });
+  const [stats, setStats] = useState({ totalCenters: 0, totalLessons: 0, totalSessions: 0 });
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newCenter, setNewCenter] = useState(EMPTY_CENTER);
@@ -79,7 +78,6 @@ export default function AdminDashboard() {
       </div>
 
       <StatCards stats={stats} loading={loading} />
-      <AnalyticCharts />
       <CentersTable centers={centers} loading={loading} onToggleStatus={handleToggleStatus} onDelete={handleDelete} />
 
       <CreateCenterModal

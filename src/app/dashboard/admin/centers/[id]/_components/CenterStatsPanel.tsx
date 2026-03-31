@@ -2,7 +2,7 @@ import { AlertCircle, Trash2 } from "lucide-react";
 
 interface Center {
   centerId?: string;
-  therapistCount?: number;
+  expertCount?: number;
   sessionCount?: number;
   createdAt?: string;
   phone?: string;
@@ -23,7 +23,7 @@ export default function CenterStatsPanel({ center, onDelete }: CenterStatsPanelP
         <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-6 px-1">Thống kê</h3>
         <div className="grid grid-cols-2 gap-4">
           <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-zinc-800">
-            <span className="block text-2xl font-bold text-zinc-900 dark:text-white">{center.therapistCount || 0}</span>
+            <span className="block text-2xl font-bold text-zinc-900 dark:text-white">{center.expertCount || 0}</span>
             <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-tighter">Chuyên gia</span>
           </div>
           <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-zinc-800">

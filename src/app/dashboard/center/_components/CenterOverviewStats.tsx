@@ -2,7 +2,7 @@ import { Users, Activity, PlayCircle, TrendingUp } from "lucide-react";
 
 interface CenterOverviewStatsProps {
   stats: {
-    totalStaff: number;
+    totalexpert: number;
     totalChildren: number;
     activeSessions: number;
   } | null;
@@ -12,7 +12,7 @@ export default function CenterOverviewStats({ stats }: CenterOverviewStatsProps)
   const displayStats = [
     { 
       label: "Chuyên gia", 
-      value: stats?.totalStaff || 0, 
+      value: stats?.totalexpert || 0, 
       icon: Users, 
       color: "text-blue-600 dark:text-blue-400", 
       bg: "bg-blue-100 dark:bg-blue-400/10" 

@@ -2,15 +2,15 @@
 
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { revalidatePath } from "next/cache";
+import { getCollectionName } from "@/lib/utils/roles";
 
 /**
  * Fetch stats for the Center Dashboard
  */
 export async function getCenterStats(centerId: string) {
   try {
-    // 1. Total Therapists (Staff)
-    const staffSnap = await adminDb.collection("users")
-      .where("role", "==", "therapist")
+    // 1. Total Experts (expert)
+    const expertSnap = await adminDb.collection("experts")
       .where("centerId", "==", centerId)
       .count()
       .get();
@@ -31,7 +31,7 @@ export async function getCenterStats(centerId: string) {
     return {
       success: true,
       stats: {
-        totalStaff: staffSnap.data().count,
+        totalExpert: expertSnap.data().count,
         totalChildren: childrenSnap.data().count,
         activeSessions: sessionsSnap.data().count,
       }
@@ -43,31 +43,30 @@ export async function getCenterStats(centerId: string) {
 }
 
 /**
- * Fetch all therapists belonging to this center
+ * Fetch all Experts belonging to this center
  */
-export async function getCenterStaff(centerId: string) {
+export async function getCenterExperts(centerId: string) {
   try {
-    const snapshot = await adminDb.collection("users")
-      .where("role", "==", "therapist")
+    const snapshot = await adminDb.collection("experts")
       .where("centerId", "==", centerId)
       .get();
     
-    const staff = snapshot.docs.map(doc => ({
+    const experts = snapshot.docs.map(doc => ({
       uid: doc.id,
       ...doc.data()
     }));
     
-    return { success: true, staff };
+    return { success: true, experts };
   } catch (error: any) {
-    console.error("Error fetching center staff:", error);
+    console.error("Error fetching center experts:", error);
     return { success: false, error: error.message };
   }
 }
 
 /**
- * Create a new Therapist account
+ * Create a new Expert account
  */
-export async function createTherapist(centerId: string, data: { name: string, email: string, password: string, specialization?: string }) {
+export async function createExpert(centerId: string, data: { name: string, email: string, password: string, specialization?: string }) {
   try {
     // 1. Create User in Firebase Auth
     const userRecord = await adminAuth.createUser({
@@ -80,16 +79,16 @@ export async function createTherapist(centerId: string, data: { name: string, em
 
     // 2. Set Custom Claims for Auth Security
     await adminAuth.setCustomUserClaims(uid, { 
-      role: "therapist", 
+      role: "Expert", 
       centerId: centerId 
     });
 
     // 3. Create User Document in Firestore
-    await adminDb.collection("users").doc(uid).set({
+    await adminDb.collection("experts").doc(uid).set({
       uid: uid,
       name: data.name,
       email: data.email,
-      role: "therapist",
+      role: "expert",
       centerId: centerId,
       specialization: data.specialization || "General",
       createdAt: new Date().toISOString(),
@@ -100,8 +99,8 @@ export async function createTherapist(centerId: string, data: { name: string, em
     revalidatePath("/dashboard/center");
     return { success: true, uid };
   } catch (error: any) {
-    console.error("Error creating therapist:", error);
-    return { success: false, error: error.message || "Failed to create therapist" };
+    console.error("Error creating Expert:", error);
+    return { success: false, error: error.message || "Failed to create Expert" };
   }
 }
 
@@ -146,7 +145,7 @@ export async function createChildProfile(centerId: string, data: { name: string,
       gender: data.gender,
       condition: data.condition,
       centerId: centerId,
-      therapistUids: [], // No therapists initially
+      expert.ids: [], // No Experts initially
       linkCode: linkCode,
       linkCodeExpires: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(), // 48h TTL
       linkCodeUsed: false,
@@ -165,48 +164,48 @@ export async function createChildProfile(centerId: string, data: { name: string,
 }
 
 /**
- * Assign a Therapist to a Child
+ * Assign a Expert to a Child
  */
-export async function assignStaffToChild(childId: string, therapistUid: string) {
+export async function assignExpertToChild(childId: string, expertUid: string) {
   try {
     const childRef = adminDb.collection("child_profiles").doc(childId);
     const childDoc = await childRef.get();
     
     if (!childDoc.exists) return { success: false, error: "Child not found" };
 
-    const currentTherapists = childDoc.data()?.therapistUids || [];
+    const currentExperts = childDoc.data()?.expertUids || [];
     
-    if (currentTherapists.includes(therapistUid)) {
+    if (currentExperts.includes(expertUid)) {
       return { success: false, error: "Chuyên gia này đã được phân công cho trẻ rồi." };
     }
 
     await childRef.update({
-      therapistUids: [...currentTherapists, therapistUid],
+      expertUids: [...currentExperts, expertUid],
       updatedAt: new Date().toISOString()
     });
 
     revalidatePath("/dashboard/center");
     return { success: true };
   } catch (error: any) {
-    console.error("Error assigning therapist:", error);
+    console.error("Error assigning Expert:", error);
     return { success: false, error: error.message };
   }
 }
 
 /**
- * Unassign a Therapist from a Child
+ * Unassign a Expert from a Child
  */
-export async function unassignStaffFromChild(childId: string, therapistUid: string) {
+export async function unassignExpertFromChild(childId: string, expertUid: string) {
   try {
     const childRef = adminDb.collection("child_profiles").doc(childId);
     const childDoc = await childRef.get();
     
     if (!childDoc.exists) return { success: false, error: "Child not found" };
 
-    const currentTherapists = childDoc.data()?.therapistUids || [];
+    const currentExperts = childDoc.data()?.expertUids || [];
     
     await childRef.update({
-      therapistUids: currentTherapists.filter((uid: string) => uid !== therapistUid),
+      expertUids: currentExperts.filter((uid: string) => uid !== expertUid),
       updatedAt: new Date().toISOString()
     });
 
@@ -214,23 +213,23 @@ export async function unassignStaffFromChild(childId: string, therapistUid: stri
     revalidatePath("/dashboard/center");
     return { success: true };
   } catch (error: any) {
-    console.error("Error unassigning therapist:", error);
+    console.error("Error unassigning Expert:", error);
     return { success: false, error: error.message };
   }
 }
 
 /**
- * Toggle Status for Staff (Active/Inactive)
+ * Toggle Status for expert (Active/Inactive)
  */
-export async function toggleStaffStatus(uid: string, currentStatus: string) {
+export async function toggleExpertStatus(uid: string, currentStatus: string) {
   try {
     const nextStatus = currentStatus === "Active" ? "Inactive" : "Active";
-    await adminDb.collection("users").doc(uid).update({
+    await adminDb.collection("experts").doc(uid).update({
       status: nextStatus,
       updatedAt: new Date().toISOString()
     });
     revalidatePath("/dashboard/center");
-    revalidatePath(`/dashboard/center/staff/${uid}`);
+    revalidatePath(`/dashboard/center/experts/${uid}`);
     return { success: true, status: nextStatus };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -269,23 +268,23 @@ export async function getChildDetail(childId: string) {
 }
 
 /**
- * Get Staff Detail with full info
+ * Get Expert Detail with full info
  */
-export async function getStaffDetail(uid: string) {
+export async function getExpertDetail(uid: string) {
   try {
-    const doc = await adminDb.collection("users").doc(uid).get();
-    if (!doc.exists) return { success: false, error: "Staff not found" };
+    const doc = await adminDb.collection("experts").doc(uid).get();
+    if (!doc.exists) return { success: false, error: "Expert not found" };
     
-    // Also get children assigned to this staff
+    // Also get children assigned to this expert
     const childrenSnap = await adminDb.collection("child_profiles")
-      .where("therapistUids", "array-contains", uid)
+      .where("expert.ids", "array-contains", uid)
       .get();
     
     const assignedChildren = childrenSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
     return { 
       success: true, 
-      staff: { uid: doc.id, ...doc.data() },
+      expert: { uid: doc.id, ...doc.data() },
       assignedChildren
     };
   } catch (error: any) {

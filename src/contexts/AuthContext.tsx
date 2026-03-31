@@ -11,6 +11,7 @@ interface AuthContextType {
   centerId: string | null;
   centerName: string | null;
   role: string | null;
+  userName: string | null;
   loading: boolean;
 }
 
@@ -19,6 +20,7 @@ const AuthContext = createContext<AuthContextType>({
   centerId: null,
   centerName: null,
   role: null,
+  userName: null,
   loading: true,
 });
 
@@ -27,14 +29,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [centerId, setCenterId] = useState<string | null>(null);
   const [centerName, setCenterName] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Listen for Firebase Auth state changes
+    // 1. Initial hydration từ localStorage giúp giao diện mượt trơn không bị giật
+    if (typeof window !== "undefined") {
+      const cached = localStorage.getItem("authProfileCache");
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (parsed.role) setRole(parsed.role);
+          if (parsed.centerId) setCenterId(parsed.centerId);
+          if (parsed.centerName) setCenterName(parsed.centerName);
+          if (parsed.userName) setUserName(parsed.userName);
+        } catch(e) {}
+      }
+    }
+
+    // 2. Lắng nghe auth state từ Firebase
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       
       if (firebaseUser) {
+        const fallBackName = firebaseUser.displayName || firebaseUser.email?.split('@')[0];
+        setUserName(fallBackName ?? null);
+
         try {
           const { getUserProfile } = await import("@/app/actions/auth");
           const result = await getUserProfile(firebaseUser.uid);
@@ -43,6 +63,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setRole(result.profile.role);
             setCenterId(result.profile.centerId);
             setCenterName(result.profile.centerName);
+            
+            const finalName = result.profile.name || fallBackName;
+            setUserName(finalName);
+
+            // 3. Cache lại profile để lần sau load siêu tốc
+            if (typeof window !== "undefined") {
+               localStorage.setItem("authProfileCache", JSON.stringify({
+                  role: result.profile.role,
+                  centerId: result.profile.centerId,
+                  centerName: result.profile.centerName,
+                  userName: finalName
+               }));
+            }
           }
         } catch (error) {
           console.error("Error fetching user profile via server action:", error);
@@ -51,6 +84,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setRole(null);
         setCenterId(null);
         setCenterName(null);
+        setUserName(null);
+        if (typeof window !== "undefined") localStorage.removeItem("authProfileCache");
       }
       
       setLoading(false);
@@ -60,7 +95,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, centerId, centerName, role, loading }}>
+    <AuthContext.Provider value={{ user, centerId, centerName, role, userName, loading }}>
       {children}
     </AuthContext.Provider>
   );

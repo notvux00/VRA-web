@@ -3,14 +3,14 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Stethoscope, UserPlus, Loader2, ArrowLeft } from "lucide-react";
-import TherapistRoster from "../_components/TherapistRoster";
-import AddTherapistModal from "../_components/AddTherapistModal";
-import { getCenterStaff } from "@/app/actions/center";
+import ExpertRoster from "../_components/ExpertRoster";
+import AddExpertModal from "../_components/AddExpertModal";
+import { getCenterExperts } from "@/app/actions/center";
 import Link from "next/link";
 
-export default function CenterStaffPage() {
+export default function CenterExpertPage() {
   const { centerId, centerName } = useAuth();
-  const [staff, setStaff] = useState<any[]>([]);
+  const [experts, setExperts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
@@ -18,8 +18,8 @@ export default function CenterStaffPage() {
     if (!centerId) return;
     setLoading(true);
     try {
-      const res = await getCenterStaff(centerId);
-      if (res.success) setStaff(res.staff || []);
+      const res = await getCenterExperts(centerId);
+      if (res.success) setExperts(res.experts || []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -56,11 +56,11 @@ export default function CenterStaffPage() {
         </div>
       ) : (
         <div className="max-w-4xl">
-          <TherapistRoster staff={staff} onRefresh={fetchData} />
+          <ExpertRoster experts={experts} onRefresh={fetchData} />
         </div>
       )}
 
-      <AddTherapistModal 
+      <AddExpertModal 
         isOpen={isAddModalOpen} 
         onClose={() => setIsAddModalOpen(false)} 
         onSuccess={fetchData}

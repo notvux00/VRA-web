@@ -8,12 +8,12 @@ import {
   TrendingUp, Award, UserCheck, Calendar
 } from "lucide-react";
 import Link from "next/link";
-import { getStaffDetail, toggleStaffStatus } from "@/app/actions/center";
+import { getExpertDetail, toggleExpertStatus } from "@/app/actions/center";
 
-export default function StaffDetailPage() {
+export default function ExpertDetailPage() {
   const { id } = useParams();
   const router = useRouter();
-  const [data, setData] = useState<{ staff: any, assignedChildren: any[] } | null>(null);
+  const [data, setData] = useState<{ expert: any, assignedChildren: any[] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [togglingStatus, setTogglingStatus] = useState(false);
@@ -21,9 +21,9 @@ export default function StaffDetailPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await getStaffDetail(id as string);
+      const res = await getExpertDetail(id as string);
       if (res.success) {
-        setData({ staff: res.staff, assignedChildren: res.assignedChildren || [] });
+        setData({ expert: res.expert, assignedChildren: res.assignedChildren || [] });
       } else {
         setError(res.error || "Không tìm thấy thông tin chuyên gia");
       }
@@ -39,10 +39,10 @@ export default function StaffDetailPage() {
   }, [id]);
 
   const handleToggleStatus = async () => {
-    if (!data?.staff) return;
+    if (!data?.expert) return;
     setTogglingStatus(true);
     try {
-      const res = await toggleStaffStatus(id as string, data.staff.status || "Active");
+      const res = await toggleExpertStatus(id as string, data.expert.status || "Active");
       if (res.success) {
         fetchData();
       }
@@ -69,7 +69,7 @@ export default function StaffDetailPage() {
     </div>
   );
 
-  const { staff, assignedChildren } = data;
+  const { expert, assignedChildren } = data;
 
   return (
     <div className="p-4 sm:p-8 max-w-5xl mx-auto space-y-8 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -82,9 +82,9 @@ export default function StaffDetailPage() {
             <ArrowLeft size={20} />
           </button>
           <div>
-            <h1 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight">{staff.name}</h1>
+            <h1 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight">{expert.name}</h1>
             <p className="text-zinc-500 font-bold flex items-center gap-2 text-sm">
-               {staff.specialization} &bull; {staff.status === 'Active' ? 'Đang hoạt động' : 'Ngưng hoạt động'}
+               {expert.specialization} &bull; {expert.status === 'Active' ? 'Đang hoạt động' : 'Ngưng hoạt động'}
             </p>
           </div>
         </div>
@@ -92,12 +92,12 @@ export default function StaffDetailPage() {
           onClick={handleToggleStatus}
           disabled={togglingStatus}
           className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-            staff.status === 'Active' 
+            expert.status === 'Active' 
               ? 'bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-950 dark:text-red-400' 
               : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-400'
           }`}
         >
-          {togglingStatus ? <Loader2 size={16} className="animate-spin" /> : (staff.status === 'Active' ? 'Tạm dừng' : 'Kích hoạt lại')}
+          {togglingStatus ? <Loader2 size={16} className="animate-spin" /> : (expert.status === 'Active' ? 'Tạm dừng' : 'Kích hoạt lại')}
         </button>
       </div>
 
@@ -113,7 +113,7 @@ export default function StaffDetailPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[10px] font-black text-zinc-400 uppercase">Liên hệ</p>
-                  <p className="font-bold text-zinc-900 dark:text-white truncate text-sm">{staff.email}</p>
+                  <p className="font-bold text-zinc-900 dark:text-white truncate text-sm">{expert.email}</p>
                 </div>
               </div>
               <div className="flex items-center gap-4">
@@ -122,7 +122,7 @@ export default function StaffDetailPage() {
                 </div>
                 <div>
                   <p className="text-[10px] font-black text-zinc-400 uppercase">Trạng thái hỗ trợ</p>
-                  <p className="font-bold text-zinc-900 dark:text-white">{staff.status === 'Active' ? 'Sẵn sàng' : 'Tạm dừng/Vắng mặt'}</p>
+                  <p className="font-bold text-zinc-900 dark:text-white">{expert.status === 'Active' ? 'Sẵn sàng' : 'Tạm dừng/Vắng mặt'}</p>
                 </div>
               </div>
             </div>

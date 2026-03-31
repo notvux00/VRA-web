@@ -1,10 +1,10 @@
 import { Clock, FileText, PlayCircle, Search, MoreVertical } from "lucide-react";
 
 const childrenList = [
-  { id: "C001", name: "Tommy Jenkins", age: 8, condition: "Tự kỷ (ASD)", lastSession: "Hôm nay", status: "Hoạt động" },
-  { id: "C002", name: "Sarah Connor", age: 10, condition: "ADHD", lastSession: "2 ngày trước", status: "Hoạt động" },
-  { id: "C003", name: "Mike Wheeler", age: 7, condition: "Lo âu", lastSession: "1 tuần trước", status: "Cần Đánh giá" },
-  { id: "C004", name: "El Hopper", age: 11, condition: "Tự kỷ (ASD)", lastSession: "Hôm qua", status: "Hoạt động" },
+  { id: "C001", name: "Tommy Jenkins", age: 8, condition: "ASD - Mức độ 1", lastSession: "Hôm nay", status: "Hoạt động" },
+  { id: "C002", name: "Sarah Connor", age: 10, condition: "ASD - Mức độ 2", lastSession: "2 ngày trước", status: "Hoạt động" },
+  { id: "C003", name: "Mike Wheeler", age: 7, condition: "ASD - Mức độ 1", lastSession: "1 tuần trước", status: "Cần Đánh giá" },
+  { id: "C004", name: "El Hopper", age: 11, condition: "ASD - Mức độ 3", lastSession: "Hôm qua", status: "Hoạt động" },
 ];
 
 export default function ChildrenTable() {

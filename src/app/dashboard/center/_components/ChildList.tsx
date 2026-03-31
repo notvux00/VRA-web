@@ -1,28 +1,28 @@
 import React, { useState } from "react";
 import { User, Plus, Calendar, Shield, MoreHorizontal, UserCheck, Loader2, Eye, ToggleLeft, ToggleRight, X } from "lucide-react";
-import { assignStaffToChild, toggleChildStatus } from "@/app/actions/center";
+import { assignExpertToChild, toggleChildStatus } from "@/app/actions/center";
 import Link from "next/link";
 
 interface ChildListProps {
   children: any[];
-  staff: any[];
+  expert: any[];
   onRefresh: () => void;
 }
 
-export default function ChildList({ children, staff, onRefresh }: ChildListProps) {
+export default function ChildList({ children, expert, onRefresh }: ChildListProps) {
   const [isAssigning, setIsAssigning] = useState<string | null>(null);
-  const [selectedTherapist, setSelectedTherapist] = useState("");
+  const [selectedExpert, setSelectedExpert] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [togglingStatus, setTogglingStatus] = useState<string | null>(null);
 
   const handleAssign = async (childId: string) => {
-    if (!selectedTherapist) return;
+    if (!selectedExpert) return;
     setSubmitting(true);
     try {
-      const res = await assignStaffToChild(childId, selectedTherapist);
+      const res = await assignExpertToChild(childId, selectedExpert);
       if (res.success) {
         setIsAssigning(null);
-        setSelectedTherapist("");
+        setSelectedExpert("");
         onRefresh();
       } else {
         alert(res.error || "Có lỗi xảy ra");
@@ -116,13 +116,13 @@ export default function ChildList({ children, staff, onRefresh }: ChildListProps
                   </div>
                   
                   <div className="flex flex-wrap gap-2">
-                    {child.therapistUids?.length > 0 ? (
-                      child.therapistUids.map((uid: string) => {
-                        const therapist = staff.find(s => s.uid === uid);
+                    {child.expert.ids?.length > 0 ? (
+                      child.expert.ids.map((uid: string) => {
+                        const Expert = expert.find(s => s.uid === uid);
                         return (
                           <div key={uid} className="flex items-center gap-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-full px-3 py-1 text-xs text-zinc-600 dark:text-zinc-300 font-medium hover:bg-white dark:hover:bg-zinc-700 transition-colors">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                            {therapist?.name || "Chưa rõ"}
+                            {Expert?.name || "Chưa rõ"}
                           </div>
                         );
                       })
@@ -134,17 +134,17 @@ export default function ChildList({ children, staff, onRefresh }: ChildListProps
                       <div className="flex items-center gap-2 mt-2 w-full animate-in slide-in-from-left-2 duration-300">
                         <select 
                           className="flex-1 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg text-xs p-2 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all dark:text-zinc-200"
-                          value={selectedTherapist}
-                          onChange={(e) => setSelectedTherapist(e.target.value)}
+                          value={selectedExpert}
+                          onChange={(e) => setSelectedExpert(e.target.value)}
                         >
                           <option value="">Chọn chuyên gia...</option>
-                          {staff.filter(s => !child.therapistUids?.includes(s.uid) && s.status !== 'Inactive').map(s => (
+                          {expert.filter(s => !child.expert.ids?.includes(s.uid) && s.status !== 'Inactive').map(s => (
                             <option key={s.uid} value={s.uid}>{s.name} ({s.specialization})</option>
                           ))}
                         </select>
                         <button 
                           onClick={() => handleAssign(child.id)}
-                          disabled={submitting || !selectedTherapist}
+                          disabled={submitting || !selectedExpert}
                           className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-md shadow-blue-500/10 h-8 flex items-center justify-center min-w-[60px]"
                         >
                           {submitting ? <Loader2 className="animate-spin" size={14} /> : "Lưu"}

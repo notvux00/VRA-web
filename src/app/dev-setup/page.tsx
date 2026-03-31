@@ -5,7 +5,7 @@ import { assignRoleByEmail } from "@/app/actions/auth";
 
 export default function DevSetupPage() {
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState("therapist");
+  const [role, setRole] = useState("Expert");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -46,7 +46,7 @@ export default function DevSetupPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
-              placeholder="therapist@example.com"
+              placeholder="Expert@example.com"
             />
           </div>
 
@@ -59,7 +59,7 @@ export default function DevSetupPage() {
             >
               <option value="admin">Admin (System Owner)</option>
               <option value="center">Center</option>
-              <option value="therapist">Therapist</option>
+              <option value="Expert">Expert</option>
               <option value="parent">Parent</option>
             </select>
           </div>

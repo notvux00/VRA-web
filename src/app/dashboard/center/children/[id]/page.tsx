@@ -8,13 +8,13 @@ import {
   UserX, CheckCircle, Info
 } from "lucide-react";
 import Link from "next/link";
-import { getChildDetail, getCenterStaff, unassignStaffFromChild } from "@/app/actions/center";
+import { getChildDetail, getCenterExperts, unassignExpertFromChild } from "@/app/actions/center";
 
 export default function ChildDetailPage() {
   const { id } = useParams();
   const router = useRouter();
   const [child, setChild] = useState<any>(null);
-  const [staff, setStaff] = useState<any[]>([]);
+  const [experts, setExperts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [unassigning, setUnassigning] = useState<string | null>(null);
@@ -22,16 +22,15 @@ export default function ChildDetailPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [childRes, staffRes] = await Promise.all([
+      const [childRes] = await Promise.all([
         getChildDetail(id as string),
-        getCenterStaff(child?.centerId || "") // We'll re-fetch staff if needed
       ]);
 
-      if (childRes.success) {
+      if (childRes.success && childRes.child) {
         setChild(childRes.child);
-        // If we didn't have centerId before, fetch staff now
-        const sRes = await getCenterStaff(childRes.child.centerId);
-        if (sRes.success) setStaff(sRes.staff || []);
+        const childData = childRes.child as any;
+        const sRes = await getCenterExperts(childData.centerId);
+        if (sRes.success) setExperts(sRes.experts || []);
       } else {
         setError(childRes.error || "Không tìm thấy thông tin trẻ");
       }
@@ -46,12 +45,12 @@ export default function ChildDetailPage() {
     fetchData();
   }, [id]);
 
-  const handleUnassign = async (therapistUid: string) => {
+  const handleUnassign = async (expertUid: string) => {
     if (!window.confirm("Bạn có chắc chắn muốn gỡ chuyên gia này khỏi hồ sơ trẻ?")) return;
     
-    setUnassigning(therapistUid);
+    setUnassigning(expertUid);
     try {
-      const res = await unassignStaffFromChild(id as string, therapistUid);
+      const res = await unassignExpertFromChild(id as string, expertUid);
       if (res.success) {
         fetchData();
       }
@@ -146,23 +145,23 @@ export default function ChildDetailPage() {
                  Chuyên gia phụ trách
                </h3>
                <span className="text-[10px] font-bold bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-lg">
-                 {child.therapistUids?.length || 0} Thành viên
+                 {child.expertUids?.length || 0} Thành viên
                </span>
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {child.therapistUids?.length > 0 ? (
-                child.therapistUids.map((uid: string) => {
-                  const therapist = staff.find(s => s.uid === uid);
+              {child.expertUids?.length > 0 ? (
+                child.expertUids.map((uid: string) => {
+                  const expert = experts.find(s => s.uid === uid);
                   return (
                     <div key={uid} className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-800/30 rounded-2xl border border-zinc-100 dark:border-zinc-800 hover:border-blue-200 transition-colors group">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-white dark:bg-zinc-700 flex items-center justify-center font-bold text-xs text-zinc-400">
-                          {therapist?.name?.charAt(0) || "T"}
+                          {expert?.name?.charAt(0) || "T"}
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-zinc-900 dark:text-white line-clamp-1">{therapist?.name || "Đang tải..."}</p>
-                          <p className="text-[10px] text-zinc-500 font-medium">{therapist?.specialization}</p>
+                          <p className="text-sm font-bold text-zinc-900 dark:text-white line-clamp-1">{expert?.name || "Đang tải..."}</p>
+                          <p className="text-[10px] text-zinc-500 font-medium">{expert?.specialization}</p>
                         </div>
                       </div>
                       <button 

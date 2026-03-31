@@ -6,7 +6,7 @@ const stats = [
   { label: "Đang chờ đánh giá", value: "3", icon: Activity, color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-100 dark:bg-amber-400/10" },
 ];
 
-export default function TherapistStats() {
+export default function expertStats() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
       {stats.map((stat, i) => (

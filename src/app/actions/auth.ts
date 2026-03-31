@@ -4,9 +4,12 @@ import { cookies } from "next/headers";
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { redirect } from "next/navigation";
 import { QueryDocumentSnapshot, DocumentData } from "firebase-admin/firestore";
+import { getCollectionName } from "@/lib/utils/roles";
 
 const SESSION_COOKIE_NAME = "session";
 const EXPIRES_IN = 60 * 60 * 24 * 5 * 1000; // 5 days
+
+// getCollectionName moved to @/lib/utils/roles.ts to satisfy Next.js 15 Server Action async rule.
 
 export async function createSession(idToken: string) {
   try {
@@ -15,9 +18,11 @@ export async function createSession(idToken: string) {
     const uid = decodedIdToken.uid;
     const email = decodedIdToken.email;
 
-    // 2. [RECOVERY] Hardcode Admin Role for specific email (Safety first)
+    // 2. [RECOVERY] Hardcode Admin Role for specific email
+    let role = decodedIdToken.role;
     if (email === "leduyvu27022005@gmail.com") {
-      await adminDb.collection("users").doc(uid).set({
+      role = "admin";
+      await adminDb.collection("system_admins").doc(uid).set({
         role: "admin",
         email: email,
         updatedAt: new Date().toISOString()
@@ -25,25 +30,35 @@ export async function createSession(idToken: string) {
       await adminAuth.setCustomUserClaims(uid, { role: "admin" });
     }
 
+    if (!role) role = "parent";
+    const collectionName = getCollectionName(role);
+
     // 3. Sync Roles: Check Firestore first
-    const userDoc = await adminDb.collection("users").doc(uid).get();
-    let role = decodedIdToken.role; // Default from current token
+    let userDoc = await adminDb.collection(collectionName).doc(uid).get();
+    
+    // Fallback vớt từ users cũ
+    if (!userDoc.exists) {
+      const oldDoc = await adminDb.collection("users").doc(uid).get();
+      if (oldDoc.exists) {
+        userDoc = oldDoc;
+      }
+    }
 
     if (userDoc.exists) {
       // Use Firestore role as source of truth
-      role = userDoc.data()?.role;
-      // Sync email/center_id if missing or changed
+      role = userDoc.data()?.role || role;
+      const targetCol = getCollectionName(role);
+      
+      // Sync email
       const updates: any = {};
       if (!userDoc.data()?.email || userDoc.data()?.email !== email) updates.email = email || "";
       
       if (Object.keys(updates).length > 0) {
-        await adminDb.collection("users").doc(uid).update(updates);
+        await adminDb.collection(targetCol).doc(uid).update(updates);
       }
     } else {
       // Auto-Migration/New User Logic
-      if (!role) role = "parent"; // Default to parent if truly no role exists
-      
-      await adminDb.collection("users").doc(uid).set({
+      await adminDb.collection(collectionName).doc(uid).set({
         role: role,
         email: email || "",
         updatedAt: new Date().toISOString()
@@ -94,13 +109,13 @@ export async function removeSession() {
   }
 
   (await cookies()).delete(SESSION_COOKIE_NAME);
-  redirect("/login");
+  redirect("/");
 }
 
 export async function setParentRole(uid: string) {
   try {
     // Update both Firestore and Auth Claims
-    const userRef = adminDb.collection("users").doc(uid);
+    const userRef = adminDb.collection("parents").doc(uid);
     const userDoc = await userRef.get();
     
     // If user already has a role (like admin), DON'T overwrite it to parent
@@ -124,10 +139,12 @@ export async function setParentRole(uid: string) {
 
 export async function updateUserRole(uid: string, role: string) {
   try {
-    await adminDb.collection("users").doc(uid).update({
+    const colName = getCollectionName(role);
+    await adminDb.collection(colName).doc(uid).set({
       role: role,
       updatedAt: new Date().toISOString()
-    });
+    }, { merge: true });
+    
     await adminAuth.setCustomUserClaims(uid, { role });
     return { success: true };
   } catch (error: any) {
@@ -179,7 +196,7 @@ export async function createCenter(centerData: {
     }
 
     // 3. Assign 'center' role and link to center_id in Firestore
-    await adminDb.collection("users").doc(uid).set({
+    await adminDb.collection("center_managers").doc(uid).set({
       role: "center",
       email: centerData.email,
       name: centerData.managerName, // Save person name here
@@ -202,7 +219,7 @@ export async function createCenter(centerData: {
       managerUids: [uid], // Support multiple managers
       createdAt: new Date().toISOString(),
       status: "Active",
-      therapistCount: 0,
+      expertCount: 0,
       sessionCount: 0
     });
 
@@ -233,7 +250,7 @@ export async function addCenterManager(centerId: string, managerData: { name: st
     }
 
     // 2. Assign 'center' role and link to center_id
-    await adminDb.collection("users").doc(uid).set({
+    await adminDb.collection("center_managers").doc(uid).set({
       role: "center",
       email: managerData.email,
       name: managerData.name, // Save name here
@@ -290,12 +307,13 @@ export async function getCenterDetails(centerId: string) {
     // Fetch details for each manager
     const managers = await Promise.all(
       managerUids.map(async (uid: string) => {
-        const userDoc = await adminDb.collection("users").doc(uid).get();
+        // managers are in center_managers collection
+        const userDoc = await adminDb.collection("center_managers").doc(uid).get();
         const userData = userDoc.data();
         return { 
           uid, 
           email: userData?.email, 
-          name: userData?.name || userData?.displayName || "Unknown Manager" 
+          name: userData?.name || "Unknown Manager" 
         };
       })
     );
@@ -309,14 +327,27 @@ export async function getCenterDetails(centerId: string) {
 
 export async function getUserProfile(uid: string) {
   try {
-    const userDoc = await adminDb.collection("users").doc(uid).get();
-    if (!userDoc.exists) return { success: false, error: "User not found" };
+    // 1. Phân loại collection theo Role
+    const userRecord = await adminAuth.getUser(uid);
+    const role = userRecord.customClaims?.role || "parent";
+    
+    let collectionName = getCollectionName(role);
+
+    // 2. Tìm trong collection mới dựa theo Role
+    let userDoc = await adminDb.collection(collectionName).doc(uid).get();
+    
+    // 3. (Fallback vớt): Tìm trong collection `users` cũ nếu bạn lười/chưa migrate dữ liệu cũ
+    if (!userDoc.exists) {
+      userDoc = await adminDb.collection("users").doc(uid).get();
+      if (!userDoc.exists) return { success: false, error: "User not found" };
+    }
 
     const userData = userDoc.data() || {};
     const profile = {
-      role: userData.role || "parent",
+      role: userData.role || role,
       centerId: userData.centerId || null,
       centerName: null as string | null,
+      name: userData.name || userData.displayName || null,
     };
 
     if (profile.centerId) {
@@ -372,21 +403,17 @@ export async function getGlobalStats() {
     // 1. Get Centers Count
     const centersSnap = await adminDb.collection("centers").count().get();
     
-    // 2. Get Therapists Count (role: 'therapist')
-    const therapistsSnap = await adminDb.collection("users").where("role", "==", "therapist").count().get();
+    // 2. Lấy thông tin bài học
+    const lessonsSnap = await adminDb.collection("lessons").count().get();
     
-    // 3. Get Children Count
-    const childrenSnap = await adminDb.collection("child_profiles").count().get();
-    
-    // 4. Get Sessions Count
+    // 3. Lấy thông tin VR session (Buổi học)
     const sessionsSnap = await adminDb.collection("sessions").count().get();
 
     return {
       success: true,
       stats: {
         totalCenters: centersSnap.data().count,
-        totalTherapists: therapistsSnap.data().count,
-        totalChildren: childrenSnap.data().count,
+        totalLessons: lessonsSnap.data().count,
         totalSessions: sessionsSnap.data().count
       }
     };
@@ -397,8 +424,7 @@ export async function getGlobalStats() {
       success: true,
       stats: {
         totalCenters: 0,
-        totalTherapists: 0,
-        totalChildren: 0,
+        totalLessons: 0,
         totalSessions: 0
       }
     };

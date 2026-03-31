@@ -8,12 +8,12 @@ export async function middleware(request: NextRequest) {
   // Paths that require auth
   const isDashboard = path.startsWith("/dashboard");
 
-  // Paths that are auth related (login/register)
-  const isAuthPage = path.startsWith("/login") || path.startsWith("/register");
+  // Paths that are auth related (login)
+  const isAuthPage = path === "/";
 
   if (!session && isDashboard) {
     // Not logged in, trying to access protected route -> redirect to login
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   if (session && isAuthPage) {
@@ -46,7 +46,7 @@ export async function middleware(request: NextRequest) {
       if (path === "/dashboard") {
         if (role === "admin") return NextResponse.redirect(new URL("/dashboard/admin", request.url));
         if (role === "center") return NextResponse.redirect(new URL("/dashboard/center", request.url));
-        if (role === "therapist") return NextResponse.redirect(new URL("/dashboard/therapist", request.url));
+        if (role === "expert") return NextResponse.redirect(new URL("/dashboard/expert", request.url));
         if (role === "parent") return NextResponse.redirect(new URL("/dashboard/parent", request.url));
         
         // Default fallback if no role matched
@@ -60,7 +60,7 @@ export async function middleware(request: NextRequest) {
       if (path.startsWith("/dashboard/center") && role !== "center") {
         return NextResponse.redirect(new URL("/dashboard", request.url));
       }
-      if (path.startsWith("/dashboard/therapist") && role !== "therapist") {
+      if (path.startsWith("/dashboard/expert") && role !== "expert") {
         return NextResponse.redirect(new URL("/dashboard", request.url));
       }
       if (path.startsWith("/dashboard/parent") && role !== "parent") {
@@ -73,7 +73,7 @@ export async function middleware(request: NextRequest) {
     } catch (e) {
       // Invalid session cookie format
       console.error("Middleware Auth Error:", e);
-      const response = NextResponse.redirect(new URL("/login", request.url));
+      const response = NextResponse.redirect(new URL("/", request.url));
       response.cookies.delete("session");
       return response;
     }
@@ -83,5 +83,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/register"],
+  matcher: ["/dashboard/:path*", "/"],
 };

@@ -1,10 +1,10 @@
 "use client";
 
 import { FileText, Plus } from "lucide-react";
-import TherapistStats from "./_components/TherapistStats";
+import expertStats from "./_components/expertStats";
 import ChildrenTable from "./_components/ChildrenTable";
 
-export default function TherapistDashboard() {
+export default function expertDashboard() {
   return (
     <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-8 pb-20">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
@@ -24,7 +24,7 @@ export default function TherapistDashboard() {
         </div>
       </div>
 
-      <TherapistStats />
+      <expertStats />
       <ChildrenTable />
     </div>
   );

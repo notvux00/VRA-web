@@ -17,7 +17,7 @@ export default function DashboardPage() {
     const session = getCookie("session");
     
     if (!session) {
-      router.push("/login");
+      router.push("/");
       return;
     }
 
@@ -29,7 +29,7 @@ export default function DashboardPage() {
 
       if (role === "admin") router.push("/dashboard/admin");
       else if (role === "center") router.push("/dashboard/center");
-      else if (role === "therapist") router.push("/dashboard/therapist");
+      else if (role === "expert") router.push("/dashboard/expert");
       else if (role === "parent") router.push("/dashboard/parent");
       else {
         // Fallback or wait a bit for role propagation
@@ -37,7 +37,7 @@ export default function DashboardPage() {
         return () => clearTimeout(timer);
       }
     } catch (e) {
-      router.push("/login");
+      router.push("/");
     }
   }, [router]);
 
