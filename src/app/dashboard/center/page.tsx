@@ -10,13 +10,14 @@ import ChildList from "./_components/ChildList";
 import AddExpertModal from "./_components/AddExpertModal";
 import AddChildModal from "./_components/AddChildModal";
 import AddParentModal from "./_components/AddParentModal";
-import { getCenterStats, getCenterExperts, getCenterChildren } from "@/app/actions/center";
+import { getCenterStats, getCenterExperts, getCenterChildren, getCenterParents } from "@/app/actions/center";
 
 export default function CenterDashboard() {
   const { centerName, centerId } = useAuth();
   const [stats, setStats] = useState<any>(null);
   const [experts, setExperts] = useState<any[]>([]);
   const [children, setChildren] = useState<any[]>([]);
+  const [parents, setParents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [isAddExpertOpen, setIsAddExpertOpen] = useState(false);
@@ -27,15 +28,17 @@ export default function CenterDashboard() {
     if (!centerId) return;
     setLoading(true);
     try {
-      const [statsRes, expertRes, childrenRes] = await Promise.all([
+      const [statsRes, expertRes, childrenRes, parentsRes] = await Promise.all([
         getCenterStats(centerId),
         getCenterExperts(centerId),
-        getCenterChildren(centerId)
+        getCenterChildren(centerId),
+        getCenterParents(centerId)
       ]);
 
       if (statsRes.success) setStats(statsRes.stats);
       if (expertRes.success) setExperts(expertRes.experts || []);
       if (childrenRes.success) setChildren(childrenRes.children || []);
+      if (parentsRes.success) setParents(parentsRes.parents || []);
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
     } finally {
@@ -91,7 +94,7 @@ export default function CenterDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <ExpertRoster experts={experts} onRefresh={fetchData} />
-        <ChildList children={children} expert={experts} onRefresh={fetchData} />
+        <ChildList children={children} expert={experts} parents={parents} onRefresh={fetchData} />
       </div>
 
       <AddExpertModal 

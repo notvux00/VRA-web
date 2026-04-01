@@ -76,32 +76,8 @@ export default function CenterParentsPage() {
           <Loader2 className="animate-spin text-emerald-600" size={32} />
         </div>
       ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
-          <div className="xl:col-span-2">
-            <ParentList parents={filteredParents} children={children} onRefresh={fetchData} />
-          </div>
-          
-          <div className="bg-white dark:bg-zinc-900/50 backdrop-blur border border-zinc-200 dark:border-zinc-800 rounded-3xl p-8 sticky top-24">
-             <h3 className="text-xl font-black text-zinc-900 dark:text-white mb-4">Quyền lợi Phụ huynh</h3>
-             <ul className="space-y-4">
-                <li className="flex gap-3 text-sm font-medium text-zinc-600 dark:text-zinc-400">
-                   <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center shrink-0 text-[10px]">1</div>
-                   Xem báo cáo tiến độ học tập VR của con theo thời gian thực.
-                </li>
-                <li className="flex gap-3 text-sm font-medium text-zinc-600 dark:text-zinc-400">
-                   <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center shrink-0 text-[10px]">2</div>
-                   Nhận thông báo về lịch học và các đánh giá từ chuyên gia.
-                </li>
-                <li className="flex gap-3 text-sm font-medium text-zinc-600 dark:text-zinc-400">
-                   <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center shrink-0 text-[10px]">3</div>
-                   Truy cập kho tài liệu hướng dẫn can thiệp tại nhà.
-                </li>
-             </ul>
-             <div className="mt-8 p-4 bg-zinc-50 dark:bg-zinc-800 rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-700">
-                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Ghi chú quan trọng</p>
-                <p className="text-xs text-zinc-400 italic">Việc liên kết hồ sơ trẻ với tài khoản phụ huynh là bắt buộc để họ có thể xem được dữ liệu lâm sàng.</p>
-             </div>
-          </div>
+        <div className="w-full">
+          <ParentList parents={filteredParents} children={children} onRefresh={fetchData} />
         </div>
       )}
 

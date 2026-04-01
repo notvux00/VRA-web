@@ -119,7 +119,7 @@ export async function getCenterChildren(centerId: string) {
   try {
     const snapshot = await adminDb.collection("child_profiles")
       .where("centerId", "==", centerId)
-      .orderBy("createdAt", "desc")
+      // .orderBy("createdAt", "desc") // Temporarily disabled for index issues
       .get();
     
     const children = snapshot.docs.map(doc => ({
@@ -184,6 +184,7 @@ export async function createChildProfile(
     });
 
     revalidatePath("/dashboard/center");
+    revalidatePath("/dashboard/center/children");
     return { success: true, childId, linkCode };
   } catch (error: any) {
     console.error("Error creating child profile:", error);
@@ -327,7 +328,8 @@ export async function getCenterParents(centerId: string) {
   try {
     const snapshot = await adminDb.collection("parents")
       .where("centerId", "==", centerId)
-      .orderBy("createdAt", "desc")
+      // Removing orderBy temporarily to avoid index issues. 
+      // Re-add later after creating composite index in Firebase Console.
       .get();
     
     const parents = snapshot.docs.map(doc => ({
@@ -375,6 +377,7 @@ export async function createParent(centerId: string, data: { name: string, email
     });
 
     revalidatePath("/dashboard/center");
+    revalidatePath("/dashboard/center/parents");
     return { success: true, uid };
   } catch (error: any) {
     console.error("Error creating Parent:", error);
@@ -394,6 +397,7 @@ export async function linkParentToChild(childId: string, parentUid: string) {
       updatedAt: new Date().toISOString()
     });
 
+    revalidatePath("/dashboard/center/parents");
     revalidatePath("/dashboard/center/children");
     revalidatePath(`/dashboard/center/children/${childId}`);
     return { success: true };

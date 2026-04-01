@@ -111,25 +111,18 @@ export default function AddChildModal({ isOpen, onClose, onSuccess }: AddChildMo
         {/* Scrollable Content - Synchronized Padding */}
         <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
           {message.linkCode ? (
-            <div className="text-center py-4 space-y-6 animate-in slide-in-from-bottom-4 duration-500">
-              <div className="w-16 h-16 bg-green-100 dark:bg-green-500/10 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-green-50 dark:border-green-500/5">
-                <CheckCircle size={32} />
+            <div className="p-8 text-center space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+              <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-emerald-50 dark:border-emerald-500/5">
+                <CheckCircle size={40} />
               </div>
-              <div className="space-y-1">
+              <div className="space-y-2">
                 <h4 className="text-2xl font-black text-zinc-900 dark:text-white">Tạo thành công!</h4>
-                <p className="text-sm text-zinc-500 font-medium">Hồ sơ trẻ đã được tạo. Mã liên kết hồ sơ:</p>
-              </div>
-              
-              <div className="bg-zinc-50 dark:bg-zinc-950 p-6 rounded-3xl border-2 border-dashed border-green-200 dark:border-green-500/20 space-y-2 max-w-[280px] mx-auto transform hover:scale-105 transition-all duration-300">
-                <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest leading-none">Mã liên kết hồ sơ</p>
-                <div className="text-4xl font-black text-emerald-600 tracking-widest font-mono py-2">
-                  {message.linkCode}
-                </div>
+                <p className="text-sm text-zinc-500 font-medium leading-relaxed">Hồ sơ trẻ đã được khởi tạo thành công. Bây giờ bạn có thể phân công Chuyên gia và liên kết Phụ huynh.</p>
               </div>
               
               <button 
                 onClick={() => { onSuccess(); onClose(); }}
-                className="w-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-900 font-extrabold py-4 rounded-2xl hover:opacity-90 transition-all shadow-xl"
+                className="w-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-900 font-extrabold py-4 rounded-2xl hover:opacity-90 transition-all shadow-xl shadow-zinc-500/10"
               >
                 Hoàn tất
               </button>

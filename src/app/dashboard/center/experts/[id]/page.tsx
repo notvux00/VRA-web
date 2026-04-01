@@ -126,18 +126,6 @@ export default function ExpertDetailPage() {
                 </div>
               </div>
             </div>
-
-            <div className="mt-8 pt-6 border-t border-zinc-100 dark:border-zinc-800">
-               <div className="flex flex-col gap-3">
-                 <div className="flex justify-between items-center text-xs font-bold">
-                    <span className="text-zinc-400">Hiệu suất tập trung</span>
-                    <span className="text-emerald-500">88%</span>
-                 </div>
-                 <div className="h-1.5 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-emerald-500 w-[88%] rounded-full" />
-                 </div>
-               </div>
-            </div>
           </div>
         </div>
 
@@ -175,30 +163,6 @@ export default function ExpertDetailPage() {
                     <p className="text-sm text-zinc-400 font-medium italic">Hiện chưa phụ trách trẻ nào.</p>
                  </div>
                )}
-             </div>
-          </div>
-
-          <div className="bg-white dark:bg-zinc-900/50 backdrop-blur border border-zinc-200 dark:border-zinc-800 rounded-3xl p-8 text-center relative overflow-hidden">
-             <div className="flex items-center justify-center mb-6">
-                <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-full text-amber-600 dark:text-amber-400">
-                  <TrendingUp size={32} />
-                </div>
-             </div>
-             <h3 className="text-xl font-black text-zinc-900 dark:text-white mb-2 tracking-tight">Chỉ số Hiệu suất & Hoạt động</h3>
-             <p className="text-sm text-zinc-500 max-w-sm mx-auto font-medium leading-relaxed">Phân tích tần suất làm việc, tỷ lệ thành công bài học và các chỉ báo đánh giá từ Trung tâm & Phụ huynh.</p>
-             
-             <div className="mt-8 flex justify-center gap-2 opacity-30 grayscale">
-                {[1, 2, 3, 4, 5, 6, 7].map(i => (
-                  <div key={i} className="w-8 bg-amber-400 rounded-t-lg" style={{ height: `${20 + (i * 10)}px` }} />
-                ))}
-             </div>
-
-             <div className="absolute inset-0 bg-gradient-to-t from-white via-white/40 to-transparent pointer-events-none dark:from-zinc-950" />
-             <div className="absolute bottom-10 left-0 right-0 z-10">
-                <div className="bg-zinc-950 dark:bg-zinc-800 text-white text-[10px] font-black uppercase tracking-[0.2em] px-4 py-2 rounded-full inline-flex items-center gap-2">
-                  <Info size={12} className="text-amber-400" />
-                  Dữ liệu đang được kết nối
-                </div>
              </div>
           </div>
         </div>

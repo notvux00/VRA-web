@@ -123,15 +123,6 @@ export default function ChildDetailPage() {
               </div>
             </div>
 
-            <div className="mt-8 pt-6 border-t border-zinc-100 dark:border-zinc-800">
-              <div className="bg-zinc-50 dark:bg-zinc-950 rounded-2xl p-4 border border-blue-100 dark:border-blue-900/20 text-center">
-                <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-2">Mã liên kết phụ huynh</p>
-                <div className="text-3xl font-black text-blue-600 dark:text-blue-400 tracking-tighter mb-1">
-                  {child.linkCode}
-                </div>
-                <p className="text-[10px] text-zinc-400 font-bold italic">Hết hạn: {new Date(child.linkCodeExpires).toLocaleDateString()}</p>
-              </div>
-            </div>
           </div>
         </div>
 

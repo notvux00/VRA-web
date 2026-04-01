@@ -15,12 +15,11 @@ export default function AddParentModal({ isOpen, onClose, onSuccess, centerId }:
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-  const [generatedPassword, setGeneratedPassword] = useState("");
   
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    password: Math.random().toString(36).substring(2, 10), // Random initial password
+    password: "",
   });
 
   if (!isOpen) return null;
@@ -34,8 +33,7 @@ export default function AddParentModal({ isOpen, onClose, onSuccess, centerId }:
       const result = await createParent(centerId, formData);
       if (result.success) {
         setSuccess(true);
-        setGeneratedPassword(formData.password);
-        setFormData({ name: "", email: "", password: Math.random().toString(36).substring(2, 10) });
+        setFormData({ name: "", email: "", password: "" });
       } else {
         setError(result.error || "Có lỗi xảy ra khi tạo tài khoản.");
       }
@@ -70,16 +68,7 @@ export default function AddParentModal({ isOpen, onClose, onSuccess, centerId }:
             </div>
             <div className="space-y-2">
               <h4 className="text-2xl font-black text-zinc-900 dark:text-white">Tạo thành công!</h4>
-              <p className="text-sm text-zinc-500 font-medium">Tài khoản phụ huynh đã sẵn sàng. Hãy cung cấp thông tin sau cho họ:</p>
-            </div>
-            
-            <div className="bg-zinc-50 dark:bg-zinc-950 p-6 rounded-3xl border-2 border-dashed border-green-200 dark:border-green-500/20 space-y-3">
-              <div>
-                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Mật khẩu truy cập</p>
-                 <div className="text-2xl font-black text-blue-600 dark:text-blue-400 tracking-wider">
-                   {generatedPassword}
-                 </div>
-              </div>
+              <p className="text-sm text-zinc-500 font-medium leading-relaxed">Tài khoản phụ huynh đã sẵn sàng. Họ có thể đăng nhập ngay bằng email và mật khẩu bạn đã thiết lập.</p>
             </div>
             
             <button 
@@ -127,15 +116,15 @@ export default function AddParentModal({ isOpen, onClose, onSuccess, centerId }:
                 <div className="relative group">
                   <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-emerald-600 transition-colors" />
                   <input 
-                    type="text" 
+                    type="password" 
                     value={formData.password}
                     onChange={(e) => setFormData({...formData, password: e.target.value})}
                     className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl pl-12 pr-4 py-3.5 text-sm font-medium focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all dark:text-white"
-                    placeholder="Mật khẩu"
+                    placeholder="Nhập mật khẩu"
                     required
                   />
                 </div>
-                <p className="text-[10px] text-zinc-500 font-medium pl-1 italic">* Mật khẩu được tạo ngẫu nhiên, bạn có thể chỉnh sửa.</p>
+                <p className="text-[10px] text-zinc-500 font-medium pl-1 italic">* Phụ huynh sẽ dùng email và mật khẩu này để đăng nhập.</p>
               </div>
             </div>
 

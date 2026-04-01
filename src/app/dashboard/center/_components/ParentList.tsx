@@ -81,7 +81,7 @@ export default function ParentList({ parents, children, onRefresh }: ParentListP
                 <div className="mt-4 flex flex-col gap-3">
                   <div className="flex items-center gap-2">
                     <Baby size={14} className="text-zinc-400" />
-                    <span className="text-xs font-semibold text-zinc-500 uppercase tracking-tighter">Con em liên kết</span>
+                    <span className="text-xs font-semibold text-zinc-500 uppercase tracking-tighter">Danh sách trẻ</span>
                   </div>
                   
                   <div className="flex flex-wrap gap-2">
