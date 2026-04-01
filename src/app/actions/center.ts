@@ -2,7 +2,8 @@
 
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { revalidatePath } from "next/cache";
-import { getCollectionName } from "@/lib/utils/roles";
+// import { getCollectionName } from "@/lib/utils/roles"; // Unused
+
 
 /**
  * Fetch stats for the Center Dashboard
@@ -28,11 +29,18 @@ export async function getCenterStats(centerId: string) {
       .count()
       .get();
 
+    // 4. Total Parents
+    const parentsSnap = await adminDb.collection("parents")
+      .where("centerId", "==", centerId)
+      .count()
+      .get();
+
     return {
       success: true,
       stats: {
         totalExpert: expertSnap.data().count,
         totalChildren: childrenSnap.data().count,
+        totalParents: parentsSnap.data().count,
         activeSessions: sessionsSnap.data().count,
       }
     };
@@ -129,7 +137,21 @@ export async function getCenterChildren(centerId: string) {
 /**
  * Create a new Child Profile
  */
-export async function createChildProfile(centerId: string, data: { name: string, age: number, condition: string, gender: string }) {
+export async function createChildProfile(
+  centerId: string, 
+  data: { 
+    name: string, 
+    age: number, 
+    condition: string, 
+    gender: string,
+    height_cm?: number,
+    weight_kg?: number,
+    sound_sensitivity?: number,
+    attention_span_min?: number,
+    anxiety_triggers?: string[],
+    diagnosis_notes?: string
+  }
+) {
   try {
     // 1. Generate a One-Time Link Code (6 capital letters/numbers)
     const linkCode = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -144,8 +166,14 @@ export async function createChildProfile(centerId: string, data: { name: string,
       age: data.age,
       gender: data.gender,
       condition: data.condition,
+      height_cm: data.height_cm || 0,
+      weight_kg: data.weight_kg || 0,
+      sound_sensitivity: data.sound_sensitivity || 3,
+      attention_span_min: data.attention_span_min || 15,
+      anxiety_triggers: data.anxiety_triggers || [],
+      diagnosis_notes: data.diagnosis_notes || "",
       centerId: centerId,
-      expert.ids: [], // No Experts initially
+      expertUids: [], // No Experts initially
       linkCode: linkCode,
       linkCodeExpires: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(), // 48h TTL
       linkCodeUsed: false,
@@ -277,7 +305,7 @@ export async function getExpertDetail(uid: string) {
     
     // Also get children assigned to this expert
     const childrenSnap = await adminDb.collection("child_profiles")
-      .where("expert.ids", "array-contains", uid)
+      .where("expertUids", "array-contains", uid)
       .get();
     
     const assignedChildren = childrenSnap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -288,6 +316,112 @@ export async function getExpertDetail(uid: string) {
       assignedChildren
     };
   } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Fetch all Parents belonging to this center
+ */
+export async function getCenterParents(centerId: string) {
+  try {
+    const snapshot = await adminDb.collection("parents")
+      .where("centerId", "==", centerId)
+      .orderBy("createdAt", "desc")
+      .get();
+    
+    const parents = snapshot.docs.map(doc => ({
+      uid: doc.id,
+      ...doc.data()
+    }));
+    
+    return { success: true, parents };
+  } catch (error: any) {
+    console.error("Error fetching center parents:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Create a new Parent account
+ */
+export async function createParent(centerId: string, data: { name: string, email: string, password: string }) {
+  try {
+    // 1. Create User in Firebase Auth
+    const userRecord = await adminAuth.createUser({
+      email: data.email,
+      password: data.password,
+      displayName: data.name,
+    });
+
+    const uid = userRecord.uid;
+
+    // 2. Set Custom Claims
+    await adminAuth.setCustomUserClaims(uid, { 
+      role: "Parent", 
+      centerId: centerId 
+    });
+
+    // 3. Create User Document in Firestore
+    await adminDb.collection("parents").doc(uid).set({
+      uid: uid,
+      name: data.name,
+      email: data.email,
+      role: "parent",
+      centerId: centerId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      status: "Active"
+    });
+
+    revalidatePath("/dashboard/center");
+    return { success: true, uid };
+  } catch (error: any) {
+    console.error("Error creating Parent:", error);
+    return { success: false, error: error.message || "Failed to create Parent account" };
+  }
+}
+
+/**
+ * Link a Parent to a Child Profile
+ */
+export async function linkParentToChild(childId: string, parentUid: string) {
+  try {
+    const childRef = adminDb.collection("child_profiles").doc(childId);
+    
+    await childRef.update({
+      parentUid: parentUid,
+      updatedAt: new Date().toISOString()
+    });
+
+    revalidatePath("/dashboard/center/children");
+    revalidatePath(`/dashboard/center/children/${childId}`);
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error linking Parent:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Get Recent Sessions for a Center
+ */
+export async function getCenterSessions(centerId: string, limit: number = 10) {
+  try {
+    const snapshot = await adminDb.collection("sessions")
+      .where("centerId", "==", centerId)
+      .orderBy("startTime", "desc")
+      .limit(limit)
+      .get();
+    
+    const sessions = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    
+    return { success: true, sessions };
+  } catch (error: any) {
+    console.error("Error fetching center sessions:", error);
     return { success: false, error: error.message };
   }
 }

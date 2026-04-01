@@ -116,8 +116,8 @@ export default function ChildList({ children, expert, onRefresh }: ChildListProp
                   </div>
                   
                   <div className="flex flex-wrap gap-2">
-                    {child.expert.ids?.length > 0 ? (
-                      child.expert.ids.map((uid: string) => {
+                    {child.expertUids?.length > 0 ? (
+                      child.expertUids.map((uid: string) => {
                         const Expert = expert.find(s => s.uid === uid);
                         return (
                           <div key={uid} className="flex items-center gap-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-full px-3 py-1 text-xs text-zinc-600 dark:text-zinc-300 font-medium hover:bg-white dark:hover:bg-zinc-700 transition-colors">
@@ -138,7 +138,7 @@ export default function ChildList({ children, expert, onRefresh }: ChildListProp
                           onChange={(e) => setSelectedExpert(e.target.value)}
                         >
                           <option value="">Chọn chuyên gia...</option>
-                          {expert.filter(s => !child.expert.ids?.includes(s.uid) && s.status !== 'Inactive').map(s => (
+                          {expert.filter(s => !child.expertUids?.includes(s.uid) && s.status !== 'Inactive').map(s => (
                             <option key={s.uid} value={s.uid}>{s.name} ({s.specialization})</option>
                           ))}
                         </select>

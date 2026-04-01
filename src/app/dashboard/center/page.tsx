@@ -1,5 +1,6 @@
 "use client";
 
+// VRA_DASHBOARD_VERSION: 1.1 (FORCE_MODAL_SYNC)
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Settings, UserPlus, Plus, Loader2 } from "lucide-react";
@@ -8,6 +9,7 @@ import ExpertRoster from "./_components/ExpertRoster";
 import ChildList from "./_components/ChildList";
 import AddExpertModal from "./_components/AddExpertModal";
 import AddChildModal from "./_components/AddChildModal";
+import AddParentModal from "./_components/AddParentModal";
 import { getCenterStats, getCenterExperts, getCenterChildren } from "@/app/actions/center";
 
 export default function CenterDashboard() {
@@ -19,6 +21,7 @@ export default function CenterDashboard() {
   
   const [isAddExpertOpen, setIsAddExpertOpen] = useState(false);
   const [isAddChildOpen, setIsAddChildOpen] = useState(false);
+  const [isAddParentOpen, setIsAddParentOpen] = useState(false);
 
   const fetchData = async () => {
     if (!centerId) return;
@@ -31,7 +34,7 @@ export default function CenterDashboard() {
       ]);
 
       if (statsRes.success) setStats(statsRes.stats);
-      if (expertRes.success) setExperts(expertRes.expert || []);
+      if (expertRes.success) setExperts(expertRes.experts || []);
       if (childrenRes.success) setChildren(childrenRes.children || []);
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
@@ -61,10 +64,17 @@ export default function CenterDashboard() {
         </div>
         <div className="flex flex-wrap gap-3">
           <button 
-            onClick={() => setIsAddChildOpen(true)}
+            onClick={() => setIsAddParentOpen(true)}
             className="bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl flex items-center gap-2 text-sm font-medium transition-all shadow-sm"
           >
-            <Plus size={16} />
+            <UserPlus size={16} className="text-emerald-500" />
+            <span>Thêm phụ huynh</span>
+          </button>
+          <button 
+            onClick={() => setIsAddChildOpen(true)}
+            className="bg-white dark:bg-zinc-900/50 hover:bg-zinc-50 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl flex items-center gap-2 text-sm font-medium transition-all shadow-sm"
+          >
+            <Plus size={16} className="text-purple-500" />
             <span>Thêm trẻ em</span>
           </button>
           <button 
@@ -80,8 +90,8 @@ export default function CenterDashboard() {
       <CenterOverviewStats stats={stats} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <ExpertRoster expert={expert} onRefresh={fetchData} />
-        <ChildList children={children} expert={expert} onRefresh={fetchData} />
+        <ExpertRoster experts={experts} onRefresh={fetchData} />
+        <ChildList children={children} expert={experts} onRefresh={fetchData} />
       </div>
 
       <AddExpertModal 
@@ -95,6 +105,15 @@ export default function CenterDashboard() {
         onClose={() => setIsAddChildOpen(false)} 
         onSuccess={fetchData}
       />
+
+      {centerId && (
+        <AddParentModal 
+          isOpen={isAddParentOpen} 
+          onClose={() => setIsAddParentOpen(false)} 
+          onSuccess={fetchData}
+          centerId={centerId}
+        />
+      )}
     </div>
   );
 }

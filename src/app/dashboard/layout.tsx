@@ -109,6 +109,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: "Tổng quan", href: "/dashboard/center", icon: LayoutDashboard },
     { name: "Chuyên gia", href: "/dashboard/center/experts", icon: Stethoscope },
     { name: "Trẻ em", href: "/dashboard/center/children", icon: Baby },
+    { name: "Phụ huynh", href: "/dashboard/center/parents", icon: ShieldCheck },
     { name: "Báo cáo", href: "/dashboard/center/reports", icon: BarChart3 },
   ];
 
@@ -144,7 +145,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                </svg>
              </div>
               <span className="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-br from-zinc-900 to-zinc-500 dark:from-white dark:to-zinc-400 truncate max-w-[150px]">
-                {role === "center" && centerName ? centerName : "VRA"}
+                VRA
               </span>
           </div>
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white">

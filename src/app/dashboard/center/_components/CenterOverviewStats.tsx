@@ -2,8 +2,9 @@ import { Users, Activity, PlayCircle, TrendingUp } from "lucide-react";
 
 interface CenterOverviewStatsProps {
   stats: {
-    totalexpert: number;
+    totalExpert: number;
     totalChildren: number;
+    totalParents: number;
     activeSessions: number;
   } | null;
 }
@@ -12,7 +13,7 @@ export default function CenterOverviewStats({ stats }: CenterOverviewStatsProps)
   const displayStats = [
     { 
       label: "Chuyên gia", 
-      value: stats?.totalexpert || 0, 
+      value: stats?.totalExpert || 0, 
       icon: Users, 
       color: "text-blue-600 dark:text-blue-400", 
       bg: "bg-blue-100 dark:bg-blue-400/10" 
@@ -25,20 +26,21 @@ export default function CenterOverviewStats({ stats }: CenterOverviewStatsProps)
       bg: "bg-purple-100 dark:bg-purple-400/10" 
     },
     { 
-      label: "Đang trị liệu", 
-      value: stats?.activeSessions || 0, 
-      icon: PlayCircle, 
+      label: "Phụ huynh", 
+      value: stats?.totalParents || 0, 
+      icon: TrendingUp, 
       color: "text-emerald-600 dark:text-emerald-400", 
       bg: "bg-emerald-100 dark:bg-emerald-400/10" 
     },
     { 
-      label: "Hiệu quả trung bình", 
-      value: "82%", 
-      icon: TrendingUp, 
+      label: "Đang trị liệu", 
+      value: stats?.activeSessions || 0, 
+      icon: PlayCircle, 
       color: "text-amber-600 dark:text-amber-400", 
       bg: "bg-amber-100 dark:bg-amber-400/10" 
     },
   ];
+
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

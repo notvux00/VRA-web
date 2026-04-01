@@ -25,7 +25,7 @@ export default function CenterChildrenPage() {
         getCenterExperts(centerId)
       ]);
       if (childRes.success) setChildren(childRes.children || []);
-      if (expertRes.success) setExperts(expertRes.expert || []);
+      if (expertRes.success) setExperts(expertRes.experts || []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -78,7 +78,7 @@ export default function CenterChildrenPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
-          <ChildList children={filteredChildren} expert={expert} onRefresh={fetchData} />
+          <ChildList children={filteredChildren} expert={experts} onRefresh={fetchData} />
           
           {/* Quick Info Box */}
           <div className="hidden xl:block bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/10 dark:to-blue-900/10 border border-purple-100 dark:border-purple-800/30 rounded-3xl p-8 sticky top-24">
