@@ -7,7 +7,7 @@ interface Center {
   email: string;
   status: string;
   centerId?: string;
-  ExpertCount?: number;
+  expertCount?: number;
 }
 
 interface CenterCardProps {
@@ -61,7 +61,7 @@ export default function CenterCard({ center, onToggleStatus, onDelete }: CenterC
         </div>
         <div className="flex items-center gap-3 text-sm text-zinc-600 dark:text-zinc-400">
           <Users size={16} className="shrink-0 text-zinc-400" />
-          <span><b>{center.ExpertCount || 0}</b> Chuyên gia</span>
+          <span><b>{center.expertCount || 0}</b> Chuyên gia</span>
         </div>
       </div>
 

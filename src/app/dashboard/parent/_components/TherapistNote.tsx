@@ -1,6 +1,6 @@
 import { Brain } from "lucide-react";
 
-export default function expertNote() {
+export default function ExpertNote() {
   return (
     <div className="bg-white dark:bg-zinc-900/50 backdrop-blur border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm dark:shadow-none">
       <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">Nhận xét từ chuyên gia</h2>

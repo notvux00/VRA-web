@@ -71,7 +71,7 @@ const mockLessons = [
 
 const categories = ["Tất cả", "Cảm xúc", "Giao tiếp", "Nhận thức", "Hành vi", "Kỹ năng sống"];
 
-export default function expertLessons() {
+export default function ExpertLessons() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("Tất cả");
   const [isModalOpen, setIsModalOpen] = useState(false);

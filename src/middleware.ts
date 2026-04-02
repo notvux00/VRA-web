@@ -1,9 +1,28 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { jwtVerify, importX509, decodeProtectedHeader } from "jose";
+
+// Cache public keys in a global variable (per-instance)
+let cachedKeys: Record<string, string> = {};
+let lastFetched: number = 0;
+
+async function getPublicKey(kid: string) {
+  const now = Date.now();
+  // Fetch keys every 1 hour or if kid not found
+  if (now - lastFetched > 3600000 || !cachedKeys[kid]) {
+    const response = await fetch("https://www.googleapis.com/identitytoolkit/v3/relyingparty/publicKeys");
+    cachedKeys = await response.json();
+    lastFetched = now;
+  }
+  const cert = cachedKeys[kid];
+  if (!cert) throw new Error(`No matching key found for kid: ${kid}`);
+  return await importX509(cert, "RS256");
+}
 
 export async function middleware(request: NextRequest) {
   const session = request.cookies.get("session")?.value;
   const path = request.nextUrl.pathname;
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 
   // Paths that require auth
   const isDashboard = path.startsWith("/dashboard");
@@ -12,33 +31,30 @@ export async function middleware(request: NextRequest) {
   const isAuthPage = path === "/";
 
   if (!session && isDashboard) {
-    // Not logged in, trying to access protected route -> redirect to login
     return NextResponse.redirect(new URL("/", request.url));
   }
 
   if (session && isAuthPage) {
-    // Logged in, trying to access login/register -> redirect to dashboard (we will figure out WHICH dashboard based on role later, or just /dashboard)
-    // For now, redirecting to /dashboard.
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // To truly route based on roles, you'd decode the JWT session cookie here.
-  // Next.js middleware runs on the Edge, so we can't use full firebase-admin.
-  // BUT we can decode the base64 payload of the JWT manually to check the role claim!
-
   if (session && isDashboard) {
     try {
-      // Decode the JWT securely or inspect the payload to get the role.
-      // Firebase session cookies are JWTs.
-      const payloadBase64 = session.split(".")[1];
-      const decodedPayload = JSON.parse(atob(payloadBase64));
+      const { kid } = decodeProtectedHeader(session);
+      if (!kid) throw new Error("No kid found in session token header");
       
-      const role = decodedPayload.role; // Custom claim
+      const publicKey = await getPublicKey(kid);
 
-      // If no role is found yet (propagation delay), don't redirect yet or default to parent
+      // Verify the Session Cookie JWT
+      // IMPORTANT: Issuer for session cookies is different from ID tokens
+      const { payload } = await jwtVerify(session, publicKey, {
+        issuer: `https://session.firebase.google.com/${projectId}`,
+        audience: projectId,
+      });
+
+      const role = payload.role as string;
+
       if (!role) {
-        console.log("No role found in token yet, allowing through or defaulting to parent...");
-        // If they are specifically at /dashboard, and no role, let them stay or redirect to a loading/setup page
         if (path === "/dashboard") return NextResponse.next();
       }
 
@@ -49,11 +65,10 @@ export async function middleware(request: NextRequest) {
         if (role === "expert") return NextResponse.redirect(new URL("/dashboard/expert", request.url));
         if (role === "parent") return NextResponse.redirect(new URL("/dashboard/parent", request.url));
         
-        // Default fallback if no role matched
         return NextResponse.next();
       }
 
-      // If they try to access a specific dashboard without the role
+      // Role isolation checks
       if (path.startsWith("/dashboard/admin") && role !== "admin") {
         return NextResponse.redirect(new URL("/dashboard", request.url));
       }
@@ -64,14 +79,11 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL("/dashboard", request.url));
       }
       if (path.startsWith("/dashboard/parent") && role !== "parent") {
-        // Special case: if it's a new user, the role might take a second to propagate. 
-        // If they are on the parent dashboard, don't kick them out immediately if role is missing.
         if (!role) return NextResponse.next(); 
         return NextResponse.redirect(new URL("/dashboard", request.url));
       }
 
     } catch (e) {
-      // Invalid session cookie format
       console.error("Middleware Auth Error:", e);
       const response = NextResponse.redirect(new URL("/", request.url));
       response.cookies.delete("session");

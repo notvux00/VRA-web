@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { redirect } from "next/navigation";
@@ -20,7 +21,8 @@ export async function createSession(idToken: string) {
 
     // 2. [RECOVERY] Hardcode Admin Role for specific email
     let role = decodedIdToken.role;
-    if (email === "leduyvu27022005@gmail.com") {
+    const ADMIN_SEED_EMAIL = process.env.ADMIN_SEED_EMAIL;
+    if (ADMIN_SEED_EMAIL && email === ADMIN_SEED_EMAIL) {
       role = "admin";
       await adminDb.collection("system_admins").doc(uid).set({
         role: "admin",
@@ -428,5 +430,48 @@ export async function getGlobalStats() {
         totalSessions: 0
       }
     };
+  }
+}
+/**
+ * Maintenance: Sync all center stats (expertCount, totalChildren)
+ * Run this to fix accurate counts for all centers.
+ */
+export async function syncAllCenterStats() {
+  try {
+    const centersSnap = await adminDb.collection("centers").get();
+    
+    const results = [];
+    for (const centerDoc of centersSnap.docs) {
+      const centerId = centerDoc.id;
+      
+      // 1. Count Experts
+      const expertsCount = await adminDb.collection("experts")
+        .where("centerId", "==", centerId)
+        .count()
+        .get();
+        
+      // 2. Count Children
+      const childrenCount = await adminDb.collection("child_profiles")
+        .where("centerId", "==", centerId)
+        .count()
+        .get();
+        
+      const expN = expertsCount.data().count;
+      const chiN = childrenCount.data().count;
+      
+      await centerDoc.ref.update({
+        expertCount: expN,
+        totalChildren: chiN,
+        updatedAt: new Date().toISOString()
+      });
+      
+      results.push({ centerId, experts: expN, children: chiN });
+    }
+    
+    revalidatePath("/dashboard/admin");
+    return { success: true, results };
+  } catch (error: any) {
+    console.error("Error syncing center stats:", error);
+    return { success: false, error: error.message };
   }
 }

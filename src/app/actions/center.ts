@@ -1,6 +1,6 @@
 "use server";
 
-import { adminAuth, adminDb } from "@/lib/firebase/admin";
+import { adminAuth, adminDb, admin } from "@/lib/firebase/admin";
 import { revalidatePath } from "next/cache";
 // import { getCollectionName } from "@/lib/utils/roles"; // Unused
 
@@ -87,7 +87,7 @@ export async function createExpert(centerId: string, data: { name: string, email
 
     // 2. Set Custom Claims for Auth Security
     await adminAuth.setCustomUserClaims(uid, { 
-      role: "Expert", 
+      role: "expert", 
       centerId: centerId 
     });
 
@@ -102,6 +102,11 @@ export async function createExpert(centerId: string, data: { name: string, email
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       status: "Active"
+    });
+    // 4. Update parent center stats (expertCount)
+    await adminDb.collection("centers").doc(centerId).update({
+      expertCount: admin.firestore.FieldValue.increment(1),
+      updatedAt: new Date().toISOString()
     });
 
     revalidatePath("/dashboard/center");
@@ -181,6 +186,12 @@ export async function createChildProfile(
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       sessionCount: 0
+    });
+ 
+    // 3. Update parent center stats (totalChildren)
+    await adminDb.collection("centers").doc(centerId).update({
+      totalChildren: admin.firestore.FieldValue.increment(1),
+      updatedAt: new Date().toISOString()
     });
 
     revalidatePath("/dashboard/center");
@@ -360,7 +371,7 @@ export async function createParent(centerId: string, data: { name: string, email
 
     // 2. Set Custom Claims
     await adminAuth.setCustomUserClaims(uid, { 
-      role: "Parent", 
+      role: "parent", 
       centerId: centerId 
     });
 

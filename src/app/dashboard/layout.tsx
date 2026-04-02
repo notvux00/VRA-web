@@ -8,7 +8,7 @@ import { LayoutDashboard, Users, Calendar, Settings, HelpCircle, Bell, Menu, X, 
 import { useAuth } from "@/contexts/AuthContext";
 import { removeSession } from "@/app/actions/auth";
 import { collection, query, where, getDocs, limit, orderBy, startAt, endAt } from "firebase/firestore";
-import { db } from "@/lib/firebase/config";
+import { db } from "@/lib/firebase/client";
 import { Loader2 } from "lucide-react";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

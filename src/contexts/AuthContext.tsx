@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
-import { auth } from "@/lib/firebase/config";
+import { auth } from "@/lib/firebase/client";
 
 // We keep track of the Firebase user. For Role, we rely on the session cookie server-side, 
 // but we can also store the user state here for client fast-reactivity.

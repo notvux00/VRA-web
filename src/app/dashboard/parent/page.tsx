@@ -3,7 +3,7 @@
 import { Link as LinkIcon } from "lucide-react";
 import ParentStats from "./_components/ParentStats";
 import FocusChart from "./_components/FocusChart";
-import expertNote from "./_components/expertNote";
+import ExpertNote from "./_components/TherapistNote";
 import RecentSessions from "./_components/RecentSessions";
 
 export default function ParentDashboard() {
@@ -25,7 +25,7 @@ export default function ParentDashboard() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         <div className="xl:col-span-2 space-y-8">
           <FocusChart />
-          <expertNote />
+          <ExpertNote />
         </div>
         <div>
           <RecentSessions />
