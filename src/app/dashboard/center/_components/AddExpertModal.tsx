@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { UserPlus, X, Mail, Lock, User, Briefcase, Loader2, AlertCircle, CheckCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { createExpert } from "@/app/actions/center";
+import { createExpert } from "@/actions/center";
 
 interface AddExpertModalProps {
   isOpen: boolean;

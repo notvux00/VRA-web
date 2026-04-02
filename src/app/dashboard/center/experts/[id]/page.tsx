@@ -8,7 +8,7 @@ import {
   TrendingUp, Award, UserCheck, Calendar
 } from "lucide-react";
 import Link from "next/link";
-import { getExpertDetail, toggleExpertStatus } from "@/app/actions/center";
+import { getExpertDetail, toggleExpertStatus } from "@/actions/center";
 
 export default function ExpertDetailPage() {
   const { id } = useParams();

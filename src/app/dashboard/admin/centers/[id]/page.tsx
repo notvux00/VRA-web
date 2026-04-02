@@ -4,7 +4,7 @@ import React, { useState, useEffect, use } from "react";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getCenterDetails, addCenterManager, updateCenterStatus, deleteCenter } from "@/app/actions/auth";
+import { getCenterDetails, addCenterManager, updateCenterStatus, deleteCenter } from "@/actions/auth";
 import CenterHeader from "./_components/CenterHeader";
 import CenterStatsPanel from "./_components/CenterStatsPanel";
 import ManagerList from "./_components/ManagerList";

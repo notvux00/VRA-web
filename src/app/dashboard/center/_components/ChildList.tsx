@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { User, Plus, Calendar, Shield, MoreHorizontal, UserCheck, Loader2, Eye, ToggleLeft, ToggleRight, X, Heart } from "lucide-react";
-import { assignExpertToChild, toggleChildStatus, linkParentToChild } from "@/app/actions/center";
+import { assignExpertToChild, toggleChildStatus, linkParentToChild } from "@/actions/center";
 import Link from "next/link";
 
 interface ChildListProps {

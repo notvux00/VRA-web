@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { User, Shield, Key, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { updateUserProfile, updateUserPassword } from "@/app/actions/user";
+import { updateUserProfile, updateUserPassword } from "@/actions/user";
 import { EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
 
 export default function SettingsPage() {

@@ -1,7 +1,7 @@
 import { Star, User, Eye, ToggleLeft, ToggleRight, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { toggleExpertStatus } from "@/app/actions/center";
+import { toggleExpertStatus } from "@/actions/center";
 
 interface ExpertRosterProps {
   experts: any[];

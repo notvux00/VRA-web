@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { UserPlus, X, User, ChevronRight, Shield, Loader2, AlertCircle, CheckCircle, Ruler, Weight, Waves, Calendar } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { createChildProfile } from "@/app/actions/center";
+import { createChildProfile } from "@/actions/center";
 
 // VRA_MODAL_SYNCED_V7.0 (FINAL PROFESSIONAL ALIGNMENT)
 

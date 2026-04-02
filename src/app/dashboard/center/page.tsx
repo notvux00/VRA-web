@@ -10,7 +10,7 @@ import ChildList from "./_components/ChildList";
 import AddExpertModal from "./_components/AddExpertModal";
 import AddChildModal from "./_components/AddChildModal";
 import AddParentModal from "./_components/AddParentModal";
-import { getCenterStats, getCenterExperts, getCenterChildren, getCenterParents } from "@/app/actions/center";
+import { getCenterStats, getCenterExperts, getCenterChildren, getCenterParents } from "@/actions/center";
 
 export default function CenterDashboard() {
   const { centerName, centerId } = useAuth();

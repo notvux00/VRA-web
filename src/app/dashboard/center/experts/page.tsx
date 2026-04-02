@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Stethoscope, UserPlus, Loader2, ArrowLeft } from "lucide-react";
 import ExpertRoster from "../_components/ExpertRoster";
 import AddExpertModal from "../_components/AddExpertModal";
-import { getCenterExperts } from "@/app/actions/center";
+import { getCenterExperts } from "@/actions/center";
 import Link from "next/link";
 
 export default function CenterExpertPage() {

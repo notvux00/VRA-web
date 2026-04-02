@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Baby, UserPlus, Loader2, ArrowLeft, Search } from "lucide-react";
 import ChildList from "../_components/ChildList";
 import AddChildModal from "../_components/AddChildModal";
-import { getCenterChildren, getCenterExperts, getCenterParents } from "@/app/actions/center";
+import { getCenterChildren, getCenterExperts, getCenterParents } from "@/actions/center";
 import Link from "next/link";
 
 export default function CenterChildrenPage() {

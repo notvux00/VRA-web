@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { X, User, Mail, Lock, Loader2, AlertCircle, CheckCircle, Shield } from "lucide-react";
-import { createParent } from "@/app/actions/center";
+import { createParent } from "@/actions/center";
 
 interface AddParentModalProps {
   isOpen: boolean;

@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
-import { createSession, setParentRole } from "@/app/actions/auth";
+import { createSession, setParentRole } from "@/actions/auth";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {

@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ShieldCheck, UserPlus, Loader2, Search } from "lucide-react";
 import ParentList from "../_components/ParentList";
 import AddParentModal from "../_components/AddParentModal";
-import { getCenterParents, getCenterChildren } from "@/app/actions/center";
+import { getCenterParents, getCenterChildren } from "@/actions/center";
 
 export default function CenterParentsPage() {
   const { centerId, centerName } = useAuth();

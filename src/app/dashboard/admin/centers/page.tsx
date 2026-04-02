@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Building, Search, Plus, Loader2 } from "lucide-react";
-import { getCenters, createCenter, updateCenterStatus, deleteCenter } from "@/app/actions/auth";
+import { getCenters, createCenter, updateCenterStatus, deleteCenter } from "@/actions/auth";
 import CenterCard from "./_components/CenterCard";
 import CreateCenterModal from "../_components/CreateCenterModal";
 

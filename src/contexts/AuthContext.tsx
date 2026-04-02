@@ -56,7 +56,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUserName(fallBackName ?? null);
 
         try {
-          const { getUserProfile } = await import("@/app/actions/auth");
+          const { getUserProfile } = await import("@/actions/auth");
           const result = await getUserProfile(firebaseUser.uid);
           
           if (result.success && result.profile) {

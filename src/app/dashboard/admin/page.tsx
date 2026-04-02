@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Plus } from "lucide-react";
-import { getCenters, createCenter, getGlobalStats, updateCenterStatus, deleteCenter } from "@/app/actions/auth";
+import { getCenters, createCenter, getGlobalStats, updateCenterStatus, deleteCenter } from "@/actions/auth";
 import StatCards from "./_components/StatCards";
 import CentersTable from "./_components/CentersTable";
 import CreateCenterModal from "./_components/CreateCenterModal";

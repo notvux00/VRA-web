@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { User, Plus, Mail, MessageSquare, MoreHorizontal, UserCheck, Loader2, Eye, Shield, Link as LinkIcon, X, Check, Baby } from "lucide-react";
-import { linkParentToChild } from "@/app/actions/center";
+import { linkParentToChild } from "@/actions/center";
 
 interface ParentListProps {
   parents: any[];

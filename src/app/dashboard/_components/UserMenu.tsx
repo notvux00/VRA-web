@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { LogOut, Settings, ChevronDown, User as UserIcon } from "lucide-react";
-import { removeSession } from "@/app/actions/auth";
+import { removeSession } from "@/actions/auth";
 
 interface UserMenuProps {
   user: any;

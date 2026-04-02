@@ -8,7 +8,7 @@ import {
   UserX, CheckCircle, Info
 } from "lucide-react";
 import Link from "next/link";
-import { getChildDetail, getCenterExperts, unassignExpertFromChild } from "@/app/actions/center";
+import { getChildDetail, getCenterExperts, unassignExpertFromChild } from "@/actions/center";
 
 export default function ChildDetailPage() {
   const { id } = useParams();
