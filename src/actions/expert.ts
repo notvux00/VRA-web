@@ -9,7 +9,7 @@ import { revalidatePath } from "next/cache";
 export async function getAssignedChildren(expertUid: string) {
   try {
     const snapshot = await adminDb.collection("child_profiles")
-      .where("expertUids", "array-contains", expertUid)
+      .where("expertUid", "==", expertUid)
       .get();
     
     const children = snapshot.docs.map(doc => ({
@@ -31,7 +31,7 @@ export async function getExpertStats(expertUid: string) {
   try {
     // 1. Total Assigned Children
     const childrenSnap = await adminDb.collection("child_profiles")
-      .where("expertUids", "array-contains", expertUid)
+      .where("expertUid", "==", expertUid)
       .count()
       .get();
     
@@ -73,9 +73,7 @@ export async function getAssignedChildDetail(expertUid: string, childId: string)
     if (!doc.exists) return { success: false, error: "Child profile not found" };
     
     const data = doc.data();
-    const expertUids = data?.expertUids || [];
-    
-    if (!expertUids.includes(expertUid)) {
+    if (data?.expertUid !== expertUid) {
       return { success: false, error: "Unauthorized access to this child profile" };
     }
     
@@ -100,9 +98,7 @@ export async function updateAlertProfile(expertUid: string, childId: string, ale
     if (!childDoc.exists) return { success: false, error: "Child profile not found" };
     
     const data = childDoc.data();
-    const expertUids = data?.expertUids || [];
-    
-    if (!expertUids.includes(expertUid)) {
+    if (data?.expertUid !== expertUid) {
       return { success: false, error: "Unauthorized: You are not assigned to this child" };
     }
     

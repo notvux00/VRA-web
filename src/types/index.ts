@@ -53,7 +53,7 @@ export interface ChildProfile {
   anxiety_triggers?: string[];
   diagnosis_notes?: string;
   centerId: string;
-  expertUids: string[];
+  expertUid?: string;
   parentUid?: string;
   linkCode?: string;
   linkCodeExpires?: string;

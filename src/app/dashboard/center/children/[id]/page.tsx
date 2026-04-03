@@ -135,37 +135,35 @@ export default function ChildDetailPage() {
                  <UserCheck size={20} className="text-blue-600" />
                  Chuyên gia phụ trách
                </h3>
-               <span className="text-[10px] font-bold bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-lg">
-                 {child.expertUids?.length || 0} Thành viên
-               </span>
+                <span className="text-[10px] font-bold bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-lg">
+                  {child.expertUid ? "1" : "0"} Đã gán
+                </span>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {child.expertUids?.length > 0 ? (
-                child.expertUids.map((uid: string) => {
-                  const expert = experts.find(s => s.uid === uid);
-                  return (
-                    <div key={uid} className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-800/30 rounded-2xl border border-zinc-100 dark:border-zinc-800 hover:border-blue-200 transition-colors group">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-white dark:bg-zinc-700 flex items-center justify-center font-bold text-xs text-zinc-400">
-                          {expert?.name?.charAt(0) || "T"}
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-zinc-900 dark:text-white line-clamp-1">{expert?.name || "Đang tải..."}</p>
-                          <p className="text-[10px] text-zinc-500 font-medium">{expert?.specialization}</p>
-                        </div>
+            <div className="grid grid-cols-1 gap-4">
+              {child.expertUid ? (() => {
+                const expert = experts.find(s => s.uid === child.expertUid);
+                return (
+                  <div key={child.expertUid} className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-800/30 rounded-2xl border border-zinc-100 dark:border-zinc-800 hover:border-blue-200 transition-colors group">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-white dark:bg-zinc-700 flex items-center justify-center font-bold text-xs text-zinc-400">
+                        {expert?.name?.charAt(0) || "T"}
                       </div>
-                      <button 
-                        onClick={() => handleUnassign(uid)}
-                        disabled={unassigning === uid}
-                        className="p-2 text-zinc-300 hover:text-red-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
-                      >
-                        {unassigning === uid ? <Loader2 size={16} className="animate-spin" /> : <UserX size={16} />}
-                      </button>
+                      <div>
+                        <p className="text-sm font-bold text-zinc-900 dark:text-white line-clamp-1">{expert?.name || "Đang tải..."}</p>
+                        <p className="text-[10px] text-zinc-500 font-medium">{expert?.specialization}</p>
+                      </div>
                     </div>
-                  );
-                })
-              ) : (
+                    <button 
+                      onClick={() => handleUnassign(child.expertUid)}
+                      disabled={unassigning === child.expertUid}
+                      className="p-2 text-zinc-300 hover:text-red-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                    >
+                      {unassigning === child.expertUid ? <Loader2 size={16} className="animate-spin" /> : <UserX size={16} />}
+                    </button>
+                  </div>
+                );
+              })() : (
                 <div className="col-span-2 py-8 text-center bg-zinc-50 dark:bg-zinc-800/20 rounded-2xl border-2 border-dashed border-zinc-100 dark:border-zinc-800">
                   <p className="text-sm text-zinc-400 font-medium italic">Chưa có chuyên gia nào được phân công.</p>
                 </div>

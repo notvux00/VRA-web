@@ -140,17 +140,15 @@ export default function ChildList({ children, expert, parents, onRefresh }: Chil
                     </div>
                     
                     <div className="flex flex-wrap gap-2">
-                      {child.expertUids?.length > 0 ? (
-                        child.expertUids.map((uid: string) => {
-                          const Exp = expert.find(s => s.uid === uid);
-                          return (
-                            <div key={uid} className="flex items-center gap-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-full px-3 py-1 text-[10px] text-zinc-600 dark:text-zinc-300 font-medium">
-                              <span className="w-1 h-1 rounded-full bg-blue-500"></span>
-                              {Exp?.name || "Chuyên gia"}
-                            </div>
-                          );
-                        })
-                      ) : (
+                      {child.expertUid ? (() => {
+                        const Exp = expert.find(s => s.uid === child.expertUid);
+                        return (
+                          <div className="flex items-center gap-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-full px-3 py-1 text-[10px] text-zinc-600 dark:text-zinc-300 font-medium">
+                            <span className="w-1 h-1 rounded-full bg-blue-500"></span>
+                            {Exp?.name || "Chuyên gia"}
+                          </div>
+                        );
+                      })() : (
                         <p className="text-[10px] text-zinc-400 italic">Chưa gán</p>
                       )}
                       
@@ -161,8 +159,8 @@ export default function ChildList({ children, expert, parents, onRefresh }: Chil
                             value={selectedExpert}
                             onChange={(e) => setSelectedExpert(e.target.value)}
                           >
-                            <option value="">Chọn...</option>
-                            {expert.filter(s => !child.expertUids?.includes(s.uid) && s.status !== 'Inactive').map(s => (
+                             <option value="">Chọn...</option>
+                            {expert.filter(s => s.uid !== child.expertUid && s.status !== 'Inactive').map(s => (
                               <option key={s.uid} value={s.uid}>{s.name}</option>
                             ))}
                           </select>
@@ -180,7 +178,7 @@ export default function ChildList({ children, expert, parents, onRefresh }: Chil
                           onClick={() => setIsAssigning(child.id)}
                           className="text-[10px] font-bold text-blue-600 hover:underline"
                         >
-                          + Gán Chuyên gia
+                          {child.expertUid ? "Đổi Chuyên gia" : "+ Gán Chuyên gia"}
                         </button>
                       )}
                     </div>

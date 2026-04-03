@@ -38,7 +38,7 @@ Hệ thống sử dụng mô hình **NoSQL** tập trung vào hiệu năng truy 
 | **Centers** | `docId` | Gốc rễ, chứa `expertCount`, `totalChildren`. |
 | **Experts** | `uid` | Chuyên gia thuộc một `centerId`. |
 | **Parents** | `uid` | Phụ huynh thuộc một `centerId`. |
-| **Child Profiles** | `docId` | Trung tâm kết nối: chứa `centerId`, `expertUids` (mảng), `parentUid`. |
+| **Child Profiles** | `docId` | Trung tâm kết nối: chứa `centerId`, `expertUid` (chuỗi), `parentUid`. |
 
 ---
 
@@ -46,10 +46,11 @@ Hệ thống sử dụng mô hình **NoSQL** tập trung vào hiệu năng truy 
 
 Đây là cách hệ thống kết nối con người với dữ liệu thực tế.
 
-### 🧑‍⚕️ Chuyên gia <-> Trẻ (Quan hệ N - N)
-- Một trẻ có thể có nhiều chuyên gia (đa trị liệu).
-- Sử dụng mảng `expertUids` trong hồ sơ trẻ.
-- **Truy vấn:** `.where("expertUids", "array-contains", expertUid)` giúp chuyên gia chỉ thấy trẻ mình phụ trách.
+### 🧑‍⚕️ Chuyên gia <-> Trẻ (Quan hệ 1 - N)
+- Một trẻ chỉ có duy nhất một chuyên gia phụ trách tại một thời điểm.
+- Sử dụng trường `expertUid` (chuỗi) trong hồ sơ trẻ.
+- **Truy vấn:** `.where("expertUid", "==", expertUid)` giúp chuyên gia chỉ thấy trẻ mình phụ trách.
+- **Thay đổi:** Khi cần đổi chuyên gia, Center Manager chỉ cần gán lại UID mới vào trường này.
 
 ### 👨‍👩‍👧 Phụ huynh <-> Trẻ (Quan hệ 1 - N)
 - Sử dụng trường `parentUid` duy nhất trong hồ sơ trẻ.
@@ -79,7 +80,7 @@ Mọi truy vấn bắt buộc phải kèm theo điều kiện lọc theo `center
 
 1. **Admin:** Khởi tạo hệ thống và Trung tâm (`Center`).
 2. **Center Manager:** Tạo tài khoản cho Chuyên gia và Phụ huynh.
-3. **Phân công:** Manager gắn Chuyên gia vào hồ sơ Trẻ (UID vào Array) và liên kết với Phụ huynh.
+3. **Phân công:** Manager gắn Chuyên gia vào hồ sơ Trẻ (UID vào trường `expertUid`) và liên kết với Phụ huynh.
 4. **Trải nghiệm:** Chuyên gia đăng nhập -> Middleware đưa về Dashboard -> Hệ thống lọc danh sách trẻ dựa trên UID của họ.
 
 ---

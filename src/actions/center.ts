@@ -178,7 +178,7 @@ export async function createChildProfile(
       anxiety_triggers: data.anxiety_triggers || [],
       diagnosis_notes: data.diagnosis_notes || "",
       centerId: centerId,
-      expertUids: [], // No Experts initially
+      expertUid: "", // No Expert initially
       linkCode: linkCode,
       linkCodeExpires: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(), // 48h TTL
       linkCodeUsed: false,
@@ -203,24 +203,12 @@ export async function createChildProfile(
   }
 }
 
-/**
- * Assign a Expert to a Child
- */
 export async function assignExpertToChild(childId: string, expertUid: string) {
   try {
     const childRef = adminDb.collection("child_profiles").doc(childId);
-    const childDoc = await childRef.get();
     
-    if (!childDoc.exists) return { success: false, error: "Child not found" };
-
-    const currentExperts = childDoc.data()?.expertUids || [];
-    
-    if (currentExperts.includes(expertUid)) {
-      return { success: false, error: "Chuyên gia này đã được phân công cho trẻ rồi." };
-    }
-
     await childRef.update({
-      expertUids: [...currentExperts, expertUid],
+      expertUid: expertUid,
       updatedAt: new Date().toISOString()
     });
 
@@ -232,20 +220,12 @@ export async function assignExpertToChild(childId: string, expertUid: string) {
   }
 }
 
-/**
- * Unassign a Expert from a Child
- */
 export async function unassignExpertFromChild(childId: string, expertUid: string) {
   try {
     const childRef = adminDb.collection("child_profiles").doc(childId);
-    const childDoc = await childRef.get();
-    
-    if (!childDoc.exists) return { success: false, error: "Child not found" };
-
-    const currentExperts = childDoc.data()?.expertUids || [];
     
     await childRef.update({
-      expertUids: currentExperts.filter((uid: string) => uid !== expertUid),
+      expertUid: "",
       updatedAt: new Date().toISOString()
     });
 
@@ -317,7 +297,7 @@ export async function getExpertDetail(uid: string) {
     
     // Also get children assigned to this expert
     const childrenSnap = await adminDb.collection("child_profiles")
-      .where("expertUids", "array-contains", uid)
+      .where("expertUid", "==", uid)
       .get();
     
     const assignedChildren = childrenSnap.docs.map(d => ({ id: d.id, ...d.data() }));
