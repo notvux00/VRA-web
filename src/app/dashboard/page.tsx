@@ -29,7 +29,7 @@ export default function DashboardPage() {
 
       if (role === "admin") router.push("/dashboard/admin");
       else if (role === "center") router.push("/dashboard/center");
-      else if (role === "expert") router.push("/dashboard/expert");
+      else if (role === "expert" || role === "therapist") router.push("/dashboard/expert");
       else if (role === "parent") router.push("/dashboard/parent");
       else {
         // Fallback or wait a bit for role propagation

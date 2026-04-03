@@ -1,13 +1,28 @@
 import { Clock, FileText, PlayCircle, Search, MoreVertical } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
 
-const childrenList = [
-  { id: "C001", name: "Tommy Jenkins", age: 8, condition: "ASD - Mức độ 1", lastSession: "Hôm nay", status: "Hoạt động" },
-  { id: "C002", name: "Sarah Connor", age: 10, condition: "ASD - Mức độ 2", lastSession: "2 ngày trước", status: "Hoạt động" },
-  { id: "C003", name: "Mike Wheeler", age: 7, condition: "ASD - Mức độ 1", lastSession: "1 tuần trước", status: "Cần Đánh giá" },
-  { id: "C004", name: "El Hopper", age: 11, condition: "ASD - Mức độ 3", lastSession: "Hôm qua", status: "Hoạt động" },
-];
+interface Child {
+  id: string;
+  name: string;
+  age: number;
+  condition: string;
+  lastSessionAt?: string;
+  status: string;
+}
 
-export default function ChildrenTable() {
+interface ChildrenTableProps {
+  children: Child[];
+}
+
+export default function ChildrenTable({ children: initialChildren }: ChildrenTableProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredChildren = initialChildren.filter(child => 
+    child.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    child.id.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="bg-white dark:bg-zinc-900/50 backdrop-blur border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm dark:shadow-none overflow-hidden">
       <div className="p-6 border-b border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -17,6 +32,8 @@ export default function ChildrenTable() {
           <input
             type="text"
             placeholder="Tìm kiếm theo tên hoặc ID..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full sm:w-64 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg py-2 pl-9 pr-4 text-sm text-zinc-900 dark:text-zinc-200 focus:outline-none focus:border-blue-500 dark:focus:border-zinc-600 transition-all font-medium"
           />
         </div>
@@ -34,7 +51,7 @@ export default function ChildrenTable() {
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-            {childrenList.map((child) => (
+            {filteredChildren.map((child) => (
               <tr key={child.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors group">
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
@@ -55,24 +72,30 @@ export default function ChildrenTable() {
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400 font-medium">
                     <Clock size={12} className="text-zinc-400" />
-                    {child.lastSession}
+                    {child.lastSessionAt || "Chưa có"}
                   </div>
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center justify-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${child.status === "Hoạt động" ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"}`} />
+                    <div className={`w-2 h-2 rounded-full ${child.status === "Active" ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"}`} />
                     <span className="text-[10px] font-bold uppercase tracking-tighter text-zinc-600 dark:text-zinc-400">{child.status}</span>
                   </div>
                 </td>
                 <td className="px-6 py-4 text-right">
                   <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="p-2 text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors" title="Xem Hồ sơ">
+                    <Link 
+                      href={`/dashboard/expert/children/${child.id}`}
+                      className="p-2 text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors" title="Xem Hồ sơ"
+                    >
                       <FileText size={18} />
-                    </button>
-                    <button className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-blue-500/20 active:scale-95 border border-blue-500">
+                    </Link>
+                    <Link
+                      href={`/dashboard/expert/lessons?childId=${child.id}`}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-blue-500/20 active:scale-95 border border-blue-500"
+                    >
                       <PlayCircle size={14} />
                       Bắt đầu tập
-                    </button>
+                    </Link>
                     <button className="p-2 text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors" title="Thêm tùy chọn">
                       <MoreVertical size={18} />
                     </button>
@@ -80,6 +103,13 @@ export default function ChildrenTable() {
                 </td>
               </tr>
             ))}
+            {filteredChildren.length === 0 && (
+              <tr>
+                <td colSpan={5} className="px-6 py-10 text-center text-zinc-500 dark:text-zinc-400">
+                  Không tìm thấy hồ sơ nào phù hợp.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

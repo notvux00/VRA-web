@@ -37,7 +37,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, navigation }: Sid
         }`}
       >
         <div className="flex items-center justify-between h-20 px-6 border-b border-transparent dark:border-transparent mt-2">
-          <div className="flex items-center gap-3">
+          <Link href="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/30 shrink-0 text-center">
                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 inline-block">
                  <path d="M4 14a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-3.4l-1.6 3h-6l-1.6-3H4z" />
@@ -46,7 +46,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, navigation }: Sid
               <span className="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-br from-zinc-900 to-zinc-500 dark:from-white dark:to-zinc-400 truncate max-w-[150px]">
                 VRA
               </span>
-          </div>
+          </Link>
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white">
             <X size={20} />
           </button>

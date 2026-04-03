@@ -3,6 +3,6 @@ export function getCollectionName(role?: string) {
   const r = role.toLowerCase();
   if (r === "admin" || r === "system_admin") return "system_admins";
   if (r === "center" || r === "center_manager") return "center_managers";
-  if (r === "expert") return "experts";
+  if (r === "expert" || r === "therapist") return "experts";
   return "parents";
 }

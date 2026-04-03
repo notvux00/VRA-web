@@ -3,7 +3,7 @@
 import { Link as LinkIcon } from "lucide-react";
 import ParentStats from "./_components/ParentStats";
 import FocusChart from "./_components/FocusChart";
-import ExpertNote from "./_components/TherapistNote";
+import ExpertNote from "./_components/ExpertNote";
 import RecentSessions from "./_components/RecentSessions";
 
 export default function ParentDashboard() {

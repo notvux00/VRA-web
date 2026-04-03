@@ -20,7 +20,6 @@ export const parentNavigation = [
 export const expertNavigation = [
   { name: "Trang chủ", href: "/dashboard/expert", icon: LayoutDashboard },
   { name: "Danh sách Trẻ", href: "/dashboard/expert/children", icon: Users },
-  { name: "Lịch trị liệu", href: "/dashboard/expert/schedule", icon: Calendar },
   { name: "Bài học", href: "/dashboard/expert/lessons", icon: PlayCircle },
   { name: "Báo cáo", href: "/dashboard/expert/reports", icon: BarChart3 },
 ];
@@ -42,7 +41,9 @@ export function getNavigationByRole(role: string) {
   switch (role) {
     case "admin": return adminNavigation;
     case "center": return centerNavigation;
-    case "expert": return expertNavigation;
+    case "expert":
+    case "therapist": 
+      return expertNavigation;
     case "parent": return parentNavigation;
     default: return parentNavigation;
   }
@@ -52,7 +53,9 @@ export function getRoleName(role: string) {
   switch (role) {
     case "admin": return "Quản trị viên";
     case "center": return "Quản lý Trung tâm";
-    case "expert": return "Chuyên gia";
+    case "expert":
+    case "therapist":
+      return "Chuyên gia";
     case "parent": return "Phụ huynh";
     default: return "Phụ huynh";
   }

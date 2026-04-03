@@ -1,10 +1,50 @@
 "use client";
 
-import { FileText, Plus } from "lucide-react";
-import ExpertStats from "./_components/TherapistStats";
+import { useEffect, useState } from "react";
+import { FileText, Plus, Loader2 } from "lucide-react";
+import ExpertStats from "./_components/ExpertStats";
 import ChildrenTable from "./_components/ChildrenTable";
+import { useAuth } from "@/contexts/AuthContext";
+import { getAssignedChildren, getExpertStats } from "@/actions/expert";
 
 export default function ExpertDashboard() {
+  const { user, loading: authLoading } = useAuth();
+  const [children, setChildren] = useState<any[]>([]);
+  const [stats, setStats] = useState({ totalChildren: 0, totalSessions: 0, activeSessions: 0 });
+  const [dataLoading, setDataLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      if (!user?.uid) return;
+      
+      try {
+        const [childrenRes, statsRes] = await Promise.all([
+          getAssignedChildren(user.uid),
+          getExpertStats(user.uid)
+        ]);
+
+        if (childrenRes.success) setChildren(childrenRes.children || []);
+        if (statsRes.success && statsRes.stats) setStats(statsRes.stats);
+      } catch (error) {
+        console.error("Error fetching expert data:", error);
+      } finally {
+        setDataLoading(false);
+      }
+    }
+
+    if (!authLoading) {
+      fetchData();
+    }
+  }, [user?.uid, authLoading]);
+
+  if (authLoading || dataLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-8 pb-20">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
@@ -17,15 +57,16 @@ export default function ExpertDashboard() {
             <FileText size={16} />
             <span>Báo cáo</span>
           </button>
-          <button className="bg-blue-600 hover:bg-blue-700 border border-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm transition-all shadow-sm">
-            <Plus size={16} />
-            <span>Thêm hồ sơ</span>
-          </button>
         </div>
       </div>
 
-      <ExpertStats />
-      <ChildrenTable />
+      <ExpertStats 
+        totalChildren={stats.totalChildren}
+        totalSessions={stats.totalSessions}
+        activeSessions={stats.activeSessions}
+      />
+      
+      <ChildrenTable children={children} />
     </div>
   );
 }

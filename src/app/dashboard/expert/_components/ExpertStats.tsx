@@ -1,12 +1,18 @@
 import { Users, PlayCircle, Activity } from "lucide-react";
 
-const stats = [
-  { label: "Đang can thiệp", value: "14", icon: Users, color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-100 dark:bg-blue-400/10" },
-  { label: "Buổi tập VR hôm nay", value: "5", icon: PlayCircle, color: "text-purple-600 dark:text-purple-400", bg: "bg-purple-100 dark:bg-purple-400/10" },
-  { label: "Đang chờ đánh giá", value: "3", icon: Activity, color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-100 dark:bg-amber-400/10" },
-];
+interface ExpertStatsProps {
+  totalChildren: number;
+  totalSessions: number;
+  activeSessions: number;
+}
 
-export default function ExpertStats() {
+export default function ExpertStats({ totalChildren, totalSessions, activeSessions }: ExpertStatsProps) {
+  const stats = [
+    { label: "Đang can thiệp", value: totalChildren.toString(), icon: Users, color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-100 dark:bg-blue-400/10" },
+    { label: "Tổng buổi tập", value: totalSessions.toString(), icon: PlayCircle, color: "text-purple-600 dark:text-purple-400", bg: "bg-purple-100 dark:bg-purple-400/10" },
+    { label: "Đang diễn ra", value: activeSessions.toString(), icon: Activity, color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-100 dark:bg-amber-400/10" },
+  ];
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
       {stats.map((stat, i) => (
