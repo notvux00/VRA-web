@@ -1,24 +1,53 @@
-import { Brain } from "lucide-react";
+import { MessageSquare, Quote } from "lucide-react";
+import { getChildLatestNote } from "@/actions/parent";
 
-export default function ExpertNote() {
+interface ExpertNoteProps {
+  childId: string;
+}
+
+export default async function ExpertNote({ childId }: ExpertNoteProps) {
+  const result = await getChildLatestNote(childId);
+  
+  if (!result.success || !result.note) return null;
+
   return (
-    <div className="bg-white dark:bg-zinc-900/50 backdrop-blur border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm dark:shadow-none">
-      <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">Nhận xét từ chuyên gia</h2>
-      <div className="bg-blue-50 dark:bg-black/50 border border-blue-100 dark:border-zinc-800/50 rounded-xl p-5 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-1 h-full bg-blue-500" />
-        <div className="flex gap-4 items-start">
-          <div className="w-10 h-10 rounded-full bg-white dark:bg-zinc-800 flex items-center justify-center shrink-0 shadow-sm border border-zinc-100 dark:border-zinc-700">
-            <Brain size={18} className="text-blue-500 dark:text-blue-400" />
+    <div className="bg-blue-600 dark:bg-blue-600 rounded-2xl p-8 text-white relative overflow-hidden shadow-lg shadow-blue-200 dark:shadow-none">
+      <div className="relative z-10">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+            <MessageSquare size={20} />
           </div>
-          <div>
-            <h3 className="text-zinc-900 dark:text-white font-medium mb-1">BS. Sarah Jenkins</h3>
-            <p className="text-sm text-zinc-700 dark:text-zinc-400 mb-3 leading-relaxed">
-              "Tommy đã cho thấy sự tiến bộ vượt bậc hôm nay trong mô-đun nhận thức không gian. Bé duy trì sự tập trung trong 12 phút liên tục mà không cần nhắc nhở thị giác, đây là thành tích tốt nhất của bé từ trước đến nay. Hãy tiếp tục thực hành các bài tập thở mà chúng ta đã thảo luận nhé!"
-            </p>
-            <span className="text-xs text-zinc-500 dark:text-zinc-600 font-medium uppercase tracking-wider">Đăng 2 giờ trước</span>
+          <span className="text-sm font-medium uppercase tracking-widest opacity-80">
+            Ghi chú từ Chuyên gia
+          </span>
+        </div>
+        
+        <div className="relative">
+          <Quote className="absolute -top-4 -left-2 opacity-20 w-12 h-12" />
+          <p className="text-xl font-medium leading-relaxed mb-6 italic">
+            "{result.note}"
+          </p>
+        </div>
+
+        <div className="flex items-center justify-between pt-6 border-t border-white/20">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-bold">
+              CG
+            </div>
+            <div>
+              <p className="text-sm font-bold leading-none">Chuyên gia phụ trách</p>
+              <p className="text-xs opacity-70 mt-1">Cập nhật: {result.date || "Gần đây"}</p>
+            </div>
           </div>
+          <button className="text-sm font-bold px-4 py-2 bg-white text-blue-600 rounded-xl hover:bg-blue-50 transition-colors">
+            Xem lịch sử
+          </button>
         </div>
       </div>
+
+      {/* Decorative Circles */}
+      <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl" />
+      <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-white/5 rounded-full blur-2xl" />
     </div>
   );
 }

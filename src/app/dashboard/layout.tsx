@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePathname, useSearchParams } from "next/navigation";
 import Sidebar from "./_components/Sidebar";
 import Header from "./_components/Header";
 import { getNavigationByRole, getRoleName } from "./_components/Navigation";
@@ -9,9 +10,25 @@ import { getNavigationByRole, getRoleName } from "./_components/Navigation";
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, role, userName } = useAuth();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   
+  const childId = searchParams.get("childId");
   const navigation = getNavigationByRole(role || "");
   const roleName = getRoleName(role || "");
+
+  // Netflix-style behavior: Hide UI if it's the Parent selection screen
+  const isProfileSelection = role === "parent" && pathname === "/dashboard/parent" && !childId;
+
+  if (isProfileSelection) {
+    return (
+      <div className="min-h-screen bg-zinc-50 dark:bg-black font-sans transition-colors duration-300 flex items-center justify-center">
+        <main className="w-full">
+          {children}
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black text-zinc-900 dark:text-zinc-100 flex overflow-hidden font-sans transition-colors duration-300">

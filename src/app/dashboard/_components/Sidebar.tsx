@@ -2,8 +2,8 @@
 
 import React from "react";
 import Link from "next/link";
-import { X } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { X, RefreshCcw } from "lucide-react";
+import { usePathname, useSearchParams } from "next/navigation";
 
 interface NavigationItem {
   name: string;
@@ -19,6 +19,9 @@ interface SidebarProps {
 
 export default function Sidebar({ sidebarOpen, setSidebarOpen, navigation }: SidebarProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const childId = searchParams.get("childId");
+  const isParentRoute = pathname.startsWith("/dashboard/parent");
 
   return (
     <>
@@ -36,8 +39,11 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, navigation }: Sid
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between h-20 px-6 border-b border-transparent dark:border-transparent mt-2">
-          <Link href="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+        <div className="flex items-center justify-between h-20 px-6 border-b border-zinc-100 dark:border-zinc-800 mt-2">
+          <Link 
+            href={childId && isParentRoute ? `/dashboard/parent?childId=${childId}` : "/dashboard"} 
+            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+          >
              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/30 shrink-0 text-center">
                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 inline-block">
                  <path d="M4 14a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-3.4l-1.6 3h-6l-1.6-3H4z" />
@@ -52,17 +58,28 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, navigation }: Sid
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-6 px-4">
+        <div className="flex-1 overflow-y-auto py-6 px-4 flex flex-col">
           <div className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-4 px-2">
             Menu chính
           </div>
-          <nav className="space-y-1.5 px-3">
+          <nav className="space-y-1.5 px-3 flex-1">
             {navigation.map((item) => {
               const isActive = pathname === item.href;
+              let hrefWithChild = childId && isParentRoute ? `${item.href}?childId=${childId}` : item.href;
+              
+              // Special case: Direct navigation to child profile if already selected
+              if (item.href === "/dashboard/parent/children") {
+                if (childId) {
+                  hrefWithChild = `/dashboard/parent/children/${childId}?childId=${childId}`;
+                } else {
+                  hrefWithChild = "/dashboard/parent";
+                }
+              }
+
               return (
                 <Link
                   key={item.name}
-                  href={item.href}
+                  href={hrefWithChild}
                   className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group relative overflow-hidden ${
                     isActive 
                       ? "bg-blue-600 text-white font-medium shadow-md shadow-blue-500/20 dark:bg-blue-600/90" 
@@ -75,6 +92,19 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, navigation }: Sid
               );
             })}
           </nav>
+
+          {/* Switch Profile Button for Parents */}
+          {isParentRoute && childId && (
+            <div className="mt-auto px-3 border-t border-zinc-100 dark:border-zinc-800 pt-4">
+               <Link
+                href="/dashboard/parent"
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-500 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-all group border border-transparent hover:border-blue-100 dark:hover:border-blue-500/20"
+              >
+                <RefreshCcw size={18} className="group-hover:rotate-180 transition-transform duration-500" />
+                <span className="text-sm font-bold">Đổi hồ sơ trẻ</span>
+              </Link>
+            </div>
+          )}
         </div>
       </aside>
     </>

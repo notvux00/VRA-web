@@ -1,52 +1,34 @@
-"use client";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { adminAuth } from "@/lib/firebase/admin";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+const SESSION_COOKIE_NAME = "session";
 
-export default function DashboardPage() {
-  const router = useRouter();
+export default async function DashboardPage() {
+  const sessionCookie = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
 
-  useEffect(() => {
-    // 1. Get the session cookie
-    const getCookie = (name: string) => {
-      const value = `; ${document.cookie}`;
-      const parts = value.split(`; ${name}=`);
-      if (parts.length === 2) return parts.pop()?.split(";").shift();
-    };
+  if (!sessionCookie) {
+    redirect("/");
+  }
 
-    const session = getCookie("session");
-    
-    if (!session) {
-      router.push("/");
-      return;
-    }
+  try {
+    const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie);
+    const role = decodedClaims.role;
 
-    try {
-      // 2. Decode the role from JWT and redirect client-side
-      const payloadBase64 = session.split(".")[1];
-      const decodedPayload = JSON.parse(atob(payloadBase64));
-      const role = decodedPayload.role;
+    if (role === "admin") redirect("/dashboard/admin");
+    if (role === "center") redirect("/dashboard/center");
+    if (role === "expert" || role === "therapist") redirect("/dashboard/expert");
+    if (role === "parent") redirect("/dashboard/parent");
 
-      if (role === "admin") router.push("/dashboard/admin");
-      else if (role === "center") router.push("/dashboard/center");
-      else if (role === "expert" || role === "therapist") router.push("/dashboard/expert");
-      else if (role === "parent") router.push("/dashboard/parent");
-      else {
-        // Fallback or wait a bit for role propagation
-        const timer = setTimeout(() => window.location.reload(), 2000);
-        return () => clearTimeout(timer);
-      }
-    } catch (e) {
-      router.push("/");
-    }
-  }, [router]);
-
-  return (
-    <div className="min-h-screen bg-black flex items-center justify-center">
-      <div className="text-white flex flex-col items-center gap-4">
+    // Fallback if role is not found yet (e.g. sync delay)
+    // Instead of a black screen, we show a clean loading state consistent with layout
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-zinc-400 animate-pulse">Đang chuyển hướng đến trang tổng quan của bạn...</p>
+        <p className="text-zinc-500 dark:text-zinc-400">Đang chuẩn bị không gian làm việc của bạn...</p>
       </div>
-    </div>
-  );
+    );
+  } catch (e) {
+    redirect("/");
+  }
 }
