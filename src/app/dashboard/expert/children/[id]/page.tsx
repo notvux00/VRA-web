@@ -12,12 +12,15 @@ import { getAssignedChildDetail } from "@/actions/expert";
 import { useAuth } from "@/contexts/AuthContext";
 import AlertProfileEditor from "./_components/AlertProfileEditor";
 import SessionHistory from "./_components/SessionHistory";
+import ChildAchievements from "../../../parent/_components/ChildAchievements";
+import { getChildStats } from "@/actions/parent";
 
 export default function ExpertChildDetailPage() {
   const { id } = useParams();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [child, setChild] = useState<any>(null);
+  const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -25,9 +28,14 @@ export default function ExpertChildDetailPage() {
     async function fetchData() {
       if (!user?.uid || !id) return;
       try {
-        const res = await getAssignedChildDetail(user.uid, id as string);
+        const [res, statsRes] = await Promise.all([
+          getAssignedChildDetail(user.uid, id as string),
+          getChildStats(id as string)
+        ]);
+
         if (res.success) {
           setChild(res.child);
+          if (statsRes.success) setStats(statsRes.stats);
         } else {
           setError(res.error || "Không tìm thấy thông tin trẻ");
         }
@@ -143,6 +151,8 @@ export default function ExpertChildDetailPage() {
              childId={child.id} 
              initialProfile={child.alert_profile} 
            />
+           
+           <ChildAchievements achievements={stats?.achievements || []} />
            
            <SessionHistory childId={child.id} />
         </div>

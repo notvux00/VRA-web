@@ -24,14 +24,42 @@ interface ChildAnalyticsGridProps {
 }
 
 export default function ChildAnalyticsGrid({ sessions, radarData }: ChildAnalyticsGridProps) {
+  const [isReady, setIsReady] = React.useState(false);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  React.useLayoutEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        if (entry.contentRect.width > 0) {
+          setIsReady(true);
+          observer.disconnect();
+        }
+      }
+    });
+
+    if (containerRef.current) observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
   // Process sessions for bar chart (Duration in minutes)
   const barData = [...sessions].reverse().slice(-7).map(s => ({
     date: new Date(s.start_time).toLocaleDateString("vi-VN", { day: '2-digit', month: '2-digit' }),
     duration: Math.round((s.duration || 0) / 60) // Convert seconds to minutes
   }));
 
+  if (!isReady) {
+    return (
+      <div className="space-y-8 animate-pulse">
+        <div className="h-[432px] w-full bg-zinc-50 dark:bg-zinc-800/10 rounded-3xl border border-zinc-200 dark:border-zinc-800" />
+        <div className="h-[432px] w-full bg-zinc-50 dark:bg-zinc-800/10 rounded-3xl border border-zinc-200 dark:border-zinc-800" />
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-8 min-w-0">
+    <div ref={containerRef} className="space-y-8 min-w-0">
       {/* 1. Training Intensity Bar Chart */}
       <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-8 min-w-0 relative">
         <div className="flex items-center justify-between mb-8">
@@ -43,8 +71,16 @@ export default function ChildAnalyticsGrid({ sessions, radarData }: ChildAnalyti
            </div>
         </div>
         
-        <div className="h-[300px] w-full min-w-0">
-          <ResponsiveContainer width="99%" height="100%">
+        <div className="h-[300px] min-h-[300px] w-full min-w-0 overflow-hidden">
+          {isReady && (
+            <ResponsiveContainer 
+              id="analytics-bar-chart"
+              width="100%" 
+              height="100%" 
+              minWidth={0} 
+              minHeight={0} 
+              debounce={0}
+            >
             <BarChart data={barData}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e4e7" className="dark:stroke-zinc-800" />
               <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#71717a' }} dy={10} />
@@ -57,7 +93,8 @@ export default function ChildAnalyticsGrid({ sessions, radarData }: ChildAnalyti
               />
               <Bar dataKey="duration" fill="#8b5cf6" radius={[6, 6, 0, 0]} name="Thời lượng (p)" />
             </BarChart>
-          </ResponsiveContainer>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
 
@@ -72,8 +109,16 @@ export default function ChildAnalyticsGrid({ sessions, radarData }: ChildAnalyti
            </div>
         </div>
 
-        <div className="h-[300px] w-full flex items-center justify-center min-w-0">
-          <ResponsiveContainer width="99%" height="100%">
+        <div className="h-[300px] min-h-[300px] w-full flex items-center justify-center min-w-0 overflow-hidden">
+          {isReady && (
+            <ResponsiveContainer 
+              id="analytics-radar-chart"
+              width="100%" 
+              height="100%" 
+              minWidth={0} 
+              minHeight={0} 
+              debounce={0}
+            >
             <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
               <PolarGrid stroke="#e4e4e7" className="dark:stroke-zinc-800" />
               <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fontWeight: 700, fill: '#71717a' }} />
@@ -92,7 +137,8 @@ export default function ChildAnalyticsGrid({ sessions, radarData }: ChildAnalyti
                 labelStyle={{ color: '#71717a', fontSize: '10px', marginBottom: '4px', fontWeight: 'bold' }}
               />
             </RadarChart>
-          </ResponsiveContainer>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
     </div>

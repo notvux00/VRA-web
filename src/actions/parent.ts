@@ -27,11 +27,21 @@ export interface SessionData {
   [key: string]: any;
 }
 
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  earned: boolean;
+  value?: string | number;
+}
+
 export interface ParentDashboardStats {
   totalSessions: number;
   totalTime: string;
   avgFocus: number;
-  achievements: number;
+  achievements: Achievement[];
 }
 
 async function getSession() {
@@ -115,6 +125,17 @@ export async function getChildStats(childId: string) {
   if (!session) return { success: false, error: "Unauthorized" };
 
   try {
+    const childDoc = await adminDb.collection("child_profiles").doc(childId).get();
+    if (!childDoc.exists) return { success: false, error: "Child not found" };
+    
+    const childData = childDoc.data();
+    const isParent = childData?.parentUid === session.uid;
+    const isExpert = childData?.expertUid === session.uid;
+
+    if (!isParent && !isExpert) {
+      return { success: false, error: "Access denied" };
+    }
+
     const sessionsSnapshot = await adminDb
       .collection("sessions")
       .where("child_profile_id", "==", childId)
@@ -123,10 +144,47 @@ export async function getChildStats(childId: string) {
     const sessions = sessionsSnapshot.docs.map(doc => doc.data());
     
     const totalSessions = sessions.length;
-    const totalDurationMinutes = sessions.reduce((acc, s) => acc + (s.duration || 0), 0) / 60;
+    const totalDurationSeconds = sessions.reduce((acc, s) => acc + (s.duration || 0), 0);
+    const totalDurationMinutes = totalDurationSeconds / 60;
     const avgScore = totalSessions > 0 
       ? sessions.reduce((acc, s) => acc + (s.score || 0), 0) / totalSessions 
       : 0;
+
+    // Define Achievement Logic
+    const achievementsList: Achievement[] = [
+      {
+        id: "first_session",
+        name: "Bước chân đầu tiên",
+        description: "Hoàn thành buổi học VR đầu tiên",
+        icon: "Award",
+        color: "text-amber-500",
+        earned: totalSessions >= 1
+      },
+      {
+        id: "focus_master",
+        name: "Bậc thầy tập trung",
+        description: "Đạt điểm tập trung trung bình trên 80",
+        icon: "Zap",
+        color: "text-blue-500",
+        earned: avgScore >= 80 && totalSessions >= 3
+      },
+      {
+        id: "persistent",
+        name: "Chiến binh kiên trì",
+        description: "Hoàn thành từ 5 buổi học trở lên",
+        icon: "Shield",
+        color: "text-emerald-500",
+        earned: totalSessions >= 5
+      },
+      {
+        id: "time_master",
+        name: "Mười giờ vàng",
+        description: "Tổng thời gian rèn luyện đạt 10 giờ",
+        icon: "Clock",
+        color: "text-purple-500",
+        earned: (totalDurationSeconds / 3600) >= 10
+      }
+    ];
 
     return {
       success: true,
@@ -134,7 +192,7 @@ export async function getChildStats(childId: string) {
         totalSessions,
         totalTime: `${Math.floor(totalDurationMinutes / 60)}h ${Math.round(totalDurationMinutes % 60)}m`,
         avgFocus: Math.round(avgScore),
-        achievements: 0,
+        achievements: achievementsList,
       } as ParentDashboardStats
     };
   } catch (error: any) {

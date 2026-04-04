@@ -23,6 +23,12 @@ interface ChildProgressChartProps {
 }
 
 export default function ChildProgressChart({ sessions }: ChildProgressChartProps) {
+  const [mounted, setMounted] = React.useState(false);
+  
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Process sessions for chart (reverse to show chronological order)
   const data = [...sessions].reverse().map(s => ({
     date: new Date(s.start_time).toLocaleDateString("vi-VN", { day: '2-digit', month: '2-digit' }),
@@ -32,15 +38,23 @@ export default function ChildProgressChart({ sessions }: ChildProgressChartProps
 
   if (data.length === 0) {
     return (
-      <div className="h-[300px] w-full flex items-center justify-center bg-zinc-50 dark:bg-zinc-800/20 rounded-3xl border border-dashed border-zinc-200 dark:border-zinc-800">
+      <div className="h-[320px] w-full flex items-center justify-center bg-zinc-50 dark:bg-zinc-800/20 rounded-3xl border border-dashed border-zinc-200 dark:border-zinc-800">
         <p className="text-zinc-400 text-sm font-medium italic">Chưa có dữ liệu buổi học để hiển thị biểu đồ.</p>
       </div>
     );
   }
 
   return (
-    <div className="h-[320px] w-full pt-4 pr-4 min-w-0">
-      <ResponsiveContainer width="99%" height="100%">
+    <div className="h-[320px] w-full pt-4 pr-4 min-w-0 overflow-hidden">
+      <ResponsiveContainer 
+        key={mounted ? "chart-mounted" : "chart-unmounted"}
+        id="progress-chart-main"
+        width="100%" 
+        height="100%" 
+        minWidth={0} 
+        minHeight={0}
+        debounce={100}
+      >
         <AreaChart data={data}>
           <defs>
             <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">

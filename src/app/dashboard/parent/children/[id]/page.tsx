@@ -3,6 +3,7 @@ import { Baby, Calendar, Ruler, Scale, Activity, History, ShieldCheck, Mail, Inf
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ChildChartsContainer from "../../_components/ChildChartsContainer";
+import ChildAchievements from "../../_components/ChildAchievements";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -141,10 +142,10 @@ export default async function ChildDetailPage({ params, searchParams }: PageProp
              </div>
            </div>
 
+           <ChildAchievements achievements={stats?.achievements || []} />
            <ChildChartsContainer sessions={sessions} radarData={radarData} />
         </div>
       </div>
     </div>
   );
 }
-

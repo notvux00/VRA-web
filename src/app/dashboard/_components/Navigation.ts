@@ -8,13 +8,15 @@ import {
   BarChart3, 
   Stethoscope, 
   Baby, 
-  History 
+  History,
+  MessageSquare,
 } from "lucide-react";
 
 export const parentNavigation = [
   { name: "Tổng quan", href: "/dashboard/parent", icon: LayoutDashboard },
   { name: "Hồ sơ của trẻ", href: "/dashboard/parent/children", icon: Baby },
   { name: "Lịch sử học", href: "/dashboard/parent/history", icon: History },
+  { name: "Nhắn tin", href: "/dashboard/parent/messages", icon: MessageSquare },
 ];
 
 export const expertNavigation = [
@@ -22,6 +24,7 @@ export const expertNavigation = [
   { name: "Danh sách Trẻ", href: "/dashboard/expert/children", icon: Users },
   { name: "Bài học", href: "/dashboard/expert/lessons", icon: PlayCircle },
   { name: "Báo cáo", href: "/dashboard/expert/reports", icon: BarChart3 },
+  { name: "Tin nhắn", href: "/dashboard/expert/messages", icon: MessageSquare },
 ];
 
 export const adminNavigation = [
