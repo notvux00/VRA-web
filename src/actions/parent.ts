@@ -95,7 +95,13 @@ export async function getChildSessions(childId: string) {
 
   try {
     const childDoc = await adminDb.collection("child_profiles").doc(childId).get();
-    if (!childDoc.exists || childDoc.data()?.parentUid !== session.uid) {
+    if (!childDoc.exists) return { success: false, error: "Child not found" };
+    
+    const childData = childDoc.data();
+    const isParent = childData?.parentUid === session.uid;
+    const isExpert = childData?.expertUid === session.uid;
+
+    if (!isParent && !isExpert) {
       return { success: false, error: "Access denied" };
     }
 
@@ -285,6 +291,17 @@ export async function getChildAlertStats(childId: string) {
   if (!session) return { success: false, error: "Unauthorized" };
 
   try {
+    const childDoc = await adminDb.collection("child_profiles").doc(childId).get();
+    if (!childDoc.exists) return { success: false, error: "Child not found" };
+    
+    const childData = childDoc.data();
+    const isParent = childData?.parentUid === session.uid;
+    const isExpert = childData?.expertUid === session.uid;
+
+    if (!isParent && !isExpert) {
+      return { success: false, error: "Access denied" };
+    }
+
     const alertsSnapshot = await adminDb
       .collection("AUTO_ALERTS")
       .where("child_id", "==", childId)

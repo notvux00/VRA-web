@@ -22,6 +22,8 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, navigation }: Sid
   const searchParams = useSearchParams();
   const childId = searchParams.get("childId");
   const isParentRoute = pathname.startsWith("/dashboard/parent");
+  const isExpertRoute = pathname.startsWith("/dashboard/expert");
+  const isCenterRoute = pathname.startsWith("/dashboard/center");
 
   return (
     <>
@@ -41,7 +43,11 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, navigation }: Sid
       >
         <div className="flex items-center justify-between h-20 px-6 border-b border-zinc-100 dark:border-zinc-800 mt-2">
           <Link 
-            href={childId && isParentRoute ? `/dashboard/parent?childId=${childId}` : "/dashboard"} 
+            href={
+              childId && isParentRoute ? `/dashboard/parent?childId=${childId}` : 
+              childId && isExpertRoute ? `/dashboard/expert?childId=${childId}&vr=skipped` :
+              "/dashboard"
+            } 
             className="flex items-center gap-3 hover:opacity-80 transition-opacity"
           >
              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/30 shrink-0 text-center">
@@ -65,15 +71,14 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, navigation }: Sid
           <nav className="space-y-1.5 px-3 flex-1">
             {navigation.map((item) => {
               const isActive = pathname === item.href;
-              let hrefWithChild = childId && isParentRoute ? `${item.href}?childId=${childId}` : item.href;
+              // Handle childId for both parent and expert routes
+              let hrefWithChild = childId && (isParentRoute || isExpertRoute) 
+                ? `${item.href}?childId=${childId}` 
+                : item.href;
               
-              // Special case: Direct navigation to child profile if already selected
-              if (item.href === "/dashboard/parent/children") {
-                if (childId) {
-                  hrefWithChild = `/dashboard/parent/children/${childId}?childId=${childId}`;
-                } else {
-                  hrefWithChild = "/dashboard/parent";
-                }
+              // Special case: Direct navigation to child profile if already selected (Parents)
+              if (item.href === "/dashboard/parent/children" && childId) {
+                hrefWithChild = `/dashboard/parent/children/${childId}?childId=${childId}`;
               }
 
               return (
@@ -93,11 +98,11 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, navigation }: Sid
             })}
           </nav>
 
-          {/* Switch Profile Button for Parents */}
-          {isParentRoute && childId && (
+          {/* Switch Profile Button for Parents & Experts */}
+          {((isParentRoute || isExpertRoute) && childId) && (
             <div className="mt-auto px-3 border-t border-zinc-100 dark:border-zinc-800 pt-4">
                <Link
-                href="/dashboard/parent"
+                href={isParentRoute ? "/dashboard/parent" : "/dashboard/expert"}
                 className="flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-500 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-all group border border-transparent hover:border-blue-100 dark:hover:border-blue-500/20"
               >
                 <RefreshCcw size={18} className="group-hover:rotate-180 transition-transform duration-500" />

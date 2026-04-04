@@ -17,8 +17,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const navigation = getNavigationByRole(role || "");
   const roleName = getRoleName(role || "");
 
-  // Netflix-style behavior: Hide UI if it's the Parent selection screen
-  const isProfileSelection = role === "parent" && pathname === "/dashboard/parent" && !childId;
+  // Netflix-style behavior: Hide UI if it's the selection screen
+  const isProfileSelection = 
+    (role === "parent" && pathname === "/dashboard/parent" && !childId) ||
+    ((role === "expert" || role === "therapist") && pathname === "/dashboard/expert" && !childId);
 
   if (isProfileSelection) {
     return (

@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { 
   MessageSquare, Send, Search, Loader2, 
-  MoreVertical, Smile, Paperclip, ChevronLeft 
+  MoreVertical, Smile, Paperclip, ChevronLeft, User, Baby
 } from "lucide-react";
 import { 
   collection, 
@@ -11,9 +11,7 @@ import {
   where, 
   orderBy, 
   onSnapshot, 
-  limit,
-  or,
-  and
+  limit
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -63,7 +61,10 @@ export default function ChatInterface({ role }: ChatInterfaceProps) {
       const counts: Record<string, number> = {};
       snapshot.docs.forEach(doc => {
         const data = doc.data();
-        counts[data.senderId] = (counts[data.senderId] || 0) + 1;
+        // Since we now have per-child rooms, the unread count should probably be per room_id
+        // but for now let's keep it simple: per sender+child combination
+        const key = `${data.senderId}_${data.childId}`;
+        counts[key] = (counts[key] || 0) + 1;
       });
       setUnreadCounts(counts);
     });
@@ -71,14 +72,13 @@ export default function ChatInterface({ role }: ChatInterfaceProps) {
     return () => unsubscribe();
   }, [user?.uid]);
 
-  // 3. Real-time Message Listener for Selected Partner
+  // 3. Real-time Message Listener for Selected Partner (Room based)
   useEffect(() => {
-    if (!user?.uid || !selectedPartner) return;
+    if (!user?.uid || !selectedPartner || !selectedPartner.childId) return;
 
-    // Build the roomId: sorted([Me, Partner])
-    const roomId = [user.uid, selectedPartner.id].sort().join("_");
+    // Build the roomId: sorted([Me, Partner, Child])
+    const roomId = [user.uid, selectedPartner.id, selectedPartner.childId].sort().join("_");
 
-    // Build the query: Simply filter by roomId AND ensure user is a participant
     const q = query(
       collection(db, "messages"),
       where("roomId", "==", roomId),
@@ -94,17 +94,17 @@ export default function ChatInterface({ role }: ChatInterfaceProps) {
       })) as any[];
       setMessages(msgs);
 
-      // 4. Mark as read if there are unread messages from partner
+      // 4. Mark as read if there are unread messages from partner in THIS room
       const hasUnread = msgs.some(m => m.senderId === selectedPartner.id && m.read === false);
       if (hasUnread) {
-        markMessagesAsRead(selectedPartner.id);
+        markMessagesAsRead(selectedPartner.id, selectedPartner.childId);
       }
     }, (error) => {
       console.error("Firestore Listen Error:", error);
     });
 
     return () => unsubscribe();
-  }, [user?.uid, selectedPartner?.id]);
+  }, [user?.uid, selectedPartner?.id, selectedPartner?.childId]);
 
   // 3. Scroll to bottom
   useEffect(() => {
@@ -117,12 +117,12 @@ export default function ChatInterface({ role }: ChatInterfaceProps) {
 
     setSending(true);
     const content = newMessage;
-    setNewMessage(""); // Clear input early for better UX
+    setNewMessage(""); 
     
-    const res = await sendMessage(selectedPartner.id, content);
+    // Pass childId to ensure it goes to the correct room
+    const res = await sendMessage(selectedPartner.id, content, selectedPartner.childId);
     if (!res.success) {
       console.error("Failed to send message:", res.error);
-      // Revert if failed? Or show error.
     }
     setSending(false);
   };
@@ -159,37 +159,45 @@ export default function ChatInterface({ role }: ChatInterfaceProps) {
               Chưa có cuộc trò chuyện nào.
             </div>
           ) : (
-            partners.map(partner => (
-              <button
-                key={partner.id}
-                onClick={() => setSelectedPartner(partner)}
-                className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${
-                  selectedPartner?.id === partner.id 
-                    ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20" 
-                    : "hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400"
-                }`}
-              >
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl font-black ${
-                  selectedPartner?.id === partner.id ? "bg-white/20" : "bg-blue-100 dark:bg-blue-900/40 text-blue-600"
-                }`}>
-                  {partner.name[0]}
-                </div>
-                <div className="flex-1 text-left min-w-0">
-                  <h4 className="font-bold truncate text-sm uppercase tracking-tight">{partner.name}</h4>
-                  <p className={`text-[10px] font-medium uppercase tracking-widest truncate ${
-                    selectedPartner?.id === partner.id ? "text-white/70" : "text-zinc-400"
+            partners.map(partner => {
+              const unreadKey = `${partner.id}_${partner.childId}`;
+              const isSelected = selectedPartner?.id === partner.id && selectedPartner?.childId === partner.childId;
+              
+              return (
+                <button
+                  key={`${partner.id}_${partner.childId}`}
+                  onClick={() => setSelectedPartner(partner)}
+                  className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${
+                    isSelected
+                      ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20" 
+                      : "hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400"
+                  }`}
+                >
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl font-black shrink-0 ${
+                    isSelected ? "bg-white/20" : "bg-blue-100 dark:bg-blue-900/40 text-blue-600"
                   }`}>
-                    {partner.description || (partner.role === 'expert' ? 'Chuyên gia phụ trách' : 'Phụ huynh học sinh')}
-                  </p>
-                </div>
-                
-                {unreadCounts[partner.id] > 0 && selectedPartner?.id !== partner.id && (
-                  <div className="w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center animate-bounce">
-                    {unreadCounts[partner.id]}
+                    {partner.name[0]}
                   </div>
-                )}
-              </button>
-            ))
+                  <div className="flex-1 text-left min-w-0">
+                    <h4 className="font-bold truncate text-sm uppercase tracking-tight leading-tight">{partner.name}</h4>
+                    <div className="flex items-center gap-1 mt-1 opacity-80">
+                      <Baby size={10} className={isSelected ? "text-white" : "text-blue-500"} />
+                      <p className={`text-[10px] font-black uppercase tracking-widest truncate ${
+                        isSelected ? "text-white" : "text-zinc-500 dark:text-zinc-400"
+                      }`}>
+                        Bé: {partner.childName || "Tất cả"}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {unreadCounts[unreadKey] > 0 && !isSelected && (
+                    <div className="w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center animate-bounce shrink-0">
+                      {unreadCounts[unreadKey]}
+                    </div>
+                  )}
+                </button>
+              );
+            })
           )}
         </div>
       </div>
@@ -208,24 +216,53 @@ export default function ChatInterface({ role }: ChatInterfaceProps) {
                   {selectedPartner.name[0]}
                 </div>
                 <div>
-                  <h3 className="font-black text-zinc-900 dark:text-white uppercase tracking-tight text-sm">{selectedPartner.name}</h3>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Đang trực tuyến</p>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-black text-zinc-900 dark:text-white uppercase tracking-tight text-sm leading-none">{selectedPartner.name}</h3>
+                    <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-500/10 text-blue-600 border border-blue-100 dark:border-blue-500/20 rounded text-[8px] font-black uppercase tracking-widest">
+                       {role === 'expert' ? 'Phụ huynh' : 'Chuyên gia'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="flex items-center gap-1">
+                       <Baby size={12} className="text-blue-500" />
+                       <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-black uppercase tracking-widest">Trao đổi về bé: <span className="text-blue-600 dark:text-blue-400 underline decoration-blue-500/30 underline-offset-2">{selectedPartner.childName}</span></p>
+                    </div>
+                    <div className="w-1 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full" />
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                      <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-widest">Trực tuyến</p>
+                    </div>
                   </div>
                 </div>
               </div>
-              <button className="p-2 text-zinc-400 hover:text-zinc-900 transition-colors">
-                <MoreVertical size={20} />
-              </button>
+              <div className="flex items-center gap-2">
+                {role === 'expert' && (
+                  <button 
+                    onClick={() => window.location.href = `/dashboard/expert/stats?childId=${selectedPartner.childId}`}
+                    className="hidden md:flex items-center gap-2 px-4 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 dark:hover:bg-blue-600 dark:hover:text-white transition-all shadow-lg shadow-zinc-500/10"
+                  >
+                    <User size={14} />
+                    Hồ sơ trẻ
+                  </button>
+                )}
+                <button className="p-2 text-zinc-400 hover:text-zinc-900 transition-colors">
+                  <MoreVertical size={20} />
+                </button>
+              </div>
             </div>
 
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-zinc-50/10 dark:bg-zinc-900/10">
               {messages.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center p-8 opacity-50">
-                  <MessageSquare size={48} className="mb-4 text-zinc-300" />
-                  <p className="text-zinc-500 font-medium italic">Không có tin nhắn nào. Hãy chào {selectedPartner.name}!</p>
+                   <div className="w-20 h-20 bg-blue-50 dark:bg-blue-500/5 rounded-full flex items-center justify-center text-blue-200 mb-6 border border-blue-100 dark:border-blue-900/20 animate-pulse">
+                      <MessageSquare size={36} />
+                   </div>
+                   <h4 className="text-zinc-900 dark:text-white font-black uppercase tracking-tighter text-base">Khởi đầu câu chuyện</h4>
+                   <p className="text-zinc-500 dark:text-zinc-400 font-medium italic text-xs mt-2 max-w-[200px]">
+                      Chưa có tin nhắn về bé <span className="text-blue-500 font-bold">{selectedPartner.childName}</span>. 
+                      Hãy gửi lời chào đầu tiên!
+                   </p>
                 </div>
               ) : (
                 messages.map((msg, i) => {
@@ -235,7 +272,7 @@ export default function ChatInterface({ role }: ChatInterfaceProps) {
                       <div className={`max-w-[75%] space-y-1`}>
                         <div className={`p-4 rounded-2xl text-sm font-medium shadow-sm leading-relaxed ${
                           isMe 
-                            ? "bg-blue-600 text-white rounded-tr-none" 
+                            ? "bg-blue-600 text-white rounded-tr-none shadow-blue-500/20" 
                             : "bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-tl-none border border-zinc-100 dark:border-zinc-800"
                         }`}>
                           {msg.content}
@@ -263,27 +300,27 @@ export default function ChatInterface({ role }: ChatInterfaceProps) {
                     type="text" 
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Nhập tin nhắn..."
+                    placeholder={`Nhắn cho ${role === 'expert' ? 'Phụ huynh' : 'Chuyên gia'} về bé ${selectedPartner.childName}...`}
                     className="w-full px-5 py-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 rounded-2xl outline-none focus:ring-4 focus:ring-blue-500/10 transition-all font-medium text-sm"
                   />
                   <button 
                     type="submit"
                     disabled={!newMessage.trim() || sending}
-                    className="absolute right-2 top-1.2 p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:grayscale transition-all shadow-lg shadow-blue-500/20 active:scale-95"
+                    className="absolute right-2 top-1.5 p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:grayscale transition-all shadow-lg shadow-blue-500/20 active:scale-95 flex items-center justify-center overflow-hidden h-[46px] w-[46px]"
                   >
-                    {sending ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
+                    {sending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} className="-mr-1" />}
                   </button>
                 </div>
               </form>
             </div>
           </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center p-20 text-center opacity-50">
-             <div className="w-24 h-24 bg-blue-50 dark:bg-blue-500/10 rounded-full flex items-center justify-center text-blue-600 mb-8 border border-blue-100 dark:border-blue-800">
+          <div className="flex-1 flex flex-col items-center justify-center p-20 text-center opacity-50 backdrop-blur-3xl bg-zinc-50/10 dark:bg-zinc-800/5">
+             <div className="w-24 h-24 bg-blue-50 dark:bg-blue-500/10 rounded-3xl flex items-center justify-center text-blue-600 mb-8 border border-blue-100 dark:border-blue-800 rotate-12 transition-transform hover:rotate-0 duration-700">
                 <MessageSquare size={40} />
              </div>
-             <h3 className="text-2xl font-black text-zinc-900 dark:text-white uppercase tracking-tighter mb-4">Giao tiếp trực tuyến</h3>
-             <p className="max-w-xs text-zinc-500 dark:text-zinc-400 font-medium">Chọn một đối tác từ danh sách bên trái để bắt đầu cuộc trò chuyện thời gian thực.</p>
+             <h3 className="text-2xl font-black text-zinc-900 dark:text-white uppercase tracking-tighter mb-4">Hội thoại can thiệp</h3>
+             <p className="max-w-xs text-zinc-500 dark:text-zinc-400 font-medium">Chọn một phiên làm việc với trẻ từ danh sách bên trái để trao đổi chi tiết với đối tác.</p>
           </div>
         )}
       </div>

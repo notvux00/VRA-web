@@ -18,8 +18,10 @@ async function getSession() {
   }
 }
 
-function getRoomId(uid1: string, uid2: string) {
-  return [uid1, uid2].sort().join("_");
+function getRoomId(uid1: string, uid2: string, childId: string) {
+  // If childId is missing (legacy), fallback to old roomId
+  if (!childId) return [uid1, uid2].sort().join("_");
+  return [uid1, uid2, childId].sort().join("_");
 }
 
 export async function getConversationPartners() {
@@ -28,53 +30,93 @@ export async function getConversationPartners() {
 
   try {
     if (session.role === "parent") {
-      // Tìm các chuyên gia phụ trách các trẻ của phụ huynh này
+      // Find all children of this parent
       const childrenSnapshot = await adminDb
         .collection("child_profiles")
         .where("parentUid", "==", session.uid)
         .get();
 
+      if (childrenSnapshot.empty) return { success: true, partners: [] };
+
+      // Map children to their experts
+      const partnersList: any[] = [];
       const expertIds = Array.from(new Set(childrenSnapshot.docs.map(doc => doc.data().expertUid).filter(Boolean)));
       
       if (expertIds.length === 0) return { success: true, partners: [] };
 
+      // Batch fetch experts for efficiency
       const expertsSnapshot = await adminDb
         .collection("experts")
         .where("__name__", "in", expertIds)
         .get();
 
-      const partners = expertsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        name: doc.data().name || "Chuyên gia",
-        role: "expert",
-        avatar: "", 
-      }));
+      const expertMap = new Map();
+      expertsSnapshot.docs.forEach(doc => {
+        expertMap.set(doc.id, doc.data());
+      });
 
-      return { success: true, partners };
+      // Build partners list: One for each child
+      childrenSnapshot.docs.forEach(doc => {
+        const childData = doc.data();
+        const expertData = expertMap.get(childData.expertUid);
+        
+        if (expertData) {
+          partnersList.push({
+            id: childData.expertUid,
+            name: expertData.name || "Chuyên gia",
+            childId: doc.id,
+            childName: childData.name || "Trẻ",
+            role: "expert",
+            avatar: "", 
+          });
+        }
+      });
+
+      return { success: true, partners: partnersList };
     } else if (session.role === "expert" || session.role === "therapist") {
-      // Tìm các phụ huynh của các trẻ mà chuyên gia này đang phụ trách
+      // Find all children assigned to this expert
       const childrenSnapshot = await adminDb
         .collection("child_profiles")
         .where("expertUid", "==", session.uid)
         .get();
 
+      if (childrenSnapshot.empty) return { success: true, partners: [] };
+
+      // Map children to their parents
+      const partnersList: any[] = [];
       const parentIds = Array.from(new Set(childrenSnapshot.docs.map(doc => doc.data().parentUid).filter(Boolean)));
+      
       if (parentIds.length === 0) return { success: true, partners: [] };
 
+      // Batch fetch parents
       const parentsSnapshot = await adminDb
         .collection("parents")
         .where("__name__", "in", parentIds)
         .get();
 
-      const partners = parentsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        name: doc.data().name || "Phụ huynh",
-        role: "parent",
-        description: "Phụ huynh trẻ",
-        avatar: "",
-      }));
+      const parentMap = new Map();
+      parentsSnapshot.docs.forEach(doc => {
+        parentMap.set(doc.id, doc.data());
+      });
 
-      return { success: true, partners };
+      // Build partners list: One for each child
+      childrenSnapshot.docs.forEach(doc => {
+        const childData = doc.data();
+        const parentData = parentMap.get(childData.parentUid);
+        
+        if (parentData) {
+          partnersList.push({
+            id: childData.parentUid,
+            name: parentData.name || "Phụ huynh",
+            childId: doc.id,
+            childName: childData.name || "Trẻ",
+            role: "parent",
+            avatar: "",
+          });
+        }
+      });
+
+      return { success: true, partners: partnersList };
     }
 
     return { success: false, error: "Access denied" };
@@ -84,17 +126,18 @@ export async function getConversationPartners() {
   }
 }
 
-export async function sendMessage(receiverId: string, content: string) {
+export async function sendMessage(receiverId: string, content: string, childId: string) {
   const session = await getSession();
   if (!session) return { success: false, error: "Unauthorized" };
 
   try {
-    const roomId = getRoomId(session.uid, receiverId);
+    const roomId = getRoomId(session.uid, receiverId, childId);
     const messageData = {
       roomId,
       participants: [session.uid, receiverId],
       senderId: session.uid,
       receiverId,
+      childId: childId || null, // Store child context in metadata
       content,
       timestamp: new Date().toISOString(),
       read: false
@@ -111,12 +154,12 @@ export async function sendMessage(receiverId: string, content: string) {
   }
 }
 
-export async function getMessages(partnerId: string) {
+export async function getMessages(partnerId: string, childId: string) {
   const session = await getSession();
   if (!session) return { success: false, error: "Unauthorized" };
 
   try {
-    const roomId = getRoomId(session.uid, partnerId);
+    const roomId = getRoomId(session.uid, partnerId, childId);
     const messagesSnapshot = await adminDb
       .collection("messages")
       .where("roomId", "==", roomId)
@@ -130,37 +173,17 @@ export async function getMessages(partnerId: string) {
 
     return { success: true, messages };
   } catch (error: any) {
-    // If getting index error or similar, fallback to old method for safety
     console.error("Error fetching messages via RoomId:", error);
-    
-    // Fallback logic
-    const sentSnapshot = await adminDb
-      .collection("messages")
-      .where("senderId", "==", session.uid)
-      .where("receiverId", "==", partnerId)
-      .get();
-
-    const receivedSnapshot = await adminDb
-      .collection("messages")
-      .where("senderId", "==", partnerId)
-      .where("receiverId", "==", session.uid)
-      .get();
-
-    const messages = [
-      ...sentSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-      ...receivedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-    ].sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-
-    return { success: true, messages };
+    return { success: false, error: error.message };
   }
 }
 
-export async function markMessagesAsRead(partnerId: string) {
+export async function markMessagesAsRead(partnerId: string, childId: string) {
   const session = await getSession();
   if (!session) return { success: false, error: "Unauthorized" };
 
   try {
-    const roomId = getRoomId(session.uid, partnerId);
+    const roomId = getRoomId(session.uid, partnerId, childId);
     const unreadSnapshot = await adminDb
       .collection("messages")
       .where("roomId", "==", roomId)

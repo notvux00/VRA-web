@@ -10,6 +10,8 @@ import {
   Baby, 
   History,
   MessageSquare,
+  Sparkles,
+  Cast,
 } from "lucide-react";
 
 export const parentNavigation = [
@@ -20,11 +22,12 @@ export const parentNavigation = [
 ];
 
 export const expertNavigation = [
-  { name: "Trang chủ", href: "/dashboard/expert", icon: LayoutDashboard },
-  { name: "Danh sách Trẻ", href: "/dashboard/expert/children", icon: Users },
-  { name: "Bài học", href: "/dashboard/expert/lessons", icon: PlayCircle },
-  { name: "Báo cáo", href: "/dashboard/expert/reports", icon: BarChart3 },
-  { name: "Tin nhắn", href: "/dashboard/expert/messages", icon: MessageSquare },
+  { name: "Thống kê trẻ", href: "/dashboard/expert/stats", icon: BarChart3 },
+  { name: "Danh sách bài học", href: "/dashboard/expert/lessons", icon: PlayCircle },
+  { name: "Bài học gợi ý", href: "/dashboard/expert/suggestions", icon: Sparkles },
+  { name: "Lịch sử học", href: "/dashboard/expert/history", icon: History },
+  { name: "Kết nối thiết bị VR", href: "/dashboard/expert/connection", icon: Cast },
+  { name: "Nhắn tin", href: "/dashboard/expert/messages", icon: MessageSquare },
 ];
 
 export const adminNavigation = [

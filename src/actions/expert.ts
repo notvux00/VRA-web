@@ -1,15 +1,33 @@
 "use server";
 
-import { adminDb } from "@/lib/firebase/admin";
+import { adminDb, adminAuth } from "@/lib/firebase/admin";
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+
+const SESSION_COOKIE_NAME = "session";
+
+async function getSession() {
+  const sessionCookie = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
+  if (!sessionCookie) return null;
+
+  try {
+    const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie);
+    return decodedClaims;
+  } catch (error) {
+    return null;
+  }
+}
 
 /**
  * Fetch all children assigned to this expert
  */
-export async function getAssignedChildren(expertUid: string) {
+export async function getAssignedChildren() {
+  const session = await getSession();
+  if (!session) return { success: false, error: "Unauthorized" };
+
   try {
     const snapshot = await adminDb.collection("child_profiles")
-      .where("expertUid", "==", expertUid)
+      .where("expertUid", "==", session.uid)
       .get();
     
     const children = snapshot.docs.map(doc => ({
@@ -27,23 +45,26 @@ export async function getAssignedChildren(expertUid: string) {
 /**
  * Fetch stats for the Expert Dashboard
  */
-export async function getExpertStats(expertUid: string) {
+export async function getExpertStats() {
+  const session = await getSession();
+  if (!session) return { success: false, error: "Unauthorized" };
+
   try {
     // 1. Total Assigned Children
     const childrenSnap = await adminDb.collection("child_profiles")
-      .where("expertUid", "==", expertUid)
+      .where("expertUid", "==", session.uid)
       .count()
       .get();
     
     // 2. Total Sessions Hosted by this Expert
     const sessionsSnap = await adminDb.collection("sessions")
-      .where("hostedBy", "==", expertUid)
+      .where("hostedBy", "==", session.uid)
       .count()
       .get();
 
     // 3. Active Sessions (Placeholder until status is fully implemented)
     const activeSessionsSnap = await adminDb.collection("sessions")
-      .where("hostedBy", "==", expertUid)
+      .where("hostedBy", "==", session.uid)
       .where("status", "==", "in-progress")
       .count()
       .get();
@@ -66,14 +87,17 @@ export async function getExpertStats(expertUid: string) {
  * Fetch a specific assigned child detail
  * This ensures the Expert actually has access to this child
  */
-export async function getAssignedChildDetail(expertUid: string, childId: string) {
+export async function getAssignedChildDetail(childId: string) {
+  const session = await getSession();
+  if (!session) return { success: false, error: "Unauthorized" };
+
   try {
     const doc = await adminDb.collection("child_profiles").doc(childId).get();
     
     if (!doc.exists) return { success: false, error: "Child profile not found" };
     
     const data = doc.data();
-    if (data?.expertUid !== expertUid) {
+    if (data?.expertUid !== session.uid) {
       return { success: false, error: "Unauthorized access to this child profile" };
     }
     
@@ -90,7 +114,10 @@ export async function getAssignedChildDetail(expertUid: string, childId: string)
 /**
  * Update the Alert Profile for a child
  */
-export async function updateAlertProfile(expertUid: string, childId: string, alertProfile: any) {
+export async function updateAlertProfile(childId: string, alertProfile: any) {
+  const session = await getSession();
+  if (!session) return { success: false, error: "Unauthorized" };
+
   try {
     const childRef = adminDb.collection("child_profiles").doc(childId);
     const childDoc = await childRef.get();
@@ -98,20 +125,20 @@ export async function updateAlertProfile(expertUid: string, childId: string, ale
     if (!childDoc.exists) return { success: false, error: "Child profile not found" };
     
     const data = childDoc.data();
-    if (data?.expertUid !== expertUid) {
+    if (data?.expertUid !== session.uid) {
       return { success: false, error: "Unauthorized: You are not assigned to this child" };
     }
     
     await childRef.update({
       alert_profile: {
         ...alertProfile,
-        last_updated_by: expertUid,
+        last_updated_by: session.uid,
         last_updated_at: new Date().toISOString()
       },
       updatedAt: new Date().toISOString()
     });
     
-    revalidatePath(`/dashboard/expert/children/${childId}`);
+    revalidatePath(`/dashboard/expert/stats?childId=${childId}`);
     return { success: true };
   } catch (error: any) {
     console.error("Error updating alert profile:", error);
@@ -122,7 +149,7 @@ export async function updateAlertProfile(expertUid: string, childId: string, ale
 /**
  * Save and finalize a session
  */
-export async function finalizeSession(expertUid: string, childId: string, data: {
+export async function finalizeSession(childId: string, data: {
   lessonName: string,
   duration: string,
   score: number,
@@ -130,6 +157,9 @@ export async function finalizeSession(expertUid: string, childId: string, data: 
   alerts: any[],
   behaviorLogs: any[]
 }) {
+  const session = await getSession();
+  if (!session) return { success: false, error: "Unauthorized" };
+
   try {
     const sessionRef = adminDb.collection("sessions").doc();
     const sessionId = sessionRef.id;
@@ -137,7 +167,7 @@ export async function finalizeSession(expertUid: string, childId: string, data: 
     const sessionData = {
       id: sessionId,
       childId: childId,
-      hostedBy: expertUid,
+      hostedBy: session.uid,
       lessonName: data.lessonName,
       duration: data.duration,
       score: data.score,
@@ -154,13 +184,17 @@ export async function finalizeSession(expertUid: string, childId: string, data: 
     await sessionRef.set(sessionData);
 
     // Update child record (increments session count, update last session time)
-    await adminDb.collection("child_profiles").doc(childId).update({
-      sessionCount: (await adminDb.collection("child_profiles").doc(childId).get()).data()?.sessionCount + 1,
+    const childRef = adminDb.collection("child_profiles").doc(childId);
+    const childSnap = await childRef.get();
+    const currentCount = childSnap.data()?.sessionCount || 0;
+
+    await childRef.update({
+      sessionCount: currentCount + 1,
       lastSessionAt: new Date().toLocaleDateString("vi-VN"),
       updatedAt: new Date().toISOString()
     });
 
-    revalidatePath(`/dashboard/expert/children/${childId}`);
+    revalidatePath(`/dashboard/expert/history?childId=${childId}`);
     revalidatePath("/dashboard/expert");
     
     return { success: true, sessionId };
