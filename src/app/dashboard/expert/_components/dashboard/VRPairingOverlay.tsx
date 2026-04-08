@@ -3,8 +3,7 @@
 import React, { useState } from "react";
 import { Smartphone, Cast, CheckCircle2, Loader2, X, AlertCircle } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { rtdb } from "@/lib/firebase/client";
-import { ref, get, update } from "firebase/database";
+import { pairWithDevice } from "@/lib/firebase/rtdb";
 
 interface VRPairingOverlayProps {
   onConnect?: () => void;
@@ -27,42 +26,21 @@ export default function VRPairingOverlay({ onConnect, onSkip, childId, childName
     setErrorMsg("");
 
     try {
-      const pinRef = ref(rtdb, `pairing_codes/${pin}`);
-      const pinSnapshot = await get(pinRef);
-
-      if (!pinSnapshot.exists()) {
-        setStatus("error");
-        setErrorMsg("Mã PIN không tồn tại hoặc đã hết hạn.");
-        return;
-      }
-
-      const data = pinSnapshot.val();
-      if (data.status !== "waiting") {
-        setStatus("error");
-        setErrorMsg("Thiết bị không ở trạng thái chờ ghép nối.");
-        return;
-      }
-
-      const sessionId = crypto.randomUUID();
-
-      await update(pinRef, {
-        status: "paired",
-        child_profile_id: childId || "UNKNOWN_CHILD",
-        session_id: sessionId
-      });
+      const { pin: pairedPin } = await pairWithDevice(pin, childId || "");
 
       setStatus("success");
       setTimeout(() => {
         const current = new URLSearchParams(Array.from(searchParams.entries()));
         current.set("vr", "connected");
-        current.set("session", sessionId);
+        current.set("pin", pairedPin); // Chỉ lưu pin, session sẽ được tạo khi bấm StartLesson
+        current.delete("session");
         router.push(`/dashboard/expert?${current.toString()}`);
         onConnect?.();
       }, 1500);
     } catch (error: any) {
       console.error("Pairing Error:", error);
       setStatus("error");
-      setErrorMsg("Lỗi khi kết nối với server Kính VR.");
+      setErrorMsg(error.message || "Lỗi khi kết nối với server Kính VR.");
     }
   };
 
