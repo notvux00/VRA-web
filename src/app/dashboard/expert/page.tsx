@@ -1,7 +1,7 @@
 import { getAssignedChildren, getExpertStats } from "@/actions/expert";
-import ExpertProfilePicker from "./_components/ExpertProfilePicker";
-import VRPairingOverlay from "./_components/VRPairingOverlay";
-import ExpertStats from "./_components/ExpertStats";
+import ExpertProfilePicker from "./_components/dashboard/ExpertProfilePicker";
+import VRPairingOverlay from "./_components/dashboard/VRPairingOverlay";
+import ExpertStats from "./_components/dashboard/ExpertStats";
 import { Baby, Cast, Info } from "lucide-react";
 import React from "react";
 import { redirect } from "next/navigation";
@@ -53,6 +53,7 @@ export default async function ExpertDashboard({ searchParams }: PageProps) {
       {/* Stage 2: VR Pairing Overlay (Demo - only if not connected OR skipped) */}
       {!isVRConnected && !isVRSkipped && (
         <VRPairingOverlay 
+          childId={selectedChild?.id}
           childName={selectedChild?.display_name || selectedChild?.name || "Trẻ"}
         />
       )}

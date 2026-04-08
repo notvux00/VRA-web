@@ -3,33 +3,67 @@
 import React, { useState } from "react";
 import { Smartphone, Cast, CheckCircle2, Loader2, X, AlertCircle } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { rtdb } from "@/lib/firebase/client";
+import { ref, get, update } from "firebase/database";
 
 interface VRPairingOverlayProps {
   onConnect?: () => void;
   onSkip?: () => void;
+  childId?: string;
   childName: string;
 }
 
-export default function VRPairingOverlay({ onConnect, onSkip, childName }: VRPairingOverlayProps) {
+export default function VRPairingOverlay({ onConnect, onSkip, childId, childName }: VRPairingOverlayProps) {
   const [pin, setPin] = useState("");
   const [status, setStatus] = useState<"idle" | "connecting" | "success" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const handleConnect = () => {
+  const handleConnect = async () => {
     if (pin.length < 3) return;
     
     setStatus("connecting");
-    // Simulated delay for demo
-    setTimeout(() => {
+    setErrorMsg("");
+
+    try {
+      const pinRef = ref(rtdb, `pairing_codes/${pin}`);
+      const pinSnapshot = await get(pinRef);
+
+      if (!pinSnapshot.exists()) {
+        setStatus("error");
+        setErrorMsg("Mã PIN không tồn tại hoặc đã hết hạn.");
+        return;
+      }
+
+      const data = pinSnapshot.val();
+      if (data.status !== "waiting") {
+        setStatus("error");
+        setErrorMsg("Thiết bị không ở trạng thái chờ ghép nối.");
+        return;
+      }
+
+      const sessionId = crypto.randomUUID();
+
+      await update(pinRef, {
+        status: "paired",
+        child_profile_id: childId || "UNKNOWN_CHILD",
+        session_id: sessionId
+      });
+
       setStatus("success");
       setTimeout(() => {
         const current = new URLSearchParams(Array.from(searchParams.entries()));
         current.set("vr", "connected");
+        current.set("session", sessionId);
         router.push(`/dashboard/expert?${current.toString()}`);
         onConnect?.();
       }, 1500);
-    }, 2000);
+    } catch (error: any) {
+      console.error("Pairing Error:", error);
+      setStatus("error");
+      setErrorMsg("Lỗi khi kết nối với server Kính VR.");
+    }
   };
 
   const handleSkip = () => {
@@ -88,6 +122,12 @@ export default function VRPairingOverlay({ onConnect, onSkip, childName }: VRPai
                     <div className="absolute inset-x-0 -bottom-8 flex items-center justify-center gap-2">
                        <Loader2 size={14} className="text-blue-600 animate-spin" />
                        <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Đang xác thực...</span>
+                    </div>
+                  )}
+                  {status === 'error' && (
+                    <div className="absolute inset-x-0 -bottom-8 flex items-center justify-center gap-2" title={errorMsg}>
+                       <AlertCircle size={14} className="text-red-500" />
+                       <span className="text-[10px] font-bold text-red-500 uppercase tracking-widest truncate w-full text-center px-4">{errorMsg}</span>
                     </div>
                   )}
                 </div>

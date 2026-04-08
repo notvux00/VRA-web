@@ -4,13 +4,14 @@ import {
   Cast, Smartphone, Wifi, Bluetooth, Radio, Battery, Power, ShieldCheck, Zap, Activity, Info, XCircle, LogOut, CheckCircle2 
 } from "lucide-react";
 import React, { useState, useEffect } from "react";
-import VRPairingForm from "../_components/VRPairingForm";
+import VRPairingForm from "../_components/connection/VRPairingForm";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export default function ExpertConnectionPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const vrStatus = searchParams.get("vr");
+  const childId = searchParams.get("childId") || undefined;
   const isConnected = vrStatus === "connected";
   
   const [showToast, setShowToast] = useState(false);
@@ -137,7 +138,7 @@ export default function ExpertConnectionPage() {
                 </div>
 
                 <div className="relative z-10 w-full flex justify-center">
-                   <VRPairingForm />
+                   <VRPairingForm childId={childId} />
                 </div>
 
                 <button 
