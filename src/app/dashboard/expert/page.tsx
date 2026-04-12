@@ -1,13 +1,13 @@
 import { getAssignedChildren, getExpertStats } from "@/actions/expert";
-import ExpertProfilePicker from "./_components/ExpertProfilePicker";
-import VRPairingOverlay from "./_components/VRPairingOverlay";
-import ExpertStats from "./_components/ExpertStats";
+import ExpertProfilePicker from "./_components/dashboard/ExpertProfilePicker";
+import VRPairingOverlay from "./_components/dashboard/VRPairingOverlay";
+import ExpertStats from "./_components/dashboard/ExpertStats";
 import { Baby, Cast, Info } from "lucide-react";
 import React from "react";
 import { redirect } from "next/navigation";
 
 interface PageProps {
-  searchParams: Promise<{ childId?: string; vr?: string }>;
+  searchParams: Promise<{ childId?: string; vr?: string; session?: string; pin?: string }>;
 }
 
 interface Child {
@@ -24,7 +24,13 @@ export default async function ExpertDashboard({ searchParams }: PageProps) {
   const vrStatus = params.vr;
 
   if (childId && (vrStatus === "connected" || vrStatus === "skipped")) {
-    redirect(`/dashboard/expert/stats?childId=${childId}`);
+    // Giữ nguyên TẤT CẢ query params khi redirect sang stats
+    const q = new URLSearchParams();
+    q.set("childId", childId);
+    if (vrStatus) q.set("vr", vrStatus);
+    if (params.session) q.set("session", params.session);
+    if (params.pin) q.set("pin", params.pin);
+    redirect(`/dashboard/expert/stats?${q.toString()}`);
   }
 
   const { children, success: childrenSuccess } = await getAssignedChildren() as { children: Child[] | undefined, success: boolean };
@@ -53,6 +59,7 @@ export default async function ExpertDashboard({ searchParams }: PageProps) {
       {/* Stage 2: VR Pairing Overlay (Demo - only if not connected OR skipped) */}
       {!isVRConnected && !isVRSkipped && (
         <VRPairingOverlay 
+          childId={selectedChild?.id}
           childName={selectedChild?.display_name || selectedChild?.name || "Trẻ"}
         />
       )}

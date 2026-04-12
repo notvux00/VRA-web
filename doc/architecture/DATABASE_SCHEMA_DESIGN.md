@@ -59,7 +59,7 @@ erDiagram
     %% ── DỮ LIỆU LÂM SÀNG ────────────────────────────────────
     CHILD_PROFILES {
         string profile_id PK
-        string expert_uid FK "Trỏ về experts (được phân công duy nhất)"
+        string expert_uid FK "Trỏ về experts (được phân công)"
         string parent_uid FK "Trỏ về parents (optional)"
         string center_id FK "Dùng cho Firestore isolation rules"
         string display_name "Bé Nam"
@@ -122,7 +122,7 @@ erDiagram
         string child_id "Tham chiếu trẻ (tối ưu Group Query)"
         float time_offset "Giây kể từ đầu buổi"
         int quest_index "Đang ở Quest số mấy"
-        string command_type "verbal_hint | visual_cue | audio_cue | pause | skip_quest | adjust_level | play_encouragement | emergency_stop"
+        string command_type "verbal_hint | visual_cue | audio_cue | pause | skip_quest |adjust_level | play_encouragement | emergency_stop"
         string command_detail "vd: play_audio:step2_hint, set_level:easy"
         string note "Ghi chú ngắn của chuyên gia (optional)"
         string triggered_by "uid_expert1"
@@ -202,7 +202,7 @@ Center Manager đăng nhập vào Web Dashboard của trung tâm mình (CID_123)
 
 #### 3. Quản lý Hồ sơ trẻ và Phân công (Assignment)
 - **Khai báo:** Center Manager tạo mới các `CHILD_PROFILES` cho trẻ mới nhập học.
-- **Phân công (1 - N):** 
-  - Center Manager chọn một trẻ $\rightarrow$ Chỉ định (Assign) cho một `EXPERTS` phụ trách duy nhất. 
-  - Hành động này cập nhật trường `expert_uid` trong `CHILD_PROFILES`. Nếu trẻ đã có chuyên gia trước đó, trường này sẽ bị ghi đè.
+- **Phân công (Ternary Relationship trong thiết kế):** 
+  - Center Manager chọn một trẻ $\rightarrow$ Chỉ định (Assign) cho một `EXPERTS` phụ trách. 
+  - Hành động này cập nhật trường `expert_uid` trong `CHILD_PROFILES`.
 - **Sử dụng:** `EXPERTS` đăng nhập Web hoặc Kính VR. Firebase Security Rules sẽ đọc UID của Expert và chỉ cho phép họ Read/Write lên các `CHILD_PROFILES` có `expert_uid` trùng khớp với UID của họ.

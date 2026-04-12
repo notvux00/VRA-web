@@ -4,30 +4,46 @@ import {
   Cast, Smartphone, Wifi, Bluetooth, Radio, Battery, Power, ShieldCheck, Zap, Activity, Info, XCircle, LogOut, CheckCircle2 
 } from "lucide-react";
 import React, { useState, useEffect } from "react";
-import VRPairingForm from "../_components/VRPairingForm";
+import VRPairingForm from "../_components/connection/VRPairingForm";
 import { useRouter, useSearchParams } from "next/navigation";
+import { disconnectDevice } from "@/lib/firebase/rtdb";
 
 export default function ExpertConnectionPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const vrStatus = searchParams.get("vr");
+  const childId = searchParams.get("childId") || undefined;
+  const pinCode = searchParams.get("pin") || "";
   const isConnected = vrStatus === "connected";
   
   const [showToast, setShowToast] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
 
-  const handleDisconnect = () => {
-    // Show notification
-    setShowToast(true);
+  const handleDisconnect = async () => {
+    setDisconnecting(true);
     
-    // Process "Disconnection" - basically clear the VR param
-    setTimeout(() => {
-      const current = new URLSearchParams(searchParams.toString());
-      current.delete("vr");
-      router.push(`/dashboard/expert/connection?${current.toString()}`);
-      
-      // Clear toast after a bit more time
-      setTimeout(() => setShowToast(false), 3000);
-    }, 1000);
+    try {
+      // Gọi Firebase RTDB để set status = "disconnected"
+      if (pinCode) {
+        await disconnectDevice(pinCode);
+      }
+
+      setShowToast(true);
+
+      setTimeout(() => {
+        const current = new URLSearchParams(searchParams.toString());
+        current.delete("vr");
+        current.delete("session");
+        current.delete("pin");
+        router.push(`/dashboard/expert/connection?${current.toString()}`);
+        
+        setTimeout(() => setShowToast(false), 3000);
+      }, 1000);
+    } catch (err) {
+      console.error("[Connection] Disconnect error:", err);
+    } finally {
+      setDisconnecting(false);
+    }
   };
 
   const devices = [
@@ -67,10 +83,11 @@ export default function ExpertConnectionPage() {
                       
                       <button 
                         onClick={handleDisconnect}
-                        className="flex items-center gap-3 px-6 py-3 bg-red-50 dark:bg-red-500/10 text-red-600 border border-red-100 dark:border-red-500/20 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all active:scale-95 group/btn"
+                        disabled={disconnecting}
+                        className="flex items-center gap-3 px-6 py-3 bg-red-50 dark:bg-red-500/10 text-red-600 border border-red-100 dark:border-red-500/20 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all active:scale-95 group/btn disabled:opacity-50"
                       >
                          <LogOut size={16} className="group-hover/btn:-translate-x-1 transition-transform" />
-                         Ngắt kết nối ngay
+                         {disconnecting ? "Đang ngắt..." : "Ngắt kết nối ngay"}
                       </button>
                    </div>
 
@@ -137,15 +154,8 @@ export default function ExpertConnectionPage() {
                 </div>
 
                 <div className="relative z-10 w-full flex justify-center">
-                   <VRPairingForm />
+                   <VRPairingForm childId={childId} />
                 </div>
-
-                <button 
-                   onClick={() => router.push('/dashboard/expert/connection?vr=connected')}
-                   className="mt-6 text-[10px] font-bold text-zinc-300 dark:text-zinc-600 uppercase tracking-[0.2em] hover:text-blue-500 transition-colors relative z-10"
-                >
-                   🚀 Demo nhanh trạng thái đã kết nối
-                </button>
              </div>
           </div>
         )}

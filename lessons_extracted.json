@@ -1,0 +1,101 @@
+﻿[
+    {
+        "lesson_index":  4,
+        "type":  "practical",
+        "lesson_id":  "Farm",
+        "level_name":  "H\\u1ECDc l\\xFD thuy\\u1EBFt",
+        "level_index":  0,
+        "lesson_name":  "Kh\\xE1m ph\\xE1 \\u0111\\u1ED9ng v\\u1EADt n\\xF4ng tr\\u1EA1i",
+        "level_id":  "1"
+    },
+    {
+        "lesson_index":  5,
+        "type":  "practical",
+        "lesson_id":  "Farm_Quiz",
+        "level_name":  "Quiz",
+        "level_index":  0,
+        "lesson_name":  "Quiz kh\\xE1m ph\\xE1 n\\xF4ng tr\\u1EA1i",
+        "level_id":  "1"
+    },
+    {
+        "lesson_index":  7,
+        "type":  "practical",
+        "lesson_id":  "Grassland",
+        "level_name":  "H\\u1ECDc l\\xFD thuy\\u1EBFt",
+        "level_index":  0,
+        "lesson_name":  "Kh\\xE1m ph\\xE1 \\u0111\\u1ED9ng v\\u1EADt hoang m\\u1EA1c",
+        "level_id":  "1"
+    },
+    {
+        "lesson_index":  6,
+        "type":  "practical",
+        "lesson_id":  "Grassland_Quiz",
+        "level_name":  "Quiz",
+        "level_index":  0,
+        "lesson_name":  "Quiz kh\\xE1m ph\\xE1 \\u0111\\u1ED9ng v\\u1EADt hoang m\\u1EA1c",
+        "level_id":  "1"
+    },
+    {
+        "lesson_index":  2,
+        "type":  "theoretical",
+        "lesson_id":  "Greet",
+        "level_name":  "L\\xE0m quen b\\u1EA1n m\\u1EDBi",
+        "level_index":  0,
+        "lesson_name":  "L\\xE0m quen b\\u1EA1n m\\u1EDBi",
+        "level_id":  "1"
+    },
+    {
+        "lesson_index":  3,
+        "type":  "theoretical",
+        "lesson_id":  "Intro",
+        "level_name":  "Ch\\u1EC9 d\\u1EABn v\\xE0 c\\xF3 m\\u1EABu",
+        "level_index":  0,
+        "lesson_name":  "T\\u1EADp gi\\u1EDBi thi\\u1EC7u b\\u1EA3n th\\xE2n",
+        "level_id":  "1"
+    },
+    {
+        "lesson_index":  3,
+        "type":  "theoretical",
+        "lesson_id":  "Intro",
+        "level_name":  "Ch\\u1EC9 d\\u1EABn v\\xE0 kh\\xF4ng m\\u1EABu",
+        "level_index":  1,
+        "lesson_name":  "T\\u1EADp gi\\u1EDBi thi\\u1EC7u b\\u1EA3n th\\xE2n",
+        "level_id":  "2"
+    },
+    {
+        "lesson_index":  8,
+        "type":  "practical",
+        "lesson_id":  "Ocean",
+        "level_name":  "H\\u1ECDc l\\xFD thuy\\u1EBFt",
+        "level_index":  0,
+        "lesson_name":  "Kh\\xE1m ph\\xE1 \\u0111\\u1ED9ng v\\u1EADt \\u0111\\u1EA1i d\\u01B0\\u01A1ng",
+        "level_id":  "1"
+    },
+    {
+        "lesson_index":  9,
+        "type":  "practical",
+        "lesson_id":  "Ocean_Quiz",
+        "level_name":  "Quiz",
+        "level_index":  0,
+        "lesson_name":  "Quiz kh\\xE1m ph\\xE1 \\u0111\\u1ED9ng v\\u1EADt \\u0111\\u1EA1i d\\u01B0\\u01A1ng",
+        "level_id":  "1"
+    },
+    {
+        "lesson_index":  0,
+        "type":  "theoretical",
+        "lesson_id":  "WashingHand",
+        "level_name":  "Ch\\u1EC9 d\\u1EABn v\\xE0 c\\xF3 m\\u1EABu",
+        "level_index":  0,
+        "lesson_name":  "B\\xE0i h\\u1ECDc r\\u1EEDa tay",
+        "level_id":  "1"
+    },
+    {
+        "lesson_index":  0,
+        "type":  "theoretical",
+        "lesson_id":  "WashingHand",
+        "level_name":  "Ch\\u1EC9 d\\u1EABn v\\xE0 kh\\xF4ng m\\u1EABu",
+        "level_index":  1,
+        "lesson_name":  "B\\xE0i h\\u1ECDc r\\u1EEDa tay",
+        "level_id":  "2"
+    }
+]

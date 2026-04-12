@@ -10,17 +10,17 @@ import {
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSimulatedSession } from "../../_hooks/useSimulatedSession";
-import POVMonitor from "../_components/POVMonitor";
-import AlertSidebar from "../_components/AlertSidebar";
-import ControlSidebar from "../_components/ControlSidebar";
 import BehaviorLogModal from "../_components/BehaviorLogModal";
 import SessionSummaryModal from "../_components/SessionSummaryModal";
 import { getAssignedChildDetail, finalizeSession } from "@/actions/expert";
+import { endLessonOnDevice, subscribeToVrHandshake } from "@/lib/firebase/rtdb";
 
 export default function LiveSessionPage() {
-  const { id } = useParams(); // id is the childId for this session
+  const { id: sessionId } = useParams(); // id trong URL là sessionId
   const searchParams = useSearchParams();
+  const childId = searchParams.get("childId");
   const lessonName = searchParams.get("lesson") || "Bài tập VR";
+  const pin = searchParams.get("pin");
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   
@@ -28,6 +28,9 @@ export default function LiveSessionPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isSessionActive, setIsSessionActive] = useState(false);
+  // vrReady = true khi VR đã bắn handshake xác nhận vào scene
+  const [vrReady, setVrReady] = useState(false);
+  const [vrSceneName, setVrSceneName] = useState("");
 
   // States for logging and summary
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
@@ -38,13 +41,12 @@ export default function LiveSessionPage() {
   // 1. Fetch child profile once
   useEffect(() => {
     async function fetchData() {
-      if (!user?.uid || !id) return;
+      if (!user?.uid || !childId) return;
       try {
-        const res = await getAssignedChildDetail(user.uid, id as string);
+        const res = await getAssignedChildDetail(childId as string);
         if (res.success) {
           setChild(res.child);
-          // Automatically start session for simulation demo
-          setTimeout(() => setIsSessionActive(true), 1500);
+          // Không tự bật session nữa — chờ VR handshake
         } else {
           setError(res.error || "Không tìm thấy thông tin trẻ");
         }
@@ -56,15 +58,49 @@ export default function LiveSessionPage() {
     }
 
     if (!authLoading) fetchData();
-  }, [id, user?.uid, authLoading]);
+  }, [childId, user?.uid, authLoading]);
 
-  // 2. Simulated Hook
+  // 2. Lắng nghe VR Handshake — chỉ bật session khi VR xác nhận đã vào scene
+  useEffect(() => {
+    const rawSessionId = Array.isArray(sessionId) ? sessionId[0] : sessionId;
+    if (!rawSessionId) return;
+
+    const unsubscribe = subscribeToVrHandshake(
+      rawSessionId,
+      // onReady: VR báo đã vào scene
+      (data) => {
+        setVrReady(true);
+        setVrSceneName(data.scene_name);
+        setIsSessionActive(true);
+      },
+      // onEnded: VR báo bài học đã kết thúc → tự động dọn và quay về Dashboard
+      async () => {
+        console.log("[Session] VR kết thúc bài học, tự động redirect về Dashboard...");
+        if (pin) {
+          try { await endLessonOnDevice(pin); } catch (e) {}
+        }
+        const current = new URLSearchParams(searchParams.toString());
+        current.delete("session");
+        current.set("vr", "connected");
+        router.push(`/dashboard/expert?${current.toString()}`);
+      },
+      // onDisconnect: VR bị ngắt đột ngột
+      () => {
+        setVrReady(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [sessionId]);
+
+
+  // 3. Simulated Hook (chạy khi VR đã ready)
   const { telemetry, activeAlerts, sessionTime } = useSimulatedSession(
     isSessionActive && child !== null, 
     child?.alert_profile
   );
 
-  // 3. Keep track of all alerts that occurred
+  // 4. Keep track of all alerts that occurred
   useEffect(() => {
     if (activeAlerts.length > 0) {
       activeAlerts.forEach(alert => {
@@ -80,10 +116,10 @@ export default function LiveSessionPage() {
   };
 
   const handleFinalSave = async (summary: any) => {
-    if (!user?.uid || !id) return;
+    if (!user?.uid || !childId) return;
     
     try {
-      const res = await finalizeSession(user.uid, id as string, {
+      const res = await finalizeSession(childId as string, {
         lessonName,
         duration: summary.duration,
         score: summary.score,
@@ -94,7 +130,19 @@ export default function LiveSessionPage() {
 
       if (res.success) {
         setIsSummaryModalOpen(false);
-        router.push(`/dashboard/expert/children/${id}`);
+        if (pin) {
+          try {
+            await endLessonOnDevice(pin);
+          } catch (e) {
+            console.error("Lỗi khi kết thúc bài học trên VR:", e);
+          }
+        }
+        
+        // Giữ lại URL params (như pin, vr) để không bị ngắt kết nối
+        const current = new URLSearchParams(searchParams.toString());
+        current.delete("session"); // Không cần thiết giữ session cũ
+        current.set("vr", "connected"); // ⚠️ Đảm bảo Dashboard không hiểu nhầm là đã ngắt
+        router.push(`/dashboard/expert?${current.toString()}`);
       } else {
         alert("Lỗi khi lưu báo cáo: " + res.error);
       }
@@ -114,7 +162,15 @@ export default function LiveSessionPage() {
     <div className="p-8 text-center bg-zinc-950 rounded-3xl border border-zinc-800 max-w-md mx-auto mt-20">
       <AlertCircle className="mx-auto text-red-500 mb-4" size={48} />
       <h3 className="text-xl font-bold text-white mb-2">{error}</h3>
-      <button onClick={() => router.back()} className="text-blue-600 font-bold hover:underline inline-flex items-center gap-2">
+      <button onClick={async () => {
+        if (pin) {
+          try { await endLessonOnDevice(pin); } catch(e){}
+        }
+        const current = new URLSearchParams(searchParams.toString());
+        current.delete("session");
+        current.set("vr", "connected");
+        router.push(`/dashboard/expert?${current.toString()}`);
+      }} className="text-blue-600 font-bold hover:underline inline-flex items-center gap-2">
         <ArrowLeft size={16} /> Quay lại
       </button>
     </div>
@@ -126,11 +182,19 @@ export default function LiveSessionPage() {
       <div className="h-16 border-b border-white/10 bg-zinc-950/50 backdrop-blur-xl px-6 flex items-center justify-between z-50 shrink-0">
         <div className="flex items-center gap-6">
           <button 
-            onClick={() => {
-              if (window.confirm("Kết thúc buổi tập và lưu báo cáo?")) setIsSummaryModalOpen(true);
+            onClick={async () => {
+              if (window.confirm("Bỏ qua báo cáo và huỷ bài học này? (Kính VR sẽ quay về phòng chờ)")) {
+                if (pin) {
+                  try { await endLessonOnDevice(pin); } catch(e){}
+                }
+                const current = new URLSearchParams(searchParams.toString());
+                current.delete("session");
+                current.set("vr", "connected");
+                router.push(`/dashboard/expert?${current.toString()}`);
+              }
             }}
             className="p-2.5 bg-white/5 border border-white/10 rounded-xl text-zinc-400 hover:text-white hover:bg-white/10 transition-all active:scale-95"
-            title="Quay lại"
+            title="Quay lại không lưu"
           >
             <ArrowLeft size={20} />
           </button>
@@ -162,53 +226,51 @@ export default function LiveSessionPage() {
         </div>
       </div>
 
-      {/* Main Layout: 3 Columns */}
-      <div className="flex-1 p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 overflow-hidden max-h-[calc(100vh-64px)] min-h-0">
+      {/* Main Layout: Chờ Handshake hoặc hiển thị Placeholder */}
+      <div className="flex-1 p-6 flex flex-col items-center justify-center relative overflow-hidden bg-zinc-950">
+        <div className="absolute inset-0 z-0">
+          <img 
+            src="https://images.unsplash.com/photo-1592478411213-6153e4ebc07d?auto=format&fit=crop&q=80&w=2000" 
+            alt="VR Streaming Placeholder" 
+            className="w-full h-full object-cover opacity-20 filter blur-sm"
+          />
+        </div>
         
-        {/* Column 1: Control (3 units) */}
-        <div className="lg:col-span-3 min-h-0">
-           <ControlSidebar sessionTime={sessionTime} telemetry={telemetry} />
-        </div>
-
-        {/* Column 2: Main POV Monitor (6 units) */}
-        <div className="lg:col-span-6 flex flex-col gap-6 min-h-0">
-           <POVMonitor telemetry={telemetry} childName={child.name} />
-           
-           {/* Clinical Telemetry Charts Placeholder */}
-           <div className="flex-1 bg-zinc-900 border border-white/10 rounded-3xl p-6 relative overflow-hidden group min-h-0">
-              <div className="flex justify-between items-start mb-6">
-                 <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-                    <LayoutDashboard size={14} className="text-blue-500" /> BIỂU ĐỒ SINH TRẮC (REAL-TIME)
-                 </h3>
-                 <Settings2 size={14} className="text-zinc-600 cursor-pointer hover:text-white transition-colors" />
+        <div className="z-10 bg-zinc-900/60 backdrop-blur-2xl border border-white/10 p-12 rounded-[3rem] flex flex-col items-center text-center max-w-2xl shadow-2xl">
+          {!vrReady ? (
+            /* Chưa nhận được Handshake từ VR */
+            <>
+              <div className="w-24 h-24 bg-amber-500/10 text-amber-400 rounded-full flex items-center justify-center border border-amber-500/20 mb-8">
+                <Loader2 size={40} className="animate-spin" />
               </div>
-              
-              <div className="h-full flex items-center justify-center -mt-4">
-                 <div className="flex items-end gap-1 h-32 w-full opacity-30 grayscale saturate-0 group-hover:grayscale-0 group-hover:saturate-100 transition-all duration-700">
-                    {[3, 5, 4, 8, 2, 6, 9, 4, 2, 5, 7, 3, 6, 8, 4, 9, 2, 5, 8, 4, 6].map((h, i) => (
-                      <div 
-                        key={i} 
-                        className="bg-blue-500/50 w-full rounded-t-sm animate-[pulse_2s_infinite]" 
-                        style={{ height: `${h * 10}%`, animationDelay: `${i * 0.1}s` }} 
-                      />
-                    ))}
-                 </div>
+              <h2 className="text-3xl font-black text-white tracking-tight uppercase mb-4">Chờ Trẻ Vào Bài</h2>
+              <p className="text-zinc-400 text-lg font-medium leading-relaxed mb-8">
+                Lệnh bắt đầu đã được gửi tới kính VR. <br/>
+                <b>Đang chờ xác nhận trẻ đã vào bên trong scene bài học...</b>
+              </p>
+              <div className="flex items-center gap-3 px-6 py-3 bg-zinc-950 rounded-2xl border border-white/5 text-sm font-bold text-amber-400 tracking-widest uppercase shadow-inner">
+                <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>
+                Đang chờ Handshake từ: {child.name}
               </div>
-
-              <div className="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none">
-                 <div className="p-4 bg-zinc-950/80 backdrop-blur rounded-2xl border border-white/10 flex items-center gap-3">
-                    <Info size={16} className="text-blue-400" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-white/80">Metric Dashboard Loading...</span>
-                 </div>
+            </>
+          ) : (
+            /* VR đã xác nhận — Hiển thị Placeholder Dashboard */
+            <>
+              <div className="w-24 h-24 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center border border-blue-500/30 mb-8 animate-pulse">
+                <Eye size={40} />
               </div>
-           </div>
+              <h2 className="text-3xl font-black text-white tracking-tight uppercase mb-4">Màn Hình Trích Xuất VR</h2>
+              <p className="text-zinc-400 text-lg font-medium leading-relaxed mb-8">
+                Bản đồ theo dõi thời gian thực (Telemetrics, Alerts, POV Monitor) đang trong quá trình thiết kế chi tiết. <br/>
+                {vrSceneName && <span className="text-emerald-400 font-bold">Scene đang chạy: {vrSceneName}</span>}
+              </p>
+              <div className="flex items-center gap-3 px-6 py-3 bg-zinc-950 rounded-2xl border border-white/5 text-sm font-bold text-emerald-400 tracking-widest uppercase shadow-inner">
+                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+                Đang duy trì kết nối với: {child.name}
+              </div>
+            </>
+          )}
         </div>
-
-        {/* Column 3: Alerts (3 units) */}
-        <div className="lg:col-span-3 min-h-0">
-           <AlertSidebar activeAlerts={activeAlerts} alertProfile={child.alert_profile} />
-        </div>
-
       </div>
 
       {/* Modals */}

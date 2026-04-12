@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import React from "react";
-import AlertProfileEditor from "../_components/AlertProfileEditor";
+import AlertProfileEditor from "../_components/stats/AlertProfileEditor";
 import ChildAchievements from "../../parent/_components/ChildAchievements";
 import ChildChartsContainer from "../../parent/_components/ChildChartsContainer";
 

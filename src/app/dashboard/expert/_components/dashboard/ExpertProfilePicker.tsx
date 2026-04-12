@@ -2,7 +2,8 @@
 
 import React from "react";
 import { ChevronRight, Baby, Users } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { updateChildOnDevice } from "@/lib/firebase/rtdb";
 
 interface Child {
   id: string;
@@ -27,9 +28,30 @@ const COLORS = [
 
 export default function ExpertProfilePicker({ childrenList }: ExportProfilePickerProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  const handleSelect = (childId: string) => {
-    router.push(`/dashboard/expert?childId=${childId}`);
+  const handleSelect = async (childId: string) => {
+    const q = new URLSearchParams();
+    q.set("childId", childId);
+    
+    const vrStatus = searchParams.get("vr");
+    const sessionId = searchParams.get("session");
+    const pin = searchParams.get("pin");
+    
+    if (vrStatus) q.set("vr", vrStatus);
+    if (sessionId) q.set("session", sessionId);
+    if (pin) q.set("pin", pin);
+
+    // Nếu đang connected, cập nhật child_id mới lên RTDB
+    if (vrStatus === "connected" && pin) {
+      try {
+        await updateChildOnDevice(pin, childId);
+      } catch (err) {
+        console.error("[ProfilePicker] Failed to update child on RTDB:", err);
+      }
+    }
+
+    router.push(`/dashboard/expert?${q.toString()}`);
   };
 
   return (
