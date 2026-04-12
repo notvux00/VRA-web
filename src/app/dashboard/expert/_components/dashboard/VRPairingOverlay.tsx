@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Smartphone, Cast, CheckCircle2, Loader2, X, AlertCircle } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { pairWithDevice } from "@/lib/firebase/rtdb";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface VRPairingOverlayProps {
   onConnect?: () => void;
@@ -18,6 +19,7 @@ export default function VRPairingOverlay({ onConnect, onSkip, childId, childName
   const [errorMsg, setErrorMsg] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user } = useAuth();
 
   const handleConnect = async () => {
     if (pin.length < 3) return;
@@ -26,7 +28,7 @@ export default function VRPairingOverlay({ onConnect, onSkip, childId, childName
     setErrorMsg("");
 
     try {
-      const { pin: pairedPin } = await pairWithDevice(pin, childId || "");
+      const { pin: pairedPin } = await pairWithDevice(pin, childId || "", user?.uid || "");
 
       setStatus("success");
       setTimeout(() => {

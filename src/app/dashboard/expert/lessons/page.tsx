@@ -1,10 +1,11 @@
 import { getAssignedChildren } from "@/actions/expert";
-import { PlayCircle, Award, Clock, BookOpen, Layers, Star } from "lucide-react";
-import Link from "next/link";
+import { getLessons, LessonData } from "@/actions/lessons";
+import { PlayCircle, Clock, BookOpen, Layers, GraduationCap, Beaker, MapPin } from "lucide-react";
 import React from "react";
+import StartLessonButton from "./_components/StartLessonButton";
 
 interface PageProps {
-  searchParams: Promise<{ childId?: string }>;
+  searchParams: Promise<{ childId?: string; pin?: string; vr?: string }>;
 }
 
 interface Child {
@@ -14,72 +15,51 @@ interface Child {
   [key: string]: any;
 }
 
-const MOCK_LESSONS = [
-  {
-    id: "L001",
-    title: "Nhận biết cảm xúc cơ bản",
-    description: "Giúp trẻ nhận biết và gọi tên các cảm xúc: Vui, Buồn, Giận dữ thông qua các tình huống 3D sinh động.",
-    category: "Giao tiếp xã hội",
-    duration: "15 phút",
-    difficulty: "Dễ",
-    image: "https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&q=80&w=400",
-    color: "bg-blue-500"
-  },
-  {
-    id: "L002",
-    title: "Giao tiếp ánh mắt trong cửa hàng",
-    description: "Môi trường giả lập siêu thị, trẻ thực hành nhìn vào mắt nhân viên thu ngân khi thanh toán.",
-    category: "Kỹ năng sống",
-    duration: "10 phút",
-    difficulty: "Trung bình",
-    image: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=400",
-    color: "bg-emerald-500"
-  },
-  {
-    id: "L003",
-    title: "Xử lý tiếng ồn nơi công cộng",
-    description: "Trẻ tập làm quen với tiếng ồn của xe cộ và đám đông trong môi trường kiểm soát.",
-    category: "Phòng ngừa lo âu",
-    duration: "20 phút",
-    difficulty: "Khó",
-    image: "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?auto=format&fit=crop&q=80&w=400",
-    color: "bg-amber-500"
-  },
-  {
-    id: "L004",
-    title: "Phân loại vật dụng theo màu sắc",
-    description: "Trò chơi tương tác tay-mắt yêu cầu trẻ phân loại các vật phẩm vào đúng rổ màu.",
-    category: "Tư duy logic",
-    duration: "12 phút",
-    difficulty: "Dễ",
-    image: "https://images.unsplash.com/photo-1587654780291-39c9404d746b?auto=format&fit=crop&q=80&w=400",
-    color: "bg-purple-500"
-  },
-  {
-    id: "L005",
-    title: "Xếp hàng chờ đợi",
-    description: "Thực hành kỹ năng kiên nhẫn khi phải xếp hàng tại trạm xe bus giả lập.",
-    category: "Kỹ năng xã hội",
-    duration: "15 phút",
-    difficulty: "Trung bình",
-    image: "https://images.unsplash.com/photo-1517611508029-4a0230bc014c?auto=format&fit=crop&q=80&w=400",
-    color: "bg-indigo-500"
-  },
-  {
-    id: "L006",
-    title: "Thoát hiểm khi có hỏa hoạn",
-    description: "Bài học kỹ năng sinh tồn quan trọng, dạy trẻ các bước di chuyển an toàn khi có báo động.",
-    category: "Kỹ năng sinh tồn",
-    duration: "25 phút",
-    difficulty: "Khó",
-    image: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=400",
-    color: "bg-rose-500"
+/** Nhóm các level lại theo lesson_id gốc để hiển thị dạng "1 bài → nhiều cấp độ" */
+function groupByLesson(lessons: LessonData[]) {
+  const map = new Map<string, { lessonId: string; lessonName: string; type: string; levels: LessonData[] }>();
+
+  for (const l of lessons) {
+    if (!map.has(l.lesson_id)) {
+      map.set(l.lesson_id, {
+        lessonId: l.lesson_id,
+        lessonName: l.lesson_name,
+        type: l.type,
+        levels: [],
+      });
+    }
+    map.get(l.lesson_id)!.levels.push(l);
   }
-];
+
+  return Array.from(map.values());
+}
+
+/** Ảnh đại diện dự phòng cho mỗi bài (vì thumbnail_url có thể rỗng) */
+// (Đã xóa LESSON_THUMBNAILS mock giả)
+
+const TYPE_LABELS: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+  practical: {
+    label: "Thực hành",
+    color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20",
+    icon: <Beaker size={12} />,
+  },
+  theory: {
+    label: "Lý thuyết",
+    color: "bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400 border-blue-200 dark:border-blue-500/20",
+    icon: <GraduationCap size={12} />,
+  },
+  quiz: {
+    label: "Kiểm tra",
+    color: "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 border-amber-200 dark:border-amber-500/20",
+    icon: <GraduationCap size={12} />,
+  },
+};
 
 export default async function ExpertLessonsPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const childId = params.childId;
+  const pin = params.pin || "";
+  const isVRConnected = params.vr === "connected";
 
   if (!childId) {
     return (
@@ -89,84 +69,166 @@ export default async function ExpertLessonsPage({ searchParams }: PageProps) {
     );
   }
 
-  const { children } = await getAssignedChildren() as { children: Child[] | undefined };
-  const child = children?.find(c => c.id === childId);
+  const [{ children }, { success, lessons }] = await Promise.all([
+    getAssignedChildren() as Promise<{ children: Child[] | undefined }>,
+    getLessons(),
+  ]);
+
+  const child = children?.find((c) => c.id === childId);
+
+  if (!success || !lessons) {
+    return (
+      <div className="p-20 text-center space-y-2">
+        <p className="text-red-500 font-bold text-lg">Không thể tải danh sách bài học</p>
+        <p className="text-zinc-400 text-sm">Vui lòng kiểm tra kết nối Firestore và thử lại.</p>
+      </div>
+    );
+  }
+
+  const grouped = groupByLesson(lessons);
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-12 pb-20 animate-in fade-in duration-700">
+      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-6">
           <div className="w-16 h-16 bg-blue-600 rounded-3xl flex items-center justify-center text-white shadow-2xl shadow-blue-500/20 transform hover:scale-110 transition-transform cursor-pointer">
             <BookOpen size={32} />
           </div>
           <div>
-            <h1 className="text-4xl font-black uppercase tracking-tight text-zinc-900 dark:text-white">Kho bài học VR</h1>
+            <h1 className="text-4xl font-black uppercase tracking-tight text-zinc-900 dark:text-white">
+              Kho bài học VR
+            </h1>
             <p className="text-zinc-500 font-medium tracking-wide">
-              Thiết lập chương trình cho bé: <span className="text-blue-600 font-black uppercase">{child?.display_name || child?.name}</span>
+              Chọn bài học cho bé:{" "}
+              <span className="text-blue-600 font-black uppercase">
+                {child?.display_name || child?.name}
+              </span>
             </p>
           </div>
         </div>
-        
-        <div className="flex items-center gap-3 bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-2 pl-5 rounded-2xl shadow-sm">
-           <div className="text-right">
-              <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest leading-none">Tổng số bài học</p>
-              <p className="text-lg font-black text-zinc-900 dark:text-white">{MOCK_LESSONS.length}</p>
-           </div>
-           <div className="w-10 h-10 bg-blue-50 dark:bg-blue-500/10 text-blue-600 rounded-xl flex items-center justify-center">
+
+        <div className="flex items-center gap-4">
+          {/* VR Connection Badge */}
+          <div
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl border text-xs font-black uppercase tracking-wider transition-all ${
+              isVRConnected
+                ? "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20 text-emerald-600"
+                : "bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-400"
+            }`}
+          >
+            <div
+              className={`w-2 h-2 rounded-full ${
+                isVRConnected ? "bg-emerald-500 animate-pulse" : "bg-zinc-300"
+              }`}
+            />
+            {isVRConnected ? "VR Đã kết nối" : "VR Chưa kết nối"}
+          </div>
+
+          {/* Lesson Count */}
+          <div className="flex items-center gap-3 bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-2 pl-5 rounded-2xl shadow-sm">
+            <div className="text-right">
+              <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest leading-none">
+                Tổng bài học
+              </p>
+              <p className="text-lg font-black text-zinc-900 dark:text-white">{grouped.length}</p>
+            </div>
+            <div className="w-10 h-10 bg-blue-50 dark:bg-blue-500/10 text-blue-600 rounded-xl flex items-center justify-center">
               <Layers size={20} />
-           </div>
+            </div>
+          </div>
         </div>
       </div>
 
+      {/* Lesson Grid — Mỗi card = 1 bài gốc, bên trong liệt kê các level */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-         {MOCK_LESSONS.map((lesson, i) => (
-           <div 
-             key={lesson.id} 
-             className="group bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 hover:-translate-y-2 relative"
-           >
-              <div className="h-44 relative overflow-hidden">
-                <img 
-                  src={lesson.image} 
-                  alt={lesson.title}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                <div className="absolute bottom-4 left-6">
-                   <span className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[10px] font-black text-white uppercase tracking-widest border border-white/20">
-                     {lesson.category}
-                   </span>
+        {grouped.map((group) => {
+          const typeInfo = TYPE_LABELS[group.type] || TYPE_LABELS.practical;
+          const thumbnail = group.levels[0]?.thumbnail_url || null;
+
+          return (
+            <div
+              key={group.lessonId}
+              className="group bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 hover:-translate-y-2"
+            >
+              {/* Thumbnail */}
+              <div className="h-44 relative overflow-hidden bg-zinc-100 dark:bg-zinc-800 flex flex-col justify-center items-center">
+                {thumbnail ? (
+                  <img
+                    src={thumbnail}
+                    alt={group.lessonName}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                  />
+                ) : (
+                  <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-zinc-500 to-transparent" />
+                )}
+                
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+                <div className="absolute bottom-4 left-6 flex items-center gap-2">
+                  <span
+                    className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border backdrop-blur-md ${typeInfo.color}`}
+                  >
+                    {typeInfo.icon} {typeInfo.label}
+                  </span>
                 </div>
               </div>
 
+              {/* Content */}
               <div className="p-8 space-y-4">
-                 <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-black text-zinc-900 dark:text-white uppercase leading-tight group-hover:text-blue-600 transition-colors">
-                      {lesson.title}
-                    </h3>
-                 </div>
-                 
-                 <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed line-clamp-2">
-                   {lesson.description}
-                 </p>
+                <h3 className="text-lg font-black text-zinc-900 dark:text-white uppercase leading-tight group-hover:text-blue-600 transition-colors">
+                  {group.lessonName}
+                </h3>
 
-                 <div className="flex items-center gap-4 pt-4 border-t border-zinc-50 dark:border-zinc-800">
-                    <div className="flex items-center gap-1.5">
-                       <Clock size={14} className="text-zinc-400" />
-                       <span className="text-xs font-bold text-zinc-500 uppercase">{lesson.duration}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                       <Star size={14} className="text-amber-500" fill="currentColor" />
-                       <span className="text-xs font-bold text-zinc-500 uppercase">{lesson.difficulty}</span>
-                    </div>
-                 </div>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed line-clamp-2">
+                  {group.levels[0]?.description || "Bài học VR tương tác cho trẻ tự kỷ."}
+                </p>
 
-                 <button className="w-full mt-2 py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-3 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 transition-all shadow-xl shadow-zinc-200/50 dark:shadow-none active:scale-95">
-                    <PlayCircle size={18} />
-                    Khởi chạy trên thiết bị VR
-                 </button>
+                {/* Meta: Scene + Duration */}
+                <div className="flex items-center gap-4 pt-2 border-t border-zinc-50 dark:border-zinc-800">
+                  <div className="flex items-center gap-1.5">
+                    <MapPin size={14} className="text-zinc-400" />
+                    <span className="text-xs font-bold text-zinc-500 uppercase">
+                      {group.levels[0]?.scene_name}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Clock size={14} className="text-zinc-400" />
+                    <span className="text-xs font-bold text-zinc-500 uppercase">
+                      {group.levels[0]?.duration_min} phút
+                    </span>
+                  </div>
+                </div>
+
+                {/* Level Selector — Liệt kê từng cấp bên dưới */}
+                <div className="space-y-2 pt-2">
+                  <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                    Chọn cấp độ ({group.levels.length})
+                  </p>
+                  {group.levels.map((level) => (
+                    <div
+                      key={level.id}
+                      className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-700/50 space-y-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300">
+                          Cấp {level.level_index}: {level.level_name}
+                        </span>
+                      </div>
+
+                      <StartLessonButton
+                        lessonDocId={level.id}
+                        sceneName={level.scene_name}
+                        lessonName={`${level.lesson_name} - ${level.level_name}`}
+                        pin={pin}
+                        childId={childId}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
-           </div>
-         ))}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

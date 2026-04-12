@@ -115,8 +115,8 @@ export async function getChildSessions(childId: string) {
     const sessions: SessionData[] = sessionsSnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
-      start_time: doc.data().start_time?.toDate()?.toISOString(),
-      finish_time: doc.data().finish_time?.toDate()?.toISOString(),
+      start_time: doc.data().start_time?.toDate?.()?.toISOString() || doc.data().startTime || doc.data().start_time || new Date().toISOString(),
+      finish_time: doc.data().finish_time?.toDate?.()?.toISOString() || doc.data().endTime || doc.data().finish_time || new Date().toISOString(),
     } as SessionData));
 
     return { success: true, sessions };
@@ -229,10 +229,17 @@ export async function getChildLatestNote(childId: string) {
       
       if (!sessionSnapshot.empty) {
         const sessionData = sessionSnapshot.docs[0].data();
+        let formattedDate = "Gần đây";
+        if (sessionData.start_time?.toDate) {
+          formattedDate = sessionData.start_time.toDate().toLocaleDateString("vi-VN");
+        } else if (sessionData.startTime) {
+          formattedDate = new Date(sessionData.startTime).toLocaleDateString("vi-VN");
+        }
+
         return { 
           success: true, 
           note: sessionData.notes || "Buổi học diễn ra tốt đẹp. Trẻ đang làm quen với môi trường mới.",
-          date: sessionData.start_time?.toDate()?.toLocaleDateString("vi-VN")
+          date: formattedDate
         };
       }
 

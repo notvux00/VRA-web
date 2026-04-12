@@ -4,6 +4,7 @@ import React, { useState, useRef } from "react";
 import { AlertCircle, ChevronRight, Loader2, CheckCircle2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { pairWithDevice } from "@/lib/firebase/rtdb";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface VRPairingFormProps {
   childId?: string;
@@ -16,6 +17,7 @@ export default function VRPairingForm({ childId }: VRPairingFormProps) {
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user } = useAuth();
 
   const handleChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
@@ -42,7 +44,7 @@ export default function VRPairingForm({ childId }: VRPairingFormProps) {
     const pinCode = pin.join("");
 
     try {
-      const { pin: pairedPin } = await pairWithDevice(pinCode, childId || "");
+      const { pin: pairedPin } = await pairWithDevice(pinCode, childId || "", user?.uid || "");
 
       setStatus("success");
       setTimeout(() => {
