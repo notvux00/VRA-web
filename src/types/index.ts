@@ -75,14 +75,34 @@ export interface Parent {
   status: "Active" | "Inactive";
 }
 
+export interface QuestLog {
+  completion_status: string;
+  hints_physical: number;
+  hints_verbal: number;
+  hints_visual: number;
+  index: number;
+  quest_name: string;
+  response_time: number;
+}
+
 export interface Session {
   id: string;
-  centerId: string;
-  childId: string;
-  expertUid: string;
-  lessonId: string;
-  startTime: string;
-  endTime?: string;
-  status: "in-progress" | "completed" | "cancelled";
-  notes?: string;
+  child_profile_id: string;
+  completion_status: string;
+  device_id?: string;
+  duration: number;
+  finish_time: string;
+  start_time: string;
+  hosted_by: string;
+  lesson_id: string;
+  lesson_name: string;
+  level_index?: number;
+  level_name?: string;
+  quest_logs?: QuestLog[];
+  score: number;
+  session_id: string;
+  type: string;
+  video_url?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }

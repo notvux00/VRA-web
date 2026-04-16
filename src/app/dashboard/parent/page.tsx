@@ -1,7 +1,6 @@
 import { getParentChildren } from "@/actions/parent";
 import ParentStats from "./_components/ParentStats";
 import FocusChart from "./_components/FocusChart";
-import ExpertNote from "./_components/ExpertNote";
 import RecentSessions from "./_components/RecentSessions";
 import ProfilePicker from "./_components/ProfilePicker";
 import { Phone, AlertCircle, Baby } from "lucide-react";
@@ -95,7 +94,6 @@ export default async function ParentDashboard({ searchParams }: PageProps) {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
         <div className="xl:col-span-2 space-y-10">
           <FocusChart childId={selectedChild.id} />
-          <ExpertNote childId={selectedChild.id} />
         </div>
         <div className="space-y-10">
           <RecentSessions childId={selectedChild.id} />
