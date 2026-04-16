@@ -40,7 +40,7 @@ export interface Achievement {
 export interface ParentDashboardStats {
   totalSessions: number;
   totalTime: string;
-  avgFocus: number;
+  streak: number;
   achievements: Achievement[];
 }
 
@@ -126,6 +126,23 @@ export async function getChildSessions(childId: string) {
   }
 }
 
+// Utility to fetch sessions across multiple field names and potential index issues
+async function fetchSessionsForChild(childId: string) {
+  const targetId = childId.trim();
+  
+  // Attempt aggressive scan first for reliability if dataset is manageable
+  // In a real production app with millions of sessions, we would use indexes,
+  // but for this implementation, a scan of recent sessions is safer to avoid silent failures.
+  const snapshot = await adminDb.collection("sessions").orderBy("start_time", "desc").limit(500).get();
+  
+  const matches = snapshot.docs.filter(doc => {
+    const data = doc.data();
+    return data.child_profile_id === targetId || data.child_id === targetId || data.childId === targetId;
+  });
+
+  return matches.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
 export async function getChildStats(childId: string) {
   const session = await getSession();
   if (!session) return { success: false, error: "Unauthorized" };
@@ -142,12 +159,7 @@ export async function getChildStats(childId: string) {
       return { success: false, error: "Access denied" };
     }
 
-    const sessionsSnapshot = await adminDb
-      .collection("sessions")
-      .where("child_profile_id", "==", childId)
-      .get();
-
-    const sessions = sessionsSnapshot.docs.map(doc => doc.data());
+    const sessions = await fetchSessionsForChild(childId);
     
     const totalSessions = sessions.length;
     const totalDurationSeconds = sessions.reduce((acc, s) => acc + (s.duration || 0), 0);
@@ -192,12 +204,52 @@ export async function getChildStats(childId: string) {
       }
     ];
 
+    const sessionDates = sessions
+      .map(s => {
+        if (s.start_time?.toDate) {
+          const d = s.start_time.toDate();
+          return d.getFullYear() + "-" + 
+                 String(d.getMonth() + 1).padStart(2, '0') + "-" + 
+                 String(d.getDate()).padStart(2, '0');
+        }
+        const rawDate = s.start_time || s.startTime;
+        if (typeof rawDate === 'string') return rawDate.split('T')[0];
+        return null;
+      })
+      .filter(d => d !== null) as string[];
+
+    const uniqueDates = Array.from(new Set(sessionDates)).sort((a, b) => b.localeCompare(a));
+
+    let streak = 0;
+    if (uniqueDates.length > 0) {
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+      const yesterday = new Date(now);
+      yesterday.setDate(now.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      
+      if (uniqueDates[0] === todayStr || uniqueDates[0] === yesterdayStr) {
+        streak = 1;
+        for (let i = 0; i < uniqueDates.length - 1; i++) {
+          const current = new Date(uniqueDates[i]);
+          const next = new Date(uniqueDates[i+1]);
+          const diffDays = Math.round((current.getTime() - next.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (diffDays === 1) {
+            streak++;
+          } else {
+            break;
+          }
+        }
+      }
+    }
+
     return {
       success: true,
       stats: {
         totalSessions,
         totalTime: `${Math.floor(totalDurationMinutes / 60)}h ${Math.round(totalDurationMinutes % 60)}m`,
-        avgFocus: Math.round(avgScore),
+        streak,
         achievements: achievementsList,
       } as ParentDashboardStats
     };
@@ -232,8 +284,12 @@ export async function getChildLatestNote(childId: string) {
         let formattedDate = "Gần đây";
         if (sessionData.start_time?.toDate) {
           formattedDate = sessionData.start_time.toDate().toLocaleDateString("vi-VN");
-        } else if (sessionData.startTime) {
-          formattedDate = new Date(sessionData.startTime).toLocaleDateString("vi-VN");
+        } else {
+          const rawDate = sessionData.start_time || sessionData.startTime;
+          if (typeof rawDate === 'string') {
+            const [y, m, d] = rawDate.split('T')[0].split('-');
+            formattedDate = `${d}/${m}/${y}`;
+          }
         }
 
         return { 
@@ -338,6 +394,125 @@ export async function getChildAlertStats(childId: string) {
     return { success: true, radarData };
   } catch (error: any) {
     console.error("Error fetching child alert stats:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getChildDashboardAnalytics(childId: string) {
+  const session = await getSession();
+  if (!session) return { success: false, error: "Unauthorized" };
+
+  try {
+    const sessions = await fetchSessionsForChild(childId);
+    if (sessions.length === 0) return { success: true, radarData: [], trendData: [] };
+
+    // 1. Calculate Radar Data
+    let totalQuests = 0;
+    let successfulQuests = 0;
+    let zeroHintQuests = 0;
+    let totalResponseTime = 0;
+    let totalScore = 0;
+
+    sessions.forEach(s => {
+      const logs = s.quest_logs || [];
+      totalQuests += logs.length;
+      totalScore += (s.score || 0);
+      
+      logs.forEach((log: any) => {
+        if (log.completion_status === "success") successfulQuests++;
+        if ((log.hints_physical || 0) + (log.hints_verbal || 0) + (log.hints_visual || 0) === 0) {
+          zeroHintQuests++;
+        }
+        totalResponseTime += (log.response_time || 0);
+      });
+    });
+
+    const avgAccuracy = totalQuests > 0 ? (successfulQuests / totalQuests) * 100 : 0;
+    const avgIndependence = totalQuests > 0 ? (zeroHintQuests / totalQuests) * 100 : 0;
+    const avgResponseTime = totalQuests > 0 ? totalResponseTime / totalQuests : 0;
+    const avgCompletion = totalScore / sessions.length;
+    
+    // Normalize Speed (Assuming 0-5s is the range, 0s = 100%, 5s = 20%)
+    const speedScore = Math.max(20, 100 - (avgResponseTime * 15)); 
+
+    const radarData = [
+      { subject: 'Chính xác', A: Math.round(avgAccuracy), fullMark: 100 },
+      { subject: 'Tự chủ', A: Math.round(avgIndependence), fullMark: 100 },
+      { subject: 'Tốc độ', A: Math.round(speedScore), fullMark: 100 },
+      { subject: 'Hoàn thành', A: Math.round(avgCompletion), fullMark: 100 },
+      { subject: 'Tập trung', A: Math.round((avgAccuracy + speedScore) / 2), fullMark: 100 },
+    ];
+
+    // 2. Trend Data (Last 10 sessions)
+    const trendData = sessions.slice(0, 10).reverse().map(s => {
+      let dateStr = "";
+      if (s.start_time?.toDate) {
+        dateStr = s.start_time.toDate().toLocaleDateString("vi-VN", { day: 'numeric', month: 'short' });
+      } else {
+        const rawDate = s.start_time || s.startTime;
+        if (typeof rawDate === 'string') {
+          const [y, m, d] = rawDate.split('T')[0].split('-');
+          dateStr = `${d} thg ${m}`;
+        }
+      }
+      return {
+        date: dateStr || "---",
+        score: s.score || 0,
+        duration: Math.round((s.duration || 0) / 60)
+      };
+    });
+
+    return { success: true, radarData, trendData };
+  } catch (error: any) {
+    console.error("Error calculating dashboard analytics:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getChildHeatmapData(childId: string) {
+  const session = await getSession();
+  if (!session) return { success: false, error: "Unauthorized" };
+
+  try {
+    const sessions = await fetchSessionsForChild(childId);
+    console.log(`[DEBUG] Final Fetch Found: ${sessions.length} sessions for heatmap`);
+
+    const heatmapData: { [key: string]: number } = {};
+    
+    // Calculate full year threshold in memory
+    const fullYearAgo = new Date();
+    fullYearAgo.setDate(fullYearAgo.getDate() - 370);
+    const fullYearAgoStr = fullYearAgo.toISOString();
+
+    sessions.forEach(data => {
+      // Filter by time in memory for safety
+      const startTime = data.start_time || data.startTime;
+      if (typeof startTime === 'string' && startTime < fullYearAgoStr) return;
+      if (data.start_time?.toDate && data.start_time.toDate() < fullYearAgo) return;
+
+      let dateStr: string | null = null;
+      if (data.start_time?.toDate) {
+        const d = data.start_time.toDate();
+        dateStr = d.getFullYear() + "-" + 
+                  String(d.getMonth() + 1).padStart(2, '0') + "-" + 
+                  String(d.getDate()).padStart(2, '0');
+      } else {
+        const rawDate = data.start_time || data.startTime;
+        if (typeof rawDate === 'string') {
+          dateStr = rawDate.split('T')[0];
+        }
+      }
+      
+      if (dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        heatmapData[dateStr] = (heatmapData[dateStr] || 0) + 1;
+      }
+    });
+
+    return { success: true, heatmapData };
+    
+
+  } catch (error: any) {
+    console.error("Error calculating heatmap data:", error);
     return { success: false, error: error.message };
   }
 }

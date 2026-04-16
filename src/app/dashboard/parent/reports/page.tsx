@@ -13,8 +13,11 @@ import {
   Timer,
   Target,
   Zap,
-  BarChart2,
-  Calendar
+  Calendar,
+  HelpCircle,
+  Award,
+  Activity,
+  Trophy
 } from "lucide-react";
 import Link from "next/link";
 import { 
@@ -60,11 +63,11 @@ export default function ParentReportsPage({ searchParams }: PageProps) {
       <div className="p-8 max-w-7xl mx-auto space-y-12 animate-in fade-in duration-700">
          <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-[3rem] p-20 text-center space-y-6">
             <div className="w-24 h-24 bg-blue-50 dark:bg-blue-500/10 rounded-full flex items-center justify-center mx-auto text-blue-600">
-               <BarChart2 size={48} />
+               <Activity size={48} />
             </div>
             <div className="max-w-md mx-auto">
                <h3 className="text-2xl font-black text-zinc-900 dark:text-white uppercase tracking-tight">Vui lòng chọn một buổi học</h3>
-               <p className="text-zinc-500 font-medium mt-2">Đi tới trang <strong>Lịch sử học của bé</strong> và chọn biểu tượng báo cáo để xem phân tích chi tiết.</p>
+               <p className="text-zinc-500 font-medium mt-2">Đi tới trang <strong>Lịch sử học của bé</strong> và chọn báo cáo để xem phân tích chi tiết.</p>
                <Link href={childId ? `/dashboard/parent/history?childId=${childId}` : "/dashboard/parent/history"} className="inline-block mt-8 px-10 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-zinc-900 transition-colors shadow-lg shadow-blue-500/20">
                   Xem lịch sử của bé
                </Link>
@@ -78,7 +81,7 @@ export default function ParentReportsPage({ searchParams }: PageProps) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
         <div className="w-10 h-10 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin"></div>
-        <p className="text-zinc-500 font-bold uppercase tracking-widest text-[10px]">Đang chuẩn bị báo cáo...</p>
+        <p className="text-zinc-500 font-bold uppercase tracking-widest text-[10px]">Đang chuẩn bị báo cáo cho ba mẹ...</p>
       </div>
     );
   }
@@ -94,12 +97,12 @@ export default function ParentReportsPage({ searchParams }: PageProps) {
 
   // Data for Charts
   const questLogs = session.quest_logs || [];
-  const questTotal = session.quest_logs?.length || 0;
-  const questSuccess = session.quest_logs?.filter(q => q.completion_status === "success").length || 0;
+  const questTotal = questLogs.length || 0;
+  const questSuccess = questLogs.filter(q => q.completion_status === "success").length || 0;
   const accuracy = questTotal > 0 ? Math.round((questSuccess / questTotal) * 100) : (session.score || 0);
   
   const chartData = questLogs.map((q, index) => ({
-    name: `Lần ${index + 1}`,
+    name: `NV ${index + 1}`,
     time: Math.round(q.response_time * 100) / 100,
     status: q.completion_status === "success" ? "Đạt" : "Chưa đạt"
   }));
@@ -110,126 +113,220 @@ export default function ParentReportsPage({ searchParams }: PageProps) {
   ];
 
   return (
-    <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-10 pb-20 animate-in fade-in duration-1000">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-         <Link 
-            href={`/dashboard/parent/history?childId=${session.child_profile_id}`}
-            className="flex items-center gap-2 text-zinc-500 hover:text-blue-600 transition-colors font-black uppercase text-[10px] tracking-widest"
-          >
-           <ChevronLeft size={16} /> Quay lại lịch sử
-         </Link>
-         
-         <button 
-            onClick={() => window.print()}
-            className="flex items-center gap-2 px-6 py-3 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:scale-105 transition-transform"
-         >
-            <Download size={14} /> Tải báo cáo PDF
-         </button>
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-8 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+      {/* Navigation & Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="space-y-4">
+           <Link 
+              href={`/dashboard/parent/history?childId=${session.child_profile_id}`}
+              className="group flex items-center gap-2 text-zinc-400 hover:text-blue-600 transition-colors font-black uppercase text-[10px] tracking-widest"
+            >
+             <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Quay lại lịch sử
+           </Link>
+           <div className="space-y-1">
+             <div className="flex items-center gap-2 text-blue-600 mb-2">
+                < Award size={18} />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em]">Báo cáo kết quả rèn luyện</span>
+             </div>
+             <h1 className="text-4xl sm:text-6xl font-black text-zinc-900 dark:text-white tracking-tighter uppercase leading-none">
+                {session.lesson_name}
+             </h1>
+             <div className="flex flex-wrap items-center gap-4 text-zinc-400 font-bold uppercase text-[10px] tracking-widest pt-2">
+                <div className="flex items-center gap-1.5"><Calendar size={12} /> {new Date(session.start_time).toLocaleDateString("vi-VN")}</div>
+                <div className="flex items-center gap-1.5 font-black text-zinc-900 dark:text-zinc-100">
+                   <Clock size={12} /> {new Date(session.start_time).toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' })}
+                </div>
+                <div className="px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded text-zinc-600 dark:text-zinc-400">ID: {session.session_id.slice(-8)}</div>
+             </div>
+           </div>
+        </div>
+        
+        <button 
+           onClick={() => window.print()}
+           className="flex items-center justify-center gap-3 px-8 py-4 bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-zinc-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+        >
+           <Download size={16} /> Tải báo cáo chi tiết
+        </button>
       </div>
 
-      {/* Main Stats Card */}
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-[3rem] p-8 sm:p-10 shadow-xl shadow-zinc-500/5 space-y-10">
-         <div className="flex flex-col lg:flex-row justify-between items-start gap-8">
-            <div className="space-y-4">
-               <div className="flex items-center gap-2 text-blue-600">
-                  <FileText size={20} />
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em]">Báo cáo rèn luyện tổng quát</span>
-               </div>
-               <h1 className="text-4xl sm:text-5xl font-black text-zinc-900 dark:text-white tracking-tighter uppercase">{session.lesson_name}</h1>
-               <div className="flex flex-wrap items-center gap-6 text-zinc-400 font-bold uppercase text-[10px] tracking-widest">
-                  <div className="flex items-center gap-2"><Calendar size={14} /> {new Date(session.start_time).toLocaleDateString("vi-VN")}</div>
-                  <div className="flex items-center gap-2"><Clock size={14} /> {new Date(session.start_time).toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' })}</div>
-                  <div className="flex items-center gap-2"><Timer size={14} /> {session.duration >= 60 ? `${Math.floor(session.duration/60)} phút ${Math.round(session.duration%60)} giây` : `${Math.round(session.duration)} giây`} tập luyện</div>
-               </div>
+      {/* Top 3 Impact Stats - Friendly Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+         <div className="bg-blue-50 dark:bg-blue-500/10 text-blue-600 p-5 rounded-[2rem] border border-blue-100 dark:border-blue-500/20 flex items-center gap-4 transition-all hover:scale-[1.02]">
+            <div className="w-12 h-12 bg-blue-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+               <Target size={20} />
             </div>
-
-            <div className="flex items-center gap-6 bg-zinc-50 dark:bg-zinc-800/50 p-4 sm:p-5 rounded-[1.5rem] border border-zinc-100 dark:border-zinc-800">
-               <div className="text-center px-4">
-                  <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Độ chính xác</p>
-                  <p className="text-3xl font-black text-blue-600">{accuracy}%</p>
-               </div>
-               <div className="w-px h-10 bg-zinc-200 dark:bg-zinc-700"></div>
-               <div className="text-center px-4">
-                  <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Nhiệm vụ</p>
-                  <p className="text-3xl font-black text-emerald-500">{questSuccess}/{questTotal}</p>
-               </div>
+            <div>
+               <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-0.5">Độ chính xác</p>
+               <p className="text-2xl font-black tracking-tighter">{accuracy}%</p>
             </div>
          </div>
 
-         {/* Visual Analytics */}
-         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-            {/* Speed Chart */}
-            <div className="space-y-6">
-               <h3 className="text-lg font-black uppercase tracking-tight flex items-center gap-3">
-                  <Zap size={20} className="text-amber-500" /> Tốc độ phản ứng của bé
-               </h3>
-               <div className="h-[280px] w-full bg-zinc-50 dark:bg-zinc-800/20 rounded-[2rem] p-6 border border-zinc-50 dark:border-zinc-800">
-                  <ResponsiveContainer width="100%" height="100%">
-                     <AreaChart data={chartData}>
-                        <defs>
-                           <linearGradient id="colorParent" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2}/>
-                              <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                           </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                        <XAxis dataKey="name" hide />
-                        <YAxis hide domain={[0, 'dataMax + 1']} />
-                        <Tooltip 
-                           contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                           labelStyle={{ fontWeight: 800, color: '#3b82f6', marginBottom: '4px' }}
-                        />
-                        <Area type="monotone" dataKey="time" stroke="#3b82f6" strokeWidth={4} fillOpacity={1} fill="url(#colorParent)" />
-                     </AreaChart>
-                  </ResponsiveContainer>
-               </div>
-               <p className="text-xs text-zinc-400 font-medium italic text-center">
-                  Biểu đồ thể hiện thời gian bé suy nghĩ trước khi đưa ra đáp án. Thời gian ngắn và ổn định cho thấy bé đang nắm bắt vấn đề tốt.
+         <div className="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 p-5 rounded-[2rem] border border-emerald-100 dark:border-emerald-500/20 flex items-center gap-4 transition-all hover:scale-[1.02]">
+            <div className="w-12 h-12 bg-emerald-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+               <Trophy size={20} />
+            </div>
+            <div>
+               <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-0.5">Nhiệm vụ đạt</p>
+               <p className="text-2xl font-black tracking-tighter">{questSuccess}/{questTotal}</p>
+            </div>
+         </div>
+
+         <div className="bg-amber-50 dark:bg-amber-500/10 text-amber-600 p-5 rounded-[2rem] border border-amber-100 dark:border-amber-500/20 flex items-center gap-4 transition-all hover:scale-[1.02]">
+            <div className="w-12 h-12 bg-amber-400 text-zinc-900 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/20">
+               <Timer size={20} />
+            </div>
+            <div>
+               <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-0.5">Thời gian tập</p>
+               <p className="text-2xl font-black tracking-tighter">
+                  {session.duration >= 60 ? `${Math.floor(session.duration/60)}p ${Math.round(session.duration%60)}s` : `${Math.round(session.duration)} Giây`}
                </p>
             </div>
+         </div>
+      </div>
 
-            {/* Achievement Pie */}
-            <div className="space-y-6">
-               <h3 className="text-lg font-black uppercase tracking-tight flex items-center gap-3">
-                  <Target size={20} className="text-emerald-500" /> Tỉ lệ hoàn thành bài học
-               </h3>
-               <div className="h-[280px] w-full flex items-center justify-center relative">
-                  <ResponsiveContainer width="100%" height="100%">
-                     <PieChart>
-                        <Pie
-                           data={pieData}
-                           cx="50%"
-                           cy="50%"
-                           innerRadius={60}
-                           outerRadius={90}
-                           paddingAngle={8}
-                           dataKey="value"
-                        >
-                           {pieData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
-                           ))}
-                        </Pie>
-                        <Tooltip />
-                     </PieChart>
-                  </ResponsiveContainer>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                     <p className="text-3xl font-black text-zinc-900 dark:text-white leading-none">{Math.round((questSuccess/questTotal)*100)}%</p>
-                     <p className="text-[8px] font-black uppercase tracking-widest text-zinc-400">Hoàn thành</p>
+      {/* Analytics Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+         {/* Speed Chart - 7 Columns */}
+         <div className="lg:col-span-7 bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-[2.5rem] p-6 sm:p-8 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+               <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-50 dark:bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-600">
+                     <Zap size={20} />
                   </div>
-               </div>
-               
-               <div className="flex justify-center gap-8">
-                  <div className="flex items-center gap-2">
-                     <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                     <span className="text-[10px] font-black uppercase text-zinc-500">Thành công</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                     <div className="w-2 h-2 rounded-full bg-rose-500"></div>
-                     <span className="text-[10px] font-black uppercase text-zinc-500">Cần cố gắng</span>
+                  <div>
+                     <h3 className="text-lg font-black uppercase tracking-tight leading-none mb-1">Tốc độ của bé</h3>
+                     <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Phản xạ qua từng câu hỏi</p>
                   </div>
                </div>
             </div>
+
+            <div className="h-[200px] w-full mt-4">
+               <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData}>
+                     <defs>
+                        <linearGradient id="colorResponse" x1="0" y1="0" x2="0" y2="1">
+                           <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2}/>
+                           <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                        </linearGradient>
+                     </defs>
+                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" strokeOpacity={0.5} />
+                     <XAxis dataKey="name" hide />
+                     <YAxis hide domain={[0, 'dataMax + 1']} />
+                     <Tooltip 
+                        contentStyle={{ borderRadius: '1.5rem', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', padding: '1rem' }}
+                        labelStyle={{ fontWeight: 900, color: '#3b82f6', marginBottom: '4px', textTransform: 'uppercase', fontSize: '10px' }}
+                     />
+                     <Area 
+                        type="monotone" 
+                        dataKey="time" 
+                        stroke="#3b82f6" 
+                        strokeWidth={4} 
+                        fillOpacity={1} 
+                        fill="url(#colorResponse)" 
+                        animationDuration={2000}
+                     />
+                  </AreaChart>
+               </ResponsiveContainer>
+            </div>
+            
+            <div className="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800">
+               <p className="text-xs text-zinc-500 font-medium italic text-center leading-relaxed">
+                  &quot;Biểu đồ này cho thấy thời gian con suy nghĩ. Đường đi xuống và ổn định là con đang rất tự tin đấy ba mẹ ơi!&quot;
+               </p>
+            </div>
+         </div>
+
+         {/* Completion Doughnut - 5 Columns */}
+         <div className="lg:col-span-5 bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-[2.5rem] p-6 sm:p-8 shadow-sm flex flex-col items-center justify-between text-center relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-rose-500"></div>
+            
+            <div className="space-y-1">
+               <h3 className="text-lg font-black uppercase tracking-tight">Tỉ lệ hoàn thành</h3>
+               <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Mức độ vượt qua bài học</p>
+            </div>
+
+            <div className="h-[180px] w-full flex items-center justify-center relative">
+               <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                     <Pie
+                        data={pieData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={65}
+                        outerRadius={85}
+                        paddingAngle={questSuccess === questTotal || questSuccess === 0 ? 0 : 6}
+                        dataKey="value"
+                        animationDuration={1500}
+                     >
+                        {pieData.map((entry, index) => (
+                           <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
+                        ))}
+                     </Pie>
+                     <Tooltip />
+                  </PieChart>
+               </ResponsiveContainer>
+               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <p className="text-4xl font-black text-zinc-900 dark:text-white tracking-tighter">{Math.round((questSuccess/questTotal)*100)}%</p>
+                  <p className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-400">Thành công</p>
+               </div>
+            </div>
+            
+            <div className="flex gap-4 w-full">
+               <div className="flex-1 p-3 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl">
+                  <p className="text-xs font-black text-emerald-600 leading-none mb-1">{questSuccess}</p>
+                  <p className="text-[8px] font-bold text-emerald-600/60 uppercase">Đúng</p>
+               </div>
+               <div className="flex-1 p-3 bg-rose-50 dark:bg-rose-500/10 rounded-2xl">
+                  <p className="text-xs font-black text-rose-600 leading-none mb-1">{questTotal - questSuccess}</p>
+                  <p className="text-[8px] font-bold text-rose-600/60 uppercase">Cần tập lại</p>
+               </div>
+            </div>
+         </div>
+      </div>
+
+      {/* Achievement Cards Grid (The old quest list) */}
+      <div className="space-y-6">
+         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <h3 className="text-2xl font-black uppercase tracking-tight flex items-center gap-3">
+               <Activity size={24} className="text-blue-600" /> Nhật ký từng bước của con
+            </h3>
+            <div className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 rounded-full text-[10px] font-black uppercase tracking-widest text-zinc-500">
+               Tổng cộng {questTotal} nhiệm vụ
+            </div>
+         </div>
+
+         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {questLogs.map((quest, i) => (
+               <div 
+                  key={i} 
+                  className={`p-8 rounded-[2.5rem] border transition-all duration-300 hover:scale-[1.03] hover:shadow-xl ${
+                     quest.completion_status === "success" 
+                        ? "bg-white dark:bg-zinc-900 border-emerald-100 dark:border-emerald-500/20 shadow-emerald-500/5" 
+                        : "bg-white dark:bg-zinc-900 border-amber-100 dark:border-amber-500/20 shadow-amber-500/5"
+                  }`}
+               >
+                  <div className="flex flex-col h-full space-y-4">
+                     <div className="flex items-start justify-between">
+                        <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest leading-none">NV {i + 1}</span>
+                        <div className={`p-2 rounded-xl ${
+                           quest.completion_status === "success" 
+                              ? "bg-emerald-50 text-emerald-500 dark:bg-emerald-500/10" 
+                              : "bg-amber-50 text-amber-500 dark:bg-amber-500/10"
+                        }`}>
+                           {quest.completion_status === "success" ? <CheckCircle2 size={24} /> : <XCircle size={24} />}
+                        </div>
+                     </div>
+
+                     <div className="flex-1">
+                        <p className="text-lg font-black text-zinc-900 dark:text-white leading-tight mb-3 capitalize">{quest.quest_name}</p>
+                        <div className="flex items-center gap-4 text-xs font-black uppercase tracking-widest text-zinc-400">
+                           <div className="flex items-center gap-1.5"><Clock size={14} className="text-blue-500" /> {Math.round(quest.response_time * 10) / 10}s</div>
+                           <div className="flex items-center gap-1.5"><HelpCircle size={14} className="text-amber-500" /> Hỗ trợ: {quest.hints_physical + quest.hints_verbal + quest.hints_visual}</div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            ))}
          </div>
       </div>
     </div>

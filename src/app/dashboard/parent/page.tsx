@@ -3,6 +3,7 @@ import ParentStats from "./_components/ParentStats";
 import FocusChart from "./_components/FocusChart";
 import RecentSessions from "./_components/RecentSessions";
 import ProfilePicker from "./_components/ProfilePicker";
+import HeatmapChart from "./_components/HeatmapChart";
 import { Phone, AlertCircle, Baby } from "lucide-react";
 
 interface PageProps {
@@ -70,16 +71,16 @@ export default async function ParentDashboard({ searchParams }: PageProps) {
   const selectedChild = children.find(c => c.id === childId) || children[0];
 
   return (
-    <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-10 pb-20 animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-zinc-100 dark:border-zinc-800 pb-8">
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-6 pb-20 animate-in fade-in duration-700">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-zinc-100 dark:border-zinc-800 pb-3">
         <div>
-          <div className="flex items-center gap-3 mb-2">
-             <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
-               <Baby size={20} />
+          <div className="flex items-center gap-3 mb-1.5">
+             <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+               <Baby size={16} />
              </div>
-             <p className="text-sm font-black text-blue-600 uppercase tracking-widest">{selectedChild.display_name || selectedChild.name}</p>
+             <p className="text-xs font-black text-blue-600 uppercase tracking-widest">{selectedChild.display_name || selectedChild.name}</p>
           </div>
-          <h1 className="text-3xl font-black tracking-tight text-zinc-900 dark:text-white uppercase">
+          <h1 className="text-2xl font-black tracking-tight text-zinc-900 dark:text-white uppercase transition-all">
             Báo cáo tiến trình chi tiết
           </h1>
           <p className="text-zinc-500 dark:text-zinc-400 font-medium mt-1">
@@ -93,6 +94,7 @@ export default async function ParentDashboard({ searchParams }: PageProps) {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
         <div className="xl:col-span-2 space-y-10">
+          <HeatmapChart childId={selectedChild.id} />
           <FocusChart childId={selectedChild.id} />
         </div>
         <div className="space-y-10">
