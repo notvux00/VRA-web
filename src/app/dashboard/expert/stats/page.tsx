@@ -1,9 +1,12 @@
 import { getAssignedChildDetail } from "@/actions/expert";
-import { getChildStats, getChildSessions, getChildAlertStats } from "@/actions/parent";
+import { getChildStats, getChildSessions } from "@/actions/parent";
+import { getChildAlertStats } from "@/actions/analytics";
 import { 
   Baby, Ruler, Scale, 
   Activity, History, Info, ShieldCheck
 } from "lucide-react";
+
+export const dynamic = "force-dynamic";
 import Link from "next/link";
 import React from "react";
 import AlertProfileEditor from "../_components/stats/AlertProfileEditor";

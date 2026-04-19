@@ -213,7 +213,7 @@ export default function HeatmapChart({ childId }: HeatmapChartProps) {
 
       <div className="mt-6 flex items-center justify-between">
         <div className="flex items-center gap-3 text-[9px] font-bold uppercase tracking-[0.1em] text-zinc-300 dark:text-zinc-700">
-           <span>Hành trình rèn luyện niên độ {selectedYear}</span>
+           <span>Hành trình rèn luyện năm {selectedYear}</span>
         </div>
         <div className="flex items-center gap-1.5 text-[9px] font-bold text-zinc-400 mr-4">
             <span>Ít</span>

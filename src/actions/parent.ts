@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
+import { getChildAlertStats as getRadarData } from "./analytics";
 
 const SESSION_COOKIE_NAME = "session";
 
@@ -24,6 +25,8 @@ export interface SessionData {
   start_time: string;
   finish_time: string;
   notes?: string;
+  quest_logs?: any[];
+  auto_alerts?: any[];
   [key: string]: any;
 }
 
@@ -40,6 +43,7 @@ export interface Achievement {
 export interface ParentDashboardStats {
   totalSessions: number;
   totalTime: string;
+  avgScore: number;
   streak: number;
   achievements: Achievement[];
 }
@@ -181,7 +185,7 @@ export async function getChildStats(childId: string) {
       {
         id: "focus_master",
         name: "Bậc thầy tập trung",
-        description: "Đạt điểm tập trung trung bình trên 80",
+        description: "Đạt điểm bài học trung bình trên 80",
         icon: "Zap",
         color: "text-blue-500",
         earned: avgScore >= 80 && totalSessions >= 3
@@ -204,17 +208,22 @@ export async function getChildStats(childId: string) {
       }
     ];
 
+    const formatDate = (date: Date) => {
+      return date.getFullYear() + "-" + 
+             String(date.getMonth() + 1).padStart(2, '0') + "-" + 
+             String(date.getDate()).padStart(2, '0');
+    };
+
     const sessionDates = sessions
       .map(s => {
-        if (s.start_time?.toDate) {
-          const d = s.start_time.toDate();
-          return d.getFullYear() + "-" + 
-                 String(d.getMonth() + 1).padStart(2, '0') + "-" + 
-                 String(d.getDate()).padStart(2, '0');
-        }
         const rawDate = s.start_time || s.startTime;
-        if (typeof rawDate === 'string') return rawDate.split('T')[0];
-        return null;
+        if (!rawDate) return null;
+        
+        const d = (typeof rawDate === 'object' && rawDate.toDate) 
+          ? rawDate.toDate() 
+          : new Date(rawDate);
+          
+        return formatDate(d);
       })
       .filter(d => d !== null) as string[];
 
@@ -223,23 +232,29 @@ export async function getChildStats(childId: string) {
     let streak = 0;
     if (uniqueDates.length > 0) {
       const now = new Date();
-      const todayStr = now.toISOString().split('T')[0];
-      const yesterday = new Date(now);
-      yesterday.setDate(now.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().split('T')[0];
       
-      if (uniqueDates[0] === todayStr || uniqueDates[0] === yesterdayStr) {
-        streak = 1;
-        for (let i = 0; i < uniqueDates.length - 1; i++) {
-          const current = new Date(uniqueDates[i]);
-          const next = new Date(uniqueDates[i+1]);
-          const diffDays = Math.round((current.getTime() - next.getTime()) / (1000 * 60 * 60 * 24));
-          
-          if (diffDays === 1) {
-            streak++;
-          } else {
-            break;
-          }
+      // We start checking from TODAY
+      let checkDate = new Date(now);
+      let todayStr = formatDate(checkDate);
+      
+      // If no session today, we check if it starts from YESTERDAY
+      if (!uniqueDates.includes(todayStr)) {
+        checkDate.setDate(checkDate.getDate() - 1);
+        let yesterdayStr = formatDate(checkDate);
+        if (!uniqueDates.includes(yesterdayStr)) {
+          // No session today or yesterday = streak is 0
+          streak = 0;
+        } else {
+          // Streak starts from yesterday
+          streak = 0; // Will be incremented in the loop
+        }
+      }
+
+      // If we found a starting point (today or yesterday)
+      if (uniqueDates.includes(formatDate(checkDate))) {
+        while (uniqueDates.includes(formatDate(checkDate))) {
+          streak++;
+          checkDate.setDate(checkDate.getDate() - 1);
         }
       }
     }
@@ -249,6 +264,7 @@ export async function getChildStats(childId: string) {
       stats: {
         totalSessions,
         totalTime: `${Math.floor(totalDurationMinutes / 60)}h ${Math.round(totalDurationMinutes % 60)}m`,
+        avgScore,
         streak,
         achievements: achievementsList,
       } as ParentDashboardStats
@@ -349,54 +365,6 @@ export async function getChildProfileDetail(childId: string) {
     return { success: false, error: error.message };
   }
 }
-export async function getChildAlertStats(childId: string) {
-  const session = await getSession();
-  if (!session) return { success: false, error: "Unauthorized" };
-
-  try {
-    const childDoc = await adminDb.collection("child_profiles").doc(childId).get();
-    if (!childDoc.exists) return { success: false, error: "Child not found" };
-    
-    const childData = childDoc.data();
-    const isParent = childData?.parentUid === session.uid;
-    const isExpert = childData?.expertUid === session.uid;
-
-    if (!isParent && !isExpert) {
-      return { success: false, error: "Access denied" };
-    }
-
-    const alertsSnapshot = await adminDb
-      .collection("AUTO_ALERTS")
-      .where("child_id", "==", childId)
-      .get();
-
-    const alerts = alertsSnapshot.docs.map(doc => doc.data());
-    
-    // Aggregate counts by group
-    const stressCount = alerts.filter(a => a.group === "stress_overwhelm").length;
-    const distractionCount = alerts.filter(a => a.group === "distraction").length;
-    const executionCount = alerts.filter(a => a.group === "execution_difficulty").length;
-    const hesitationCount = alerts.filter(a => a.type === "hesitation").length;
-    const idleCount = alerts.filter(a => a.type === "idle").length;
-
-    // Normalize to 0-100 scale (Base 100 minus penalty per event)
-    const factor = 10; // Penalty per event
-    const normalize = (val: number) => Math.max(20, 100 - (val * factor));
-
-    const radarData = [
-      { subject: 'Tập trung', A: normalize(distractionCount), fullMark: 100 },
-      { subject: 'Bình tĩnh', A: normalize(stressCount), fullMark: 100 },
-      { subject: 'Thực thi', A: normalize(executionCount), fullMark: 100 },
-      { subject: 'Tốc độ', A: normalize(hesitationCount), fullMark: 100 },
-      { subject: 'Kiên trì', A: normalize(idleCount), fullMark: 100 },
-    ];
-
-    return { success: true, radarData };
-  } catch (error: any) {
-    console.error("Error fetching child alert stats:", error);
-    return { success: false, error: error.message };
-  }
-}
 
 export async function getChildDashboardAnalytics(childId: string) {
   const session = await getSession();
@@ -432,15 +400,43 @@ export async function getChildDashboardAnalytics(childId: string) {
     const avgResponseTime = totalQuests > 0 ? totalResponseTime / totalQuests : 0;
     const avgCompletion = totalScore / sessions.length;
     
-    // Normalize Speed (Assuming 0-5s is the range, 0s = 100%, 5s = 20%)
-    const speedScore = Math.max(20, 100 - (avgResponseTime * 15)); 
+    // 1. Calculate Radar Data (Strictly follow RADAR_CHART_METRICS.md - Focus on LAST 5 SESSIONS)
+    const recentSessions = sessions.slice(0, 5);
+    const totalRecent = recentSessions.length || 1;
+    let totalPenalties = { chudoong: 0, tutin: 0, taptrung: 0, ondinh: 0, binhtinh: 0 };
+
+    recentSessions.forEach(s => {
+      const alerts = s.auto_alerts || [];
+      
+      // 1. CHỦ ĐỘNG (idle - Low: -30đ mỗi 5s, max -100đ)
+      const idleDur = alerts.filter((a: any) => a.type === 'idle').reduce((acc: number, a: any) => acc + (a.duration_sec || 0), 0);
+      totalPenalties.chudoong += Math.min(100, Math.floor(idleDur / 5) * 30);
+
+      // 2. TỰ TIN (hesitation - Low: -60đ/lần, max -100đ)
+      const hesitationCount = alerts.filter((a: any) => a.type === 'hesitation').length;
+      totalPenalties.tutin += Math.min(100, hesitationCount * 60);
+
+      // 3. TẬP TRUNG (distraction - Medium: -50đ mỗi 5s, max -100đ)
+      const distractionDur = alerts.filter((a: any) => a.type === 'distraction').reduce((acc: number, a: any) => acc + (a.duration_sec || 0), 0);
+      totalPenalties.taptrung += Math.min(100, Math.floor(distractionDur / 5) * 50);
+
+      // 4. ỔN ĐỊNH (stimming_proxy - Medium: -80đ/lần, max -100đ)
+      const stimmingCount = alerts.filter((a: any) => a.type === 'stimming_proxy').length;
+      totalPenalties.ondinh += Math.min(100, stimmingCount * 80);
+
+      // 5. BÌNH TĨNH (freeze/meltdown - High: -150đ/lần, max -100đ)
+      const stressCount = alerts.filter((a: any) => 
+        a.type === 'freeze' || a.type === 'meltdown_proxy' || a.group === 'stress_overwhelm'
+      ).length;
+      totalPenalties.binhtinh += Math.min(100, stressCount * 150);
+    });
 
     const radarData = [
-      { subject: 'Chính xác', A: Math.round(avgAccuracy), fullMark: 100 },
-      { subject: 'Tự chủ', A: Math.round(avgIndependence), fullMark: 100 },
-      { subject: 'Tốc độ', A: Math.round(speedScore), fullMark: 100 },
-      { subject: 'Hoàn thành', A: Math.round(avgCompletion), fullMark: 100 },
-      { subject: 'Tập trung', A: Math.round((avgAccuracy + speedScore) / 2), fullMark: 100 },
+      { subject: 'TẬP TRUNG', A: Math.max(0, 100 - (totalPenalties.taptrung / totalRecent)), fullMark: 100 },
+      { subject: 'BÌNH TĨNH', A: Math.max(0, 100 - (totalPenalties.binhtinh / totalRecent)), fullMark: 100 },
+      { subject: 'CHỦ ĐỘNG', A: Math.max(0, 100 - (totalPenalties.chudoong / totalRecent)), fullMark: 100 },
+      { subject: 'TỰ TIN', A: Math.max(0, 100 - (totalPenalties.tutin / totalRecent)), fullMark: 100 },
+      { subject: 'ỔN ĐỊNH', A: Math.max(0, 100 - (totalPenalties.ondinh / totalRecent)), fullMark: 100 },
     ];
 
     // 2. Trend Data (Last 10 sessions)

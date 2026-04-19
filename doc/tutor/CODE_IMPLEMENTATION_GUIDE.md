@@ -31,47 +31,35 @@ export interface Session {
   start_time: string;
   finish_time: string;
   quest_logs: QuestLog[]; // Đây là mảng (Array)
+  auto_alerts: AutoAlert[]; // Đây cũng là mảng (Array) - MỚI
 }
-
-// Sub-collection riêng
-export interface AutoAlert {
-  type: string;
-  group: string;
-  severity: string;
-  duration_sec: number;
-  time_offset: number;
-}
-```
 
 ---
 
 ## 2. Truy vấn dữ liệu
 
-Vì `quest_logs` đã nằm sẵn trong Session, bạn chỉ cần fetch thêm `auto_alerts` từ sub-collection:
+Vì `quest_logs` và `auto_alerts` đều đã nằm sẵn trong Session, bạn chỉ cần fetch Session document là có đủ dữ liệu:
 
 ```typescript
 import { db } from "@/lib/firebase/client";
-import { doc, getDoc, collection, getDocs } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 
 export const getSessionAnalytics = async (docId: string) => {
-  // 1. Lấy dữ liệu Session (đã có sẵn quest_logs bên trong)
+  // Chỉ cần 1 lần fetch duy nhất
   const sessionRef = doc(db, "sessions", docId);
   const sessionSnap = await getDoc(sessionRef);
   
   if (!sessionSnap.exists()) return null;
   const sessionData = sessionSnap.data() as Session;
 
-  // 2. Lấy dữ liệu Auto Alerts từ Sub-collection
-  const alertsRef = collection(db, "sessions", docId, "auto_alerts");
-  const alertsSnap = await getDocs(alertsRef);
-  const alerts = alertsSnap.docs.map(doc => doc.data() as AutoAlert);
-
   return { 
     session: sessionData, 
     questLogs: sessionData.quest_logs, // Lấy trực tiếp từ mảng
-    alerts 
+    alerts: sessionData.auto_alerts    // Lấy trực tiếp từ mảng - KHÔNG cần fetch sub-collection
   };
 };
+```
+
 ```
 
 ---

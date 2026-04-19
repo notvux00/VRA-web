@@ -101,7 +101,7 @@ export default function ChildProgressChart({ sessions }: ChildProgressChartProps
             fillOpacity={1} 
             fill="url(#colorScore)" 
             animationDuration={1500}
-            name="Điểm tập trung"
+            name="Điểm bài học"
           />
         </AreaChart>
       </ResponsiveContainer>

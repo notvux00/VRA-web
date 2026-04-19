@@ -22,10 +22,17 @@ import Link from "next/link";
 import { 
   AreaChart, 
   Area, 
+  BarChart,
+  Bar,
+  ScatterChart,
+  Scatter,
+  Cell,
   XAxis, 
   YAxis, 
+  ZAxis,
   CartesianGrid, 
   Tooltip, 
+  Legend,
   ResponsiveContainer
 } from "recharts";
 
@@ -106,9 +113,34 @@ export default function ExpertReportsPage({ searchParams }: PageProps) {
     name: `Q${index + 1}`,
     fullName: q.quest_name,
     time: Math.round(q.response_time * 100) / 100,
+    visual: q.hints_visual || 0,
+    verbal: q.hints_verbal || 0,
+    physical: q.hints_physical || 0,
     status: q.completion_status,
     color: q.completion_status === "success" ? "#10b981" : "#f43f5e"
   })) || [];
+
+  const alertMap: Record<string, { y: number; label: string; color: string }> = {
+    "freeze": { y: 5, label: "Căng thẳng", color: "#f43f5e" },
+    "meltdown_proxy": { y: 5, label: "Căng thẳng", color: "#f43f5e" },
+    "distraction": { y: 4, label: "Xao nhãng", color: "#f59e0b" },
+    "idle": { y: 3, label: "Đứng ỳ", color: "#3b82f6" },
+    "stimming_proxy": { y: 2, label: "Kích thích", color: "#8b5cf6" },
+    "hesitation": { y: 1, label: "Ngập ngừng", color: "#64748b" },
+  };
+
+  const alertTimelineData = session.auto_alerts?.map((a: any) => {
+    const config = alertMap[a.type] || { y: 0, label: "Khác", color: "#94a3b8" };
+    return {
+      time: a.time_offset || 0,
+      timeLabel: `${Math.floor((a.time_offset || 0)/60)}:${((a.time_offset || 0)%60).toString().padStart(2, '0')}`,
+      category: config.y,
+      categoryLabel: config.label,
+      duration: a.duration_sec || (a.count ? a.count * 5 : 5), // Proxy duration for count-based
+      color: config.color,
+      type: a.type
+    };
+  }) || [];
 
   const questTotal = session.quest_logs?.length || 0;
   const questSuccess = session.quest_logs?.filter(q => q.completion_status === "success").length || 0;
@@ -221,6 +253,125 @@ export default function ExpertReportsPage({ searchParams }: PageProps) {
                            animationDuration={1500}
                         />
                      </AreaChart>
+                  </ResponsiveContainer>
+               </div>
+            </div>
+
+            {/* Hints Analysis Chart (New) */}
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-8 sm:p-10 rounded-[3rem] shadow-sm space-y-8">
+               <div className="flex justify-between items-center">
+                  <h3 className="text-xl font-black uppercase tracking-tight">Phân tích mức độ trợ giúp</h3>
+                  <div className="flex items-center gap-4">
+                     <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Trực quan</span>
+                     </div>
+                     <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Lời nói</span>
+                     </div>
+                     <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-rose-500 rounded-full"></div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Vật lý</span>
+                     </div>
+                  </div>
+               </div>
+               
+               <div className="h-[350px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                     <BarChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                        <XAxis 
+                           dataKey="name" 
+                           axisLine={false} 
+                           tickLine={false} 
+                           tick={{ fontSize: 10, fontWeight: 900, fill: '#94a3b8' }} 
+                           dy={10}
+                        />
+                        <YAxis 
+                           axisLine={false} 
+                           tickLine={false} 
+                           tick={{ fontSize: 10, fontWeight: 900, fill: '#94a3b8' }} 
+                        />
+                        <Tooltip 
+                           cursor={{fill: '#f8fafc'}}
+                           contentStyle={{ borderRadius: '1.5rem', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', padding: '1rem' }}
+                           labelStyle={{ fontWeight: 900, color: '#18181b', marginBottom: '0.25rem', textTransform: 'uppercase' }}
+                        />
+                        <Bar dataKey="visual" name="Trực quan" stackId="a" fill="#3b82f6" radius={[0, 0, 0, 0]} barSize={40} />
+                        <Bar dataKey="verbal" name="Lời nói" stackId="a" fill="#f59e0b" radius={[0, 0, 0, 0]} barSize={40} />
+                        <Bar dataKey="physical" name="Vật lý" stackId="a" fill="#f43f5e" radius={[10, 10, 0, 0]} barSize={40} />
+                     </BarChart>
+                  </ResponsiveContainer>
+               </div>
+            </div>
+
+            {/* Behavioral Timeline Chart (New) */}
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-8 sm:p-10 rounded-[3rem] shadow-sm space-y-8">
+               <div className="flex justify-between items-center">
+                  <h3 className="text-xl font-black uppercase tracking-tight">Dòng thời gian hành vi</h3>
+                  <div className="flex items-center gap-2">
+                     <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400 italic">* Kích thước bóng thể hiện thời lượng</span>
+                  </div>
+               </div>
+               
+               <div className="h-[350px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                     <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={true} stroke="#f1f5f9" />
+                        <XAxis 
+                           type="number" 
+                           dataKey="time" 
+                           name="Thời gian" 
+                           unit="s"
+                           axisLine={false} 
+                           tickLine={false} 
+                           tick={{ fontSize: 10, fontWeight: 900, fill: '#94a3b8' }} 
+                        />
+                        <YAxis 
+                           type="number" 
+                           dataKey="category" 
+                           name="Hành vi" 
+                           ticks={[1, 2, 3, 4, 5]}
+                           domain={[0, 6]}
+                           axisLine={false} 
+                           tickLine={false} 
+                           tickFormatter={(val) => {
+                              if (val === 1) return "NGẬP NGỪNG";
+                              if (val === 2) return "KÍCH THÍCH";
+                              if (val === 3) return "ĐỨNG Ỳ";
+                              if (val === 4) return "XAO NHÃNG";
+                              if (val === 5) return "CĂNG THẲNG";
+                              return "";
+                           }}
+                           tick={{ fontSize: 10, fontWeight: 900, fill: '#94a3b8' }} 
+                        />
+                        <ZAxis type="number" dataKey="duration" range={[100, 1000]} />
+                        <Tooltip 
+                           cursor={{ strokeDasharray: '3 3' }}
+                           content={({ active, payload }) => {
+                              if (active && payload && payload.length) {
+                                 const data = payload[0].payload;
+                                 return (
+                                    <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl shadow-2xl border border-zinc-100 dark:border-zinc-800">
+                                       <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-1">{data.timeLabel}</p>
+                                       <p className="text-sm font-black text-zinc-900 dark:text-white uppercase mb-2">{data.categoryLabel}</p>
+                                       <div className="flex items-center gap-2">
+                                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: data.color }}></div>
+                                          <p className="text-xs font-bold text-zinc-500">Thời lượng: {data.duration}s</p>
+                                       </div>
+                                    </div>
+                                 );
+                              }
+                              return null;
+                           }}
+                        />
+                        <Scatter name="Hành vi" data={alertTimelineData} fill="#3b82f6">
+                           {alertTimelineData.map((entry: any, index: number) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} fillOpacity={0.6} stroke={entry.color} strokeWidth={2} />
+                           ))}
+                        </Scatter>
+                     </ScatterChart>
                   </ResponsiveContainer>
                </div>
             </div>

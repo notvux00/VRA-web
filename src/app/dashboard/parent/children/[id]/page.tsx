@@ -1,4 +1,5 @@
-import { getChildProfileDetail, getChildStats, getChildSessions, getChildAlertStats } from "@/actions/parent";
+import { getChildProfileDetail, getChildStats, getChildSessions } from "@/actions/parent";
+import { getChildAlertStats } from "@/actions/analytics";
 import { Baby, Calendar, Ruler, Scale, Activity, History, ShieldCheck, Mail, Info, UserCheck } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
