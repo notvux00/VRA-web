@@ -1,7 +1,7 @@
 "use client";
 
 import { rtdb } from "@/lib/firebase/client";
-import { ref, get, update, remove, onValue, off } from "firebase/database";
+import { ref, get, update, remove, onValue, off, onChildAdded } from "firebase/database";
 
 // ─────────────────────────────────────────────────────
 // Tất cả logic RTDB pairing nằm ở đây, các component chỉ gọi hàm
@@ -132,4 +132,23 @@ export function subscribeToVrHandshake(
 
   // Trả về hàm dọn dẹp listener khi component unmount
   return () => off(vrStateRef, "value", unsubscribe);
+}
+
+/**
+ * Lắng nghe luồng dữ liệu Telemetry từ VR.
+ * VR đẩy dữ liệu vào behavior_snapshots/sessionId/timestamp
+ */
+export function subscribeToTelemetry(
+  sessionId: string,
+  onNewSnapshot: (timestamp: string, snapshot: any) => void
+): () => void {
+  const telemetryRef = ref(rtdb, `behavior_snapshots/${sessionId}`);
+  
+  const unsubscribe = onChildAdded(telemetryRef, (snapshot) => {
+    if (snapshot.exists()) {
+      onNewSnapshot(snapshot.key as string, snapshot.val());
+    }
+  });
+
+  return () => off(telemetryRef, "child_added", unsubscribe);
 }
