@@ -16,7 +16,7 @@ import {
   Target,
   Zap,
   HelpCircle,
-  LucideIcon
+  LucideIcon, AlertCircle, History
 } from "lucide-react";
 import Link from "next/link";
 import { 
@@ -203,6 +203,45 @@ export default function ExpertReportsPage({ searchParams }: PageProps) {
                ))}
             </div>
          </div>
+      </div>
+
+      {/* Navigation to Detailed Logs */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+         <Link 
+            href={`/dashboard/expert/reports/alerts?sessionId=${session.id}&childId=${session.child_profile_id}`}
+            className="group relative bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-8 rounded-[2.5rem] shadow-sm hover:border-blue-500/30 transition-all overflow-hidden"
+         >
+            <div className="absolute top-0 right-0 p-8 text-blue-500/5 -rotate-12 group-hover:scale-110 transition-transform">
+               <AlertCircle size={100} />
+            </div>
+            <div className="relative z-10 flex items-center justify-between">
+               <div className="space-y-2">
+                  <h3 className="text-xl font-black uppercase tracking-tight">Chi tiết Cảnh báo AI</h3>
+                  <p className="text-xs text-zinc-500 font-medium italic">Xem rà soát kỹ thuật và ghi chú lâm sàng cho {session.auto_alerts?.length || 0} cảnh báo.</p>
+               </div>
+               <div className="w-12 h-12 rounded-2xl bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center text-zinc-400 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                  <ChevronLeft size={20} className="rotate-180" />
+               </div>
+            </div>
+         </Link>
+
+         <Link 
+            href={`/dashboard/expert/reports/behavior?sessionId=${session.id}&childId=${session.child_profile_id}`}
+            className="group relative bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-8 rounded-[2.5rem] shadow-sm hover:border-emerald-500/30 transition-all overflow-hidden"
+         >
+            <div className="absolute top-0 right-0 p-8 text-emerald-500/5 -rotate-12 group-hover:scale-110 transition-transform">
+               <History size={100} />
+            </div>
+            <div className="relative z-10 flex items-center justify-between">
+               <div className="space-y-2">
+                  <h3 className="text-xl font-black uppercase tracking-tight">Nhật ký Hành vi</h3>
+                  <p className="text-xs text-zinc-500 font-medium italic">Dòng thời gian các phản ứng {session.behavior_logs?.length || 0} lâm sàng do chuyên gia ghi nhận.</p>
+               </div>
+               <div className="w-12 h-12 rounded-2xl bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center text-zinc-400 group-hover:bg-emerald-600 group-hover:text-white transition-all">
+                  <ChevronLeft size={20} className="rotate-180" />
+               </div>
+            </div>
+         </Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -412,6 +451,37 @@ export default function ExpertReportsPage({ searchParams }: PageProps) {
                   ))}
                </div>
             </div>
+
+            {/* Behavior Logs Preview (New Section) */}
+            {session.behavior_logs && session.behavior_logs.length > 0 && (
+               <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-[3rem] overflow-hidden shadow-sm">
+                  <div className="p-8 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 flex justify-between items-center">
+                     <h3 className="text-lg font-black uppercase tracking-tight">Nhật ký hành vi (Mới nhất)</h3>
+                     <Link href={`/dashboard/expert/reports/behavior?sessionId=${session.id}&childId=${session.child_profile_id}`} className="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:underline">
+                        Xem tất cả
+                     </Link>
+                  </div>
+                  <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                     {session.behavior_logs.slice(0, 3).map((log, i) => (
+                        <div key={i} className="p-6">
+                           <div className="flex items-center justify-between mb-2">
+                              <span className={`text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-tighter ${
+                                 log.event === 'Tích cực' ? 'bg-emerald-100 text-emerald-600' :
+                                 log.event === 'Meltdown' ? 'bg-rose-100 text-rose-600' :
+                                 'bg-blue-100 text-blue-600'
+                              }`}>
+                                 {log.event}
+                              </span>
+                              <span className="font-mono text-[10px] font-bold text-zinc-400">
+                                 {Math.floor(log.time_offset/60)}:{(Math.floor(log.time_offset%60)).toString().padStart(2,'0')}
+                              </span>
+                           </div>
+                           <p className="text-xs font-bold text-zinc-800 dark:text-zinc-200 line-clamp-2 italic">"{log.note}"</p>
+                        </div>
+                     ))}
+                  </div>
+               </div>
+            )}
          </div>
       </div>
     </div>
