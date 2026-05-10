@@ -105,4 +105,9 @@ export interface Session {
   video_url?: string | null;
   createdAt?: string;
   updatedAt?: string;
+  // Clinical data
+  auto_alerts?: any[];
+  behavior_logs?: any[];
+  evaluation?: string;
+  notes?: string;
 }

@@ -47,7 +47,14 @@ export async function getChildSessionHistory(childId: string): Promise<{ success
       const st = data.start_time?.toDate?.() || new Date(data.start_time);
       const ft = data.finish_time?.toDate?.() || new Date(data.finish_time);
       
-      let duration = data.duration || 0;
+      let duration = data.duration;
+      if (typeof duration === 'string' && duration.includes(':')) {
+        const [m, s] = duration.split(':').map(Number);
+        duration = m * 60 + s;
+      } else {
+        duration = Number(duration) || 0;
+      }
+      
       if (!duration && st && ft) {
         duration = Math.max(0, Math.floor((ft.getTime() - st.getTime()) / 1000));
       }
@@ -97,7 +104,14 @@ export async function getSessionDetail(sessionId: string): Promise<{ success: bo
     const st = (sessionData as any).start_time?.toDate?.() || new Date(sessionData.start_time);
     const ft = (sessionData as any).finish_time?.toDate?.() || new Date(sessionData.finish_time);
     
-    let duration = sessionData.duration || 0;
+    let duration = sessionData.duration;
+    if (typeof duration === 'string' && duration.includes(':')) {
+      const [m, s] = duration.split(':').map(Number);
+      duration = m * 60 + s;
+    } else {
+      duration = Number(duration) || 0;
+    }
+    
     if (!duration && st && ft) {
       duration = Math.max(0, Math.floor((ft.getTime() - st.getTime()) / 1000));
     }

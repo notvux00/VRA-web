@@ -149,10 +149,11 @@ export async function updateAlertProfile(childId: string, alertProfile: any) {
 /**
  * Save and finalize a session
  */
-export async function finalizeSession(childId: string, data: {
+export async function finalizeSession(childId: string, sessionId: string, data: {
   lessonName: string,
   duration: string,
   score: number,
+  status: string,
   evaluation: string,
   alerts: any[],
   behaviorLogs: any[]
@@ -161,27 +162,29 @@ export async function finalizeSession(childId: string, data: {
   if (!session) return { success: false, error: "Unauthorized" };
 
   try {
-    const sessionRef = adminDb.collection("sessions").doc();
-    const sessionId = sessionRef.id;
+    const sessionRef = adminDb.collection("sessions").doc(sessionId);
+
+    // Convert duration "M:SS" back to total seconds (number) for DB consistency
+    const durationParts = data.duration.split(':');
+    const durationSeconds = durationParts.length === 2 
+      ? parseInt(durationParts[0]) * 60 + parseInt(durationParts[1])
+      : parseInt(data.duration) || 0;
 
     const sessionData = {
-      id: sessionId,
-      childId: childId,
-      hostedBy: session.uid,
-      lessonName: data.lessonName,
-      duration: data.duration,
+      session_id: sessionId,
+      child_profile_id: childId,
+      hosted_by: session.uid,
+      duration: durationSeconds,
       score: data.score,
       evaluation: data.evaluation,
-      alerts: data.alerts,
-      behaviorLogs: data.behaviorLogs,
-      status: "completed",
-      startTime: new Date(Date.now() - 600000).toISOString(), // Mock start time 10m ago
-      endTime: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
+      auto_alerts: data.alerts, 
+      behavior_logs: data.behaviorLogs,
+      completion_status: data.status,
+      finish_time: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
 
-    await sessionRef.set(sessionData);
+    await sessionRef.set(sessionData, { merge: true });
 
     // Update child record (increments session count, update last session time)
     const childRef = adminDb.collection("child_profiles").doc(childId);

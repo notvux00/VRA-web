@@ -35,6 +35,7 @@ export default function LiveSessionPage() {
   
   const alertsScrollRef = useRef<HTMLDivElement>(null);
   const alertsHistoryRef = useRef<any[]>([]);
+  const manualLogsRef = useRef<any[]>([]);
 
   // 1. Lấy thông tin bé
   useEffect(() => {
@@ -68,11 +69,11 @@ export default function LiveSessionPage() {
         setIsSessionActive(true);
       },
       async () => {
+        // When VR session finishes, open the summary modal for review
+        console.log("Session finished from VR, opening summary modal...");
+        setIsSummaryModalOpen(true);
+        
         if (pin) try { await endLessonOnDevice(pin); } catch (e) {}
-        const current = new URLSearchParams(searchParams.toString());
-        current.delete("session");
-        current.set("vr", "connected");
-        router.push(`/dashboard/expert?${current.toString()}`);
       },
       () => setVrReady(false)
     );
@@ -108,36 +109,41 @@ export default function LiveSessionPage() {
     );
   };
 
-  const handleQuickLog = (type: string, note: string) => {
+  const handleQuickLog = (event: string, note: string) => {
     const newLog = {
-      id: crypto.randomUUID(),
-      time: sessionTime,
-      type,
+      log_id: crypto.randomUUID(),
+      time_offset: sessionTime,
+      event,
       note,
+      triggered_by: user?.uid || "unknown",
       timestamp: Date.now()
     };
-    setManualLogs(prev => [...prev, newLog]);
+    setManualLogs(prev => {
+      const next = [...prev, newLog];
+      manualLogsRef.current = next;
+      return next;
+    });
   };
 
   const handleFinalSave = async (summary: any) => {
     if (!childId) return;
     
     try {
-      const res = await finalizeSession(childId as string, {
+      const res = await finalizeSession(childId as string, sessionId as string, {
         lessonName: lessonName,
         duration: summary.duration,
         score: summary.score,
+        status: summary.status,
         evaluation: summary.evaluation,
-        alerts: activeAlerts,
+        alerts: summary.alerts,
         behaviorLogs: manualLogs
       });
 
       if (res.success) {
-        // Kết thúc buổi học trên thiết bị nếu PIN tồn tại
-        if (pin) try { await endLessonOnDevice(pin); } catch (e) {}
-        
-        // Quay về trang dashboard
-        router.push("/dashboard/expert?status=saved");
+        console.log("Session saved successfully!");
+        setIsSummaryModalOpen(false);
+        // Redirect to child stats/history page instead of profile selection
+        router.push(`/dashboard/expert/stats?childId=${childId}`);
       } else {
         alert("Lỗi khi lưu báo cáo: " + res.error);
       }
@@ -312,12 +318,19 @@ export default function LiveSessionPage() {
           ))}
 
           {manualLogs.map((log) => (
-            <div key={log.id} className="shrink-0 min-w-[180px] border border-emerald-500/30 bg-emerald-500/10 text-emerald-100 px-3 py-2 rounded-lg flex flex-col gap-1 shadow-lg">
+            <div key={log.log_id} className="shrink-0 min-w-[180px] border border-emerald-500/30 bg-emerald-500/10 text-emerald-100 px-3 py-2 rounded-lg flex flex-col gap-1 shadow-lg">
               <div className="flex items-center justify-between opacity-60">
                 <div className="text-[9px] font-mono uppercase tracking-wider">Expert Log</div>
-                <div className="text-[9px] font-mono">{Math.floor(log.time/60)}:{(log.time%60).toString().padStart(2,'0')}</div>
+                <div className="text-[9px] font-mono">
+                  {Math.floor(log.time_offset/60)}:{(Math.floor(log.time_offset%60)).toString().padStart(2,'0')}
+                </div>
               </div>
-              <div className="text-xs font-bold">{log.type}</div>
+              <div className="text-xs font-bold">{log.event}</div>
+              {log.note && log.event === "Note" && (
+                <div className="text-[10px] opacity-80 italic line-clamp-1 border-t border-emerald-500/20 mt-1 pt-1">
+                  {log.note}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -360,7 +373,7 @@ export default function LiveSessionPage() {
         onClose={() => setIsSummaryModalOpen(false)}
         onSave={handleFinalSave}
         sessionTime={sessionTime}
-        alertsCount={activeAlerts.length}
+        alerts={alertsHistoryRef.current}
         logsCount={manualLogs.length}
         childName={child?.name || "Bé"}
       />
