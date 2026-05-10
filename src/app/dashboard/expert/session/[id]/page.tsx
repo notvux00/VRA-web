@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLiveTelemetry } from "../../_hooks/useLiveTelemetry";
 import SessionSummaryModal from "../_components/SessionSummaryModal";
 import { getAssignedChildDetail, finalizeSession } from "@/actions/expert";
+import AlertSidebar from "../_components/AlertSidebar";
 import { endLessonOnDevice, subscribeToVrHandshake } from "@/lib/firebase/rtdb";
 
 export default function LiveSessionPage() {
@@ -79,10 +80,12 @@ export default function LiveSessionPage() {
   }, [sessionId]);
 
   // 3. Telemetry Logic
+  const [mutedGroups, setMutedGroups] = useState<string[]>([]);
   const validSessionId = (Array.isArray(sessionId) ? sessionId[0] : sessionId) || null;
   const { telemetry, activeAlerts, sessionTime, currentQuest } = useLiveTelemetry(
     isSessionActive && vrReady ? validSessionId : null,
-    isSessionActive
+    isSessionActive,
+    mutedGroups
   );
 
   // Cuộn thanh ngang alert sang phải mỗi khi có alert mới
@@ -99,7 +102,12 @@ export default function LiveSessionPage() {
     }
   }, [activeAlerts]);
 
-  // Handle Manual Logs
+  const toggleMute = (group: string) => {
+    setMutedGroups(prev => 
+      prev.includes(group) ? prev.filter(g => g !== group) : [...prev, group]
+    );
+  };
+
   const handleQuickLog = (type: string, note: string) => {
     const newLog = {
       id: crypto.randomUUID(),
@@ -112,8 +120,31 @@ export default function LiveSessionPage() {
   };
 
   const handleFinalSave = async (summary: any) => {
-    // Save logic omitted for brevity
-    alert("Đã lưu (Demo)");
+    if (!childId) return;
+    
+    try {
+      const res = await finalizeSession(childId as string, {
+        lessonName: lessonName,
+        duration: summary.duration,
+        score: summary.score,
+        evaluation: summary.evaluation,
+        alerts: activeAlerts,
+        behaviorLogs: manualLogs
+      });
+
+      if (res.success) {
+        // Kết thúc buổi học trên thiết bị nếu PIN tồn tại
+        if (pin) try { await endLessonOnDevice(pin); } catch (e) {}
+        
+        // Quay về trang dashboard
+        router.push("/dashboard/expert?status=saved");
+      } else {
+        alert("Lỗi khi lưu báo cáo: " + res.error);
+      }
+    } catch (err) {
+      console.error("Final save error:", err);
+      alert("Lỗi kết nối khi lưu báo cáo");
+    }
   };
 
   if (authLoading || loading) return <p>Đang tải...</p>;
@@ -234,6 +265,13 @@ export default function LiveSessionPage() {
               </button>
             </div>
           </div>
+
+          {/* Alert Controls & Active List */}
+          <AlertSidebar 
+            activeAlerts={activeAlerts.filter(a => !mutedGroups.includes(a.group))} 
+            mutedGroups={mutedGroups}
+            onToggleMute={toggleMute}
+          />
         </div>
       </div>
 
@@ -251,17 +289,25 @@ export default function LiveSessionPage() {
             </div>
           )}
 
-          {activeAlerts.map((alert, idx) => (
+          {activeAlerts.filter(a => !mutedGroups.includes(a.group)).map((alert, idx) => (
             <div key={`${alert.id}-${idx}`} className={`shrink-0 min-w-[200px] border px-3 py-2 rounded-lg flex flex-col gap-1 shadow-lg
               ${alert.severity === 'high' ? 'bg-red-500/10 border-red-500/30 text-red-100' : ''}
               ${alert.severity === 'medium' ? 'bg-amber-500/10 border-amber-500/30 text-amber-100' : ''}
               ${alert.severity === 'low' ? 'bg-blue-500/10 border-blue-500/30 text-blue-100' : ''}
             `}>
               <div className="flex items-center justify-between opacity-60">
-                <div className="text-[9px] font-mono uppercase tracking-wider">{alert.type}</div>
+                <div className="text-[9px] font-mono uppercase tracking-wider">
+                  {alert.group.replace('_', ' ')} <span className="mx-1">/</span> {alert.type}
+                </div>
                 <div className="text-[9px] font-mono">{new Date(alert.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'})}</div>
               </div>
-              <div className="text-xs font-bold">{alert.message}</div>
+              <div className="text-xs font-bold mb-1">{alert.message}</div>
+              <div className="flex items-center gap-1.5 mt-auto">
+                <div className="h-1 flex-1 bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-full bg-current opacity-30 animate-pulse" style={{ width: '100%' }}></div>
+                </div>
+                <span className="text-[10px] font-mono font-bold opacity-80">{alert.duration_sec}s</span>
+              </div>
             </div>
           ))}
 
