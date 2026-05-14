@@ -1,7 +1,7 @@
 "use client";
 
 import { rtdb } from "@/lib/firebase/client";
-import { ref, get, update, remove, onValue, off, onChildAdded } from "firebase/database";
+import { ref, get, update, remove, onValue, off, onChildAdded, push, set } from "firebase/database";
 
 // ─────────────────────────────────────────────────────
 // Tất cả logic RTDB pairing nằm ở đây, các component chỉ gọi hàm
@@ -151,4 +151,69 @@ export function subscribeToTelemetry(
   });
 
   return () => off(telemetryRef, "child_added", unsubscribe);
+}
+
+
+/**
+ * Lắng nghe WebRTC Offer từ thiết bị VR
+ */
+export function subscribeToWebRTCOffer(
+  sessionId: string,
+  onOffer: (offer: string) => void
+): () => void {
+  const offerRef = ref(rtdb, `webrtc_signaling/${sessionId}/offer`);
+  const unsubscribe = onValue(offerRef, (snapshot) => {
+    if (snapshot.exists()) {
+      onOffer(snapshot.val());
+    }
+  });
+  return () => off(offerRef, 'value', unsubscribe);
+}
+
+/**
+ * Gửi WebRTC Answer tới thiết bị VR
+ */
+export async function pushWebRTCAnswer(sessionId: string, answer: string): Promise<void> {
+  const answerRef = ref(rtdb, `webrtc_signaling/${sessionId}/answer`);
+  await set(answerRef, answer);
+}/answer`);
+  await update(ref(rtdb), {
+    [`webrtc_signaling/${sessionId}/answer`]: answer
+  });
+}
+
+/**
+ * Gửi ICE Candidate của Web tới thiết bị VR
+ */
+export async function pushWebRTCCandidate(sessionId: string, candidate: string): Promise<void> {
+  const candidatesRef = ref(rtdb, `webrtc_signaling/${sessionId}/web_candidates`);
+  const newCandidateRef = push(candidatesRef);
+  await set(newCandidateRef, candidate);
+}/web_candidates`);
+  const newCandidateRef = require('firebase/database').push(candidatesRef);
+  await require('firebase/database').set(newCandidateRef, candidate);
+}
+
+/**
+ * Lắng nghe ICE Candidate từ thiết bị VR
+ */
+export function subscribeToVRCandidates(
+  sessionId: string,
+  onCandidate: (candidate: string) => void
+): () => void {
+  const candidatesRef = ref(rtdb, `webrtc_signaling/${sessionId}/vr_candidates`);
+  const unsubscribe = onChildAdded(candidatesRef, (snapshot) => {
+    if (snapshot.exists()) {
+      onCandidate(snapshot.val());
+    }
+  });
+  return () => off(candidatesRef, 'child_added', unsubscribe);
+}
+
+/**
+ * Dọn dẹp Signaling
+ */
+export async function cleanupWebRTCSignaling(sessionId: string): Promise<void> {
+  const signalingRef = ref(rtdb, `webrtc_signaling/${sessionId}`);
+  await remove(signalingRef);
 }

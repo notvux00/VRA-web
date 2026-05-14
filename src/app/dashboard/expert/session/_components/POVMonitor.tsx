@@ -9,23 +9,50 @@ import {
 interface POVMonitorProps {
   telemetry: any;
   childName: string;
+  stream: MediaStream | null;
+  connectionState: string;
 }
 
-export default function POVMonitor({ telemetry, childName }: POVMonitorProps) {
+export default function POVMonitor({ telemetry, childName, stream, connectionState }: POVMonitorProps) {
+  const videoRef = React.useRef<HTMLVideoElement>(null);
+
+  React.useEffect(() => {
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [stream]);
   // Use a nice placeholder image for VR POV
   const POV_PLACEHOLDER = "https://images.unsplash.com/photo-1622979135225-d2ba269cf1ac?q=80&w=1200&auto=format&fit=crop";
 
   return (
     <div className="relative aspect-video bg-zinc-950 rounded-3xl overflow-hidden border-4 border-zinc-900 group shadow-2xl">
-      {/* VR POV Image Placeholder */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center transition-transform duration-100 opacity-60"
-        style={{ 
-          backgroundImage: `url(${POV_PLACEHOLDER})`,
-          // Simulate slight head movement from telemetry
-          transform: `scale(1.1) translate(${telemetry?.head?.yaw || 0}px, ${telemetry?.head?.pitch || 0}px)`
-        }}
-      />
+      
+      {/* VR POV Video Stream */}
+      {connectionState === 'connected' ? (
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-100 opacity-100"
+        />
+      ) : (
+        <div
+          className="absolute inset-0 bg-cover bg-center transition-transform duration-100 opacity-60"
+          style={{
+            backgroundImage: `url(${POV_PLACEHOLDER})`,
+            transform: `scale(1.1) translate(${telemetry?.head?.yaw || 0}px, ${telemetry?.head?.pitch || 0}px)`
+          }}
+        >
+          <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+            <span className="text-zinc-400 font-bold uppercase tracking-widest text-sm flex items-center gap-2">
+              {connectionState === 'connecting' && <div className="w-2 h-2 bg-yellow-500 rounded-full animate-ping" />}
+              {connectionState === 'disconnected' && <div className="w-2 h-2 bg-red-500 rounded-full" />}
+              {connectionState === 'connecting' ? 'Đang kết nối camera...' : 'Mất kết nối camera'}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Overlays */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />

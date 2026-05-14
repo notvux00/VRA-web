@@ -12,7 +12,9 @@ import { useLiveTelemetry } from "../../_hooks/useLiveTelemetry";
 import SessionSummaryModal from "../_components/SessionSummaryModal";
 import { getAssignedChildDetail, finalizeSession } from "@/actions/expert";
 import AlertSidebar from "../_components/AlertSidebar";
+import POVMonitor from "../_components/POVMonitor";
 import { endLessonOnDevice, subscribeToVrHandshake } from "@/lib/firebase/rtdb";
+import { useWebRTCViewer } from "../../_hooks/useWebRTCViewer";
 
 export default function LiveSessionPage() {
   const { id: sessionId } = useParams(); 
@@ -88,6 +90,9 @@ export default function LiveSessionPage() {
     isSessionActive,
     mutedGroups
   );
+  
+  // 4. WebRTC POV Logic
+  const { stream, connectionState } = useWebRTCViewer(isSessionActive && vrReady ? validSessionId : "");
 
   // Cuộn thanh ngang alert sang phải mỗi khi có alert mới
   useEffect(() => {
@@ -203,13 +208,16 @@ export default function LiveSessionPage() {
         <div className="flex-1 border-r border-white/5 relative bg-zinc-950 flex flex-col">
           {/* POV Video Container */}
           <div className="absolute inset-4 rounded-xl overflow-hidden border border-white/10 bg-black flex items-center justify-center">
-            {/* Giả lập WebRTC */}
-            <Video size={48} className="text-zinc-800 absolute" />
-            <img 
-              src="https://images.unsplash.com/photo-1622979135225-d2ba269cf1ac?auto=format&fit=crop&q=80&w=2000" 
-              alt="POV Stream"
-              className="w-full h-full object-cover opacity-30" 
-            />
+            
+            {/* POV Component */}
+            <div className="absolute inset-0 w-full h-full">
+               <POVMonitor 
+                 telemetry={telemetry} 
+                 childName={child?.name || "Bé"} 
+                 stream={stream} 
+                 connectionState={connectionState} 
+               />
+            </div>
             
             {/* HUD Overlay cho Telemetry */}
             <div className="absolute top-4 left-4 flex gap-2">
