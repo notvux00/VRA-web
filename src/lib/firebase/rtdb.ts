@@ -176,10 +176,6 @@ export function subscribeToWebRTCOffer(
 export async function pushWebRTCAnswer(sessionId: string, answer: string): Promise<void> {
   const answerRef = ref(rtdb, `webrtc_signaling/${sessionId}/answer`);
   await set(answerRef, answer);
-}/answer`);
-  await update(ref(rtdb), {
-    [`webrtc_signaling/${sessionId}/answer`]: answer
-  });
 }
 
 /**
@@ -189,9 +185,6 @@ export async function pushWebRTCCandidate(sessionId: string, candidate: string):
   const candidatesRef = ref(rtdb, `webrtc_signaling/${sessionId}/web_candidates`);
   const newCandidateRef = push(candidatesRef);
   await set(newCandidateRef, candidate);
-}/web_candidates`);
-  const newCandidateRef = require('firebase/database').push(candidatesRef);
-  await require('firebase/database').set(newCandidateRef, candidate);
 }
 
 /**
