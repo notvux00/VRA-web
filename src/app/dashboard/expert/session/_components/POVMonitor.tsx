@@ -19,8 +19,11 @@ export default function POVMonitor({ telemetry, childName, stream, connectionSta
   React.useEffect(() => {
     if (videoRef.current && stream) {
       videoRef.current.srcObject = stream;
+      const track = stream.getVideoTracks()[0];
+      console.log(`[WebRTC] Track status: readyState=${track?.readyState}, muted=${track?.muted}, enabled=${track?.enabled}`);
+      videoRef.current.play().catch(e => console.warn("[WebRTC] Autoplay failed:", e));
     }
-  }, [stream]);
+  }, [stream, connectionState]);
   // Use a nice placeholder image for VR POV
   const POV_PLACEHOLDER = "https://images.unsplash.com/photo-1622979135225-d2ba269cf1ac?q=80&w=1200&auto=format&fit=crop";
 

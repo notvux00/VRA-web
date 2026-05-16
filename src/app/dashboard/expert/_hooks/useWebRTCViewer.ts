@@ -9,9 +9,59 @@ export function useWebRTCViewer(sessionId: string) {
   
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
 
-  // Memoize handlers to prevent infinite re-renders in useWebRTCSignaling
+  // ── Ref-based approach: always call the LATEST version of signaling functions ──
+  // This prevents stale closures when sessionId changes between renders.
+  const sendAnswerRef = useRef<(json: string) => void>(() => {});
+  const sendIceCandidateRef = useRef<(json: string) => void>(() => {});
+
+  const initPeerConnection = useCallback(() => {
+    if (peerConnectionRef.current) return;
+
+    setConnectionState('connecting');
+    const pc = new RTCPeerConnection({
+      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+    });
+
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        const candJson = JSON.stringify({
+          candidate: event.candidate.candidate,
+          sdpMid: event.candidate.sdpMid,
+          sdpMLineIndex: event.candidate.sdpMLineIndex
+        });
+        sendIceCandidateRef.current(candJson);
+      }
+    };
+
+    pc.ontrack = (event) => {
+      // Unity's AddTrack doesn't associate a MediaStream,
+      // so event.streams[0] may be undefined. Create one from the raw track.
+      const remoteStream = event.streams?.[0] ?? new MediaStream([event.track]);
+      console.log('Received remote track', remoteStream.id);
+      setStream(remoteStream);
+      setConnectionState('connected');
+    };
+
+    pc.oniceconnectionstatechange = () => {
+      console.log('ICE Connection State:', pc.iceConnectionState);
+      if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
+        setConnectionState('disconnected');
+      } else if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+        setConnectionState('connected');
+      }
+    };
+
+    pc.onconnectionstatechange = () => {
+       if (pc.connectionState === 'failed') {
+          setConnectionState('failed');
+       }
+    };
+
+    peerConnectionRef.current = pc;
+  }, []); // No deps needed — uses refs for signaling
+
   const handleOfferReceived = useCallback(async (offerJson: string) => {
-    console.log('Received WebRTC Offer', offerJson);
+    console.log('Received WebRTC Offer');
     try {
       const offer = JSON.parse(offerJson);
       if (!peerConnectionRef.current) {
@@ -29,11 +79,12 @@ export function useWebRTCViewer(sessionId: string) {
         sdp: answer.sdp
       });
       
-      sendAnswer(answerJson);
+      // Use ref to always call the LATEST sendAnswer (with valid sessionId)
+      sendAnswerRef.current(answerJson);
     } catch (e) {
       console.error('Error handling offer', e);
     }
-  }, []);
+  }, [initPeerConnection]);
 
   const handleIceCandidateReceived = useCallback(async (candidateJson: string) => {
     console.log('Received Remote ICE Candidate');
@@ -55,48 +106,9 @@ export function useWebRTCViewer(sessionId: string) {
     onIceCandidateReceived: handleIceCandidateReceived
   });
 
-  const initPeerConnection = useCallback(() => {
-    if (peerConnectionRef.current) return;
-
-    setConnectionState('connecting');
-    const pc = new RTCPeerConnection({
-      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-    });
-
-    pc.onicecandidate = (event) => {
-      if (event.candidate) {
-        const candJson = JSON.stringify({
-          candidate: event.candidate.candidate,
-          sdpMid: event.candidate.sdpMid,
-          sdpMLineIndex: event.candidate.sdpMLineIndex
-        });
-        sendIceCandidate(candJson);
-      }
-    };
-
-    pc.ontrack = (event) => {
-      console.log('Received remote track', event.streams[0]);
-      setStream(event.streams[0]);
-      setConnectionState('connected');
-    };
-
-    pc.oniceconnectionstatechange = () => {
-      console.log('ICE Connection State:', pc.iceConnectionState);
-      if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
-        setConnectionState('disconnected');
-      } else if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
-        setConnectionState('connected');
-      }
-    };
-
-    pc.onconnectionstatechange = () => {
-       if (pc.connectionState === 'failed') {
-          setConnectionState('failed');
-       }
-    };
-
-    peerConnectionRef.current = pc;
-  }, [sendIceCandidate]);
+  // Keep refs in sync with latest signaling functions
+  useEffect(() => { sendAnswerRef.current = sendAnswer; }, [sendAnswer]);
+  useEffect(() => { sendIceCandidateRef.current = sendIceCandidate; }, [sendIceCandidate]);
 
   const disconnect = useCallback(() => {
     if (peerConnectionRef.current) {
@@ -109,7 +121,6 @@ export function useWebRTCViewer(sessionId: string) {
   }, [cleanupSignaling]);
 
   useEffect(() => {
-    // Only init if we have a sessionId
     if (sessionId) {
       initPeerConnection();
     }
