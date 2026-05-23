@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import React from "react";
 import AlertProfileEditor from "../_components/stats/AlertProfileEditor";
+import LessonParametersEditor from "../_components/stats/LessonParametersEditor";
 import ChildAchievements from "../../parent/_components/ChildAchievements";
 import ChildChartsContainer from "../../parent/_components/ChildChartsContainer";
 
@@ -32,6 +33,7 @@ interface Child {
   diagnosis_notes?: string;
   anxiety_triggers?: string[];
   alert_profile?: any;
+  default_lesson_params?: any;
 }
 
 export default async function ExpertStatsPage({ searchParams }: PageProps) {
@@ -152,6 +154,12 @@ export default async function ExpertStatsPage({ searchParams }: PageProps) {
            <AlertProfileEditor 
              childId={child.id} 
              initialProfile={child.alert_profile} 
+           />
+
+           {/* Lesson Parameters Configuration (Story 2.3) */}
+           <LessonParametersEditor
+             childId={child.id}
+             initialParams={child.default_lesson_params}
            />
            
            {/* Achievements Section */}

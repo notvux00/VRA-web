@@ -206,3 +206,54 @@ export async function finalizeSession(childId: string, sessionId: string, data: 
     return { success: false, error: error.message };
   }
 }
+
+/**
+ * Update the default lesson parameters for a child (Story 2.3)
+ * Written as a nested map to Firestore: { actions: {...}, quiz: {...}, exploration: {...} }
+ * Values of -1 indicate "use system default" (sentinel for VR Client fallback to Inspector).
+ */
+export async function updateDefaultLessonParams(childId: string, lessonParams: {
+  actions: {
+    enable_visual_guidance: boolean;
+    enable_bubble_hints: boolean;
+    speech_silence_timeout: number;
+    action_reminder_cycle: number;
+  };
+  quiz: {
+    quiz_intro_delay: number;
+    quiz_sound_gap: number;
+    quiz_end_delay: number;
+  };
+  exploration: {
+    camera_move_speed: number;
+    sound_to_description_gap: number;
+  };
+}) {
+  const session = await getSession();
+  if (!session) return { success: false, error: "Unauthorized" };
+
+  try {
+    const childRef = adminDb.collection("child_profiles").doc(childId);
+    const childDoc = await childRef.get();
+
+    if (!childDoc.exists) return { success: false, error: "Child profile not found" };
+
+    const data = childDoc.data();
+    // Verify the expert is assigned to this child (either primary or in the array)
+    const isAssigned = data?.expertUid === session.uid || data?.expertUids?.includes(session.uid);
+    if (!isAssigned) {
+      return { success: false, error: "Unauthorized: You are not assigned to this child" };
+    }
+
+    await childRef.update({
+      default_lesson_params: lessonParams,
+      updatedAt: new Date().toISOString()
+    });
+
+    revalidatePath(`/dashboard/expert/stats?childId=${childId}`);
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error updating default lesson params:", error);
+    return { success: false, error: error.message };
+  }
+}
