@@ -7,7 +7,7 @@ export default function SkeletonCards() {
           className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-[2.5rem] overflow-hidden animate-pulse flex flex-col md:flex-row"
         >
           {/* Skeleton Thumbnail */}
-          <div className="h-44 md:w-64 md:min-h-[16rem] bg-zinc-100 dark:bg-zinc-800 flex-shrink-0" />
+          <div className="h-44 md:h-auto md:w-64 md:min-h-[16rem] bg-zinc-100 dark:bg-zinc-800 flex-shrink-0" />
 
           {/* Skeleton Content */}
           <div className="p-8 flex-1 space-y-5">
