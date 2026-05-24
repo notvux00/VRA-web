@@ -1,5 +1,6 @@
 import { getAssignedChildren } from "@/actions/expert";
 import { getCachedAIRecommendations } from "@/actions/ai-recommendations";
+import { adminDb } from "@/lib/firebase/admin";
 import { Sparkles, Brain } from "lucide-react";
 import React from "react";
 import SuggestionsClient from "./_components/SuggestionsClient";
@@ -42,6 +43,22 @@ export default async function ExpertSuggestionsPage({ searchParams }: PageProps)
 
   // ── Đọc cache từ Firestore (không gọi Gemini) ──
   const initial = await getCachedAIRecommendations(childId);
+
+  // Tự động bổ sung thumbnailUrl cho dữ liệu từ cache cũ (nếu thiếu)
+  if (initial.success && initial.recommendations) {
+    try {
+      const lessonsSnap = await adminDb.collection("lessons").get();
+      const lessonMap = new Map(
+        lessonsSnap.docs.map((d) => [d.id, d.data().thumbnail_url ?? null])
+      );
+      initial.recommendations = initial.recommendations.map((r) => ({
+        ...r,
+        thumbnailUrl: r.thumbnailUrl || lessonMap.get(r.lessonId) || null,
+      }));
+    } catch (e) {
+      console.error("[ExpertSuggestionsPage] Lỗi phục hồi ảnh từ cache:", e);
+    }
+  }
 
   return (
     <div className="p-6 sm:p-8 max-w-7xl mx-auto pb-24 animate-in fade-in duration-700">

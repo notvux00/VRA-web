@@ -42,7 +42,7 @@ export default function RecommendationCard({ rec, index }: Props) {
       className="group bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-xl hover:border-amber-200 dark:hover:border-amber-800/50 transition-all duration-500 flex flex-col md:flex-row"
     >
       {/* ── Thumbnail ── */}
-      <div className="h-44 md:h-auto md:w-64 relative overflow-hidden bg-zinc-100 dark:bg-zinc-800 flex-shrink-0 flex flex-col justify-center items-center">
+      <div className="h-44 md:w-64 md:min-h-[16rem] relative overflow-hidden bg-zinc-100 dark:bg-zinc-800 flex-shrink-0 flex flex-col justify-center items-center">
         {rec.thumbnailUrl ? (
           <img
             src={rec.thumbnailUrl}
