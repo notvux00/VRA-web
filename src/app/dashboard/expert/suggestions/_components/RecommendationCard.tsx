@@ -50,23 +50,6 @@ export default function RecommendationCard({ rec, index }: Props) {
             {rec.levelName} &middot; {rec.type === "practical" ? "Thực hành" : "Lý thuyết"}
           </p>
         </div>
-
-        {/* Confidence ring */}
-        <div className="flex-shrink-0 flex flex-col items-center gap-1">
-          <div className="relative w-16 h-16">
-            <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-              <circle cx="18" cy="18" r="15.9" fill="none" stroke="currentColor"
-                className="text-zinc-100 dark:text-zinc-800" strokeWidth="2.5" />
-              <circle cx="18" cy="18" r="15.9" fill="none"
-                stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round"
-                strokeDasharray={`${confidencePct} 100`} />
-            </svg>
-            <span className="absolute inset-0 flex items-center justify-center text-sm font-black text-zinc-900 dark:text-white">
-              {confidencePct}%
-            </span>
-          </div>
-          <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Độ tin cậy</span>
-        </div>
       </div>
 
       {/* Priority badge */}

@@ -13,7 +13,6 @@ export default function SkeletonCards() {
               <div className="h-6 w-48 bg-zinc-200 dark:bg-zinc-700 rounded-xl" />
               <div className="h-3 w-32 bg-zinc-100 dark:bg-zinc-800 rounded-full" />
             </div>
-            <div className="w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-800" />
           </div>
 
           {/* Badges */}
