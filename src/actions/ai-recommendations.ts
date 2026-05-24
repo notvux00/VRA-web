@@ -104,34 +104,40 @@ export async function generateAIRecommendations(
       return { success: false, error: "Bạn không có quyền truy cập hồ sơ này" };
     }
 
-    // 2. Lấy 3 sessions gần nhất (sắp xếp finish_time desc — mới nhất trước)
+    // Lấy 3 session mới nhất — sắp xếp trong memory tránh yêu cầu Composite Index
     const sessionsSnap = await adminDb
       .collection("sessions")
       .where("child_profile_id", "==", childId)
-      .orderBy("finish_time", "desc")
-      .limit(MAX_SESSIONS)
       .get();
 
-    const sessions = sessionsSnap.docs.map((d) => {
-      const s = d.data();
-      return {
-        id: d.id,
-        lesson_id: s.lesson_id ?? "",
-        lesson_name: s.lesson_name ?? "",
-        level_name: s.level_name ?? "",
-        type: s.type ?? "",
-        score: s.score ?? 0,
-        completion_status: s.completion_status ?? "",
-        duration: s.duration ?? 0,
-        quest_logs: s.quest_logs ?? [],
-        auto_alerts: s.auto_alerts ?? [],
-        behavior_logs: s.behavior_logs ?? [],
-        evaluation: s.evaluation ?? "",
-        notes: s.notes ?? "",
-        start_time: s.start_time ?? "",
-        finish_time: s.finish_time ?? "",
-      };
-    });
+    const sessions = sessionsSnap.docs
+      .map((d) => {
+        const s = d.data();
+        return {
+          id: d.id,
+          lesson_id: s.lesson_id ?? "",
+          lesson_name: s.lesson_name ?? "",
+          level_name: s.level_name ?? "",
+          type: s.type ?? "",
+          score: s.score ?? 0,
+          completion_status: s.completion_status ?? "",
+          duration: s.duration ?? 0,
+          quest_logs: s.quest_logs ?? [],
+          auto_alerts: s.auto_alerts ?? [],
+          behavior_logs: s.behavior_logs ?? [],
+          evaluation: s.evaluation ?? "",
+          notes: s.notes ?? "",
+          start_time: s.start_time ?? "",
+          finish_time: s.finish_time ?? "",
+        };
+      })
+      .sort((a, b) => {
+        // Mới nhất lên đầu
+        const ta = a.finish_time ? new Date(a.finish_time).getTime() : 0;
+        const tb = b.finish_time ? new Date(b.finish_time).getTime() : 0;
+        return tb - ta;
+      })
+      .slice(0, MAX_SESSIONS);
 
     const basedOnSessionIds = sessions.map((s) => s.id);
     const insufficientData = sessions.length < MAX_SESSIONS;
@@ -229,13 +235,24 @@ export async function generateAIRecommendations(
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 async function getLatestSessionIds(childId: string): Promise<string[]> {
+  // Không dùng orderBy để tránh yêu cầu Composite Index trên Firestore
   const snap = await adminDb
     .collection("sessions")
     .where("child_profile_id", "==", childId)
-    .orderBy("finish_time", "desc")
-    .limit(MAX_SESSIONS)
     .get();
-  return snap.docs.map((d) => d.id);
+
+  return snap.docs
+    .map((d) => ({
+      id: d.id,
+      finish_time: d.data().finish_time ?? "",
+    }))
+    .sort((a, b) => {
+      const ta = a.finish_time ? new Date(a.finish_time).getTime() : 0;
+      const tb = b.finish_time ? new Date(b.finish_time).getTime() : 0;
+      return tb - ta;
+    })
+    .slice(0, MAX_SESSIONS)
+    .map((s) => s.id);
 }
 
 async function saveCache(cache: AIRecommendationCache) {
