@@ -13,7 +13,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { user, role, userName } = useAuth();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  
+
   const childId = searchParams.get("childId");
   const pin = searchParams.get("pin");
   const isVRConnected = searchParams.get("vr") === "connected";
@@ -21,14 +21,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const roleName = getRoleName(role || "");
 
   // Netflix-style behavior: Hide UI if it's the selection screen
-  const isProfileSelection = 
+  const isProfileSelection =
     (role === "parent" && pathname === "/dashboard/parent" && !childId) ||
     ((role === "expert" || role === "therapist") && pathname === "/dashboard/expert" && !childId);
 
-  if (isProfileSelection) {
+  const isLiveSession = pathname?.includes("/dashboard/expert/session/");
+
+  if (isProfileSelection || isLiveSession) {
     return (
-      <div className="min-h-screen bg-zinc-50 dark:bg-black font-sans transition-colors duration-300 flex items-center justify-center">
-        <main className="w-full">
+      <div className="min-h-screen bg-zinc-50 dark:bg-black font-sans transition-colors duration-300 flex items-center justify-center overflow-hidden">
+        <main className="w-full h-full">
           {children}
         </main>
       </div>
@@ -37,17 +39,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="h-screen bg-zinc-50 dark:bg-black text-zinc-900 dark:text-zinc-100 flex overflow-hidden font-sans transition-colors duration-300">
-      
-      <Sidebar 
-        sidebarOpen={sidebarOpen} 
-        setSidebarOpen={setSidebarOpen} 
-        navigation={navigation} 
+
+      <Sidebar
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        navigation={navigation}
       />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        
-        <Header 
+
+        <Header
           sidebarOpen={sidebarOpen}
           setSidebarOpen={setSidebarOpen}
           user={user}
@@ -59,7 +61,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Dynamic Page Content */}
         <main className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-black dark:bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] dark:from-zinc-900/40 dark:via-black dark:to-black">
           {children}
-          
+
           {/* Trực ban theo dõi kết nối VR Xuyên suốt mọi trang */}
           {isVRConnected && pin && <VRConnectionMonitor pin={pin} />}
         </main>

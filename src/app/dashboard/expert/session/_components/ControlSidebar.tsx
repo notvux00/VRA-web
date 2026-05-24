@@ -10,13 +10,35 @@ import {
 interface ControlSidebarProps {
   sessionTime: number;
   telemetry: any;
+  onPauseLesson?: () => void;
+  onForceSkip?: () => void;
+  onResumeLesson?: () => void;
 }
 
-export default function ControlSidebar({ sessionTime, telemetry }: ControlSidebarProps) {
+export default function ControlSidebar({ 
+  sessionTime, 
+  telemetry,
+  onPauseLesson,
+  onForceSkip,
+  onResumeLesson
+}: ControlSidebarProps) {
   const formatTime = (sec: number) => {
     const m = Math.floor(sec / 60);
     const s = sec % 60;
     return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
+
+  // State to track if session is currently paused in UI
+  const [isPaused, setIsPaused] = React.useState(false);
+
+  const handlePauseToggle = () => {
+    if (isPaused) {
+      onResumeLesson?.();
+      setIsPaused(false);
+    } else {
+      onPauseLesson?.();
+      setIsPaused(true);
+    }
   };
 
   return (
@@ -67,9 +89,18 @@ export default function ControlSidebar({ sessionTime, telemetry }: ControlSideba
            </h4>
 
            <div className="grid grid-cols-2 gap-3">
-              <CommandButton icon={Pause} label="PAUSE" />
+              <CommandButton 
+                icon={isPaused ? Play : Pause} 
+                label={isPaused ? "RESUME" : "PAUSE"} 
+                onClick={handlePauseToggle} 
+              />
               <CommandButton icon={RotateCcw} label="RESET STAGE" />
-              <CommandButton icon={ArrowRight} label="NEXT STEP" color="blue" />
+              <CommandButton 
+                icon={ArrowRight} 
+                label="NEXT STEP" 
+                color="blue" 
+                onClick={onForceSkip}
+              />
               <CommandButton icon={Target} label="CALIBRATE" />
            </div>
         </div>
@@ -111,12 +142,16 @@ function QuestStep({ label, isCompleted, isActive }: { label: string, isComplete
   );
 }
 
-function CommandButton({ icon: Icon, label, color = "zinc" }: { icon: any, label: string, color?: string }) {
+function CommandButton({ icon: Icon, label, color = "zinc", onClick }: { icon: any, label: string, color?: string, onClick?: () => void }) {
   const colorClass = color === "blue" ? "bg-blue-600 hover:bg-blue-700 text-white border-blue-500" : "bg-white dark:bg-zinc-800 hover:bg-zinc-50 border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white";
   return (
-    <button className={`p-4 rounded-2xl flex flex-col items-center justify-center gap-2 border transition-all active:scale-95 shadow-sm hover:shadow-md ${colorClass}`}>
+    <button 
+      onClick={onClick}
+      className={`p-4 rounded-2xl flex flex-col items-center justify-center gap-2 border transition-all active:scale-95 shadow-sm hover:shadow-md ${colorClass}`}
+    >
        <Icon size={18} />
        <span className="text-[9px] font-black tracking-widest uppercase">{label}</span>
     </button>
   );
 }
+

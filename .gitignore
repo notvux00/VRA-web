@@ -43,4 +43,14 @@ yarn-error.log*
 next-env.d.ts
 
 # antigravity-kit
-/.agent
+.agent/
+.agents/
+_bmad/
+_bmad-output/
+memories/
+project-context.md
+.instructions.md
+.prompt.md
+.agent.md
+copilot-instructions.md
+AGENTS.md

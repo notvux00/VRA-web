@@ -1,7 +1,7 @@
 "use client";
 
 import { rtdb } from "@/lib/firebase/client";
-import { ref, get, update, remove, onValue, off, onChildAdded, push, set } from "firebase/database";
+import { ref, get, update, remove, onValue, off, onChildAdded, push, set, serverTimestamp } from "firebase/database";
 
 // ─────────────────────────────────────────────────────
 // Tất cả logic RTDB pairing nằm ở đây, các component chỉ gọi hàm
@@ -210,3 +210,33 @@ export async function cleanupWebRTCSignaling(sessionId: string): Promise<void> {
   const signalingRef = ref(rtdb, `webrtc_signaling/${sessionId}`);
   await remove(signalingRef);
 }
+
+/**
+ * Gửi lệnh điều khiển từ xa (Remote Command) tới kính VR qua RTDB.
+ * Ghi vào live_sessions/${sessionId}/commands bằng push() để tạo một key ngẫu nhiên duy nhất.
+ */
+export async function pushRemoteCommand(
+  sessionId: string,
+  commandType: string,
+  param: any = null
+): Promise<void> {
+  if (!sessionId) {
+    console.error("pushRemoteCommand: sessionId is empty");
+    return;
+  }
+  
+  if (!commandType) {
+    console.error("pushRemoteCommand: commandType is empty");
+    return;
+  }
+
+  const commandsRef = ref(rtdb, `live_sessions/${sessionId}/commands`);
+  const newCommandRef = push(commandsRef);
+
+  await set(newCommandRef, {
+    command_type: commandType,
+    param: param,
+    timestamp: serverTimestamp()
+  });
+}
+

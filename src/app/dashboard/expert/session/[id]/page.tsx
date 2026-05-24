@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { 
   ArrowLeft, Loader2, AlertCircle, 
   MessageSquarePlus, Save, Eye, Video, 
-  ThumbsUp, Frown, Lightbulb, SkipForward, Volume2, Mic
+  ThumbsUp, Frown, Lightbulb, SkipForward, Volume2, Mic, MessageCircle
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLiveTelemetry } from "../../_hooks/useLiveTelemetry";
@@ -13,7 +13,7 @@ import SessionSummaryModal from "../_components/SessionSummaryModal";
 import { getAssignedChildDetail, finalizeSession } from "@/actions/expert";
 import AlertSidebar from "../_components/AlertSidebar";
 import POVMonitor from "../_components/POVMonitor";
-import { endLessonOnDevice, subscribeToVrHandshake } from "@/lib/firebase/rtdb";
+import { endLessonOnDevice, subscribeToVrHandshake, pushRemoteCommand } from "@/lib/firebase/rtdb";
 import { useWebRTCViewer } from "../../_hooks/useWebRTCViewer";
 
 export default function LiveSessionPage() {
@@ -34,6 +34,12 @@ export default function LiveSessionPage() {
   
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
   const [manualLogs, setManualLogs] = useState<any[]>([]);
+  const [toastMessage, setToastMessage] = useState("");
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(""), 3000);
+  };
   
   const alertsScrollRef = useRef<HTMLDivElement>(null);
   const alertsHistoryRef = useRef<any[]>([]);
@@ -64,23 +70,37 @@ export default function LiveSessionPage() {
     const rawSessionId = (Array.isArray(sessionId) ? sessionId[0] : sessionId) || "";
     if (!rawSessionId) return;
 
+    const handleExit = async () => {
+      console.log("Session finished/disconnected from VR, auto exiting...");
+      setVrReady(false);
+      setIsSessionActive(false);
+      if (pin) try { await endLessonOnDevice(pin); } catch (e) { console.error("Error ending lesson:", e); }
+      
+      const q = new URLSearchParams();
+      if (childId) q.set("childId", childId);
+      if (pin) {
+        q.set("vr", "connected");
+        q.set("pin", pin);
+      }
+      
+      if (childId) {
+        router.replace(`/dashboard/expert/stats?${q.toString()}`);
+      } else {
+        router.replace(`/dashboard/expert?${q.toString()}`);
+      }
+    };
+
     const unsubscribe = subscribeToVrHandshake(
       rawSessionId,
       (data) => {
         setVrReady(true);
         setIsSessionActive(true);
       },
-      async () => {
-        // When VR session finishes, open the summary modal for review
-        console.log("Session finished from VR, opening summary modal...");
-        setIsSummaryModalOpen(true);
-        
-        if (pin) try { await endLessonOnDevice(pin); } catch (e) {}
-      },
-      () => setVrReady(false)
+      handleExit, // onEnded
+      handleExit  // onDisconnect
     );
     return () => unsubscribe();
-  }, [sessionId]);
+  }, [sessionId, childId, router, pin]);
 
   // 3. Telemetry Logic
   const [mutedGroups, setMutedGroups] = useState<string[]>([]);
@@ -92,7 +112,56 @@ export default function LiveSessionPage() {
   );
   
   // 4. WebRTC POV Logic
-  const { stream, connectionState } = useWebRTCViewer(isSessionActive && vrReady ? validSessionId : "");
+  const { stream, connectionState } = useWebRTCViewer(isSessionActive && vrReady && validSessionId ? validSessionId : "");
+
+  // 5. Remote Commands Dispatchers
+  const handleTriggerVerbalHint = async () => {
+    if (!validSessionId) return;
+    try {
+      console.log("[LiveSessionPage] Sending trigger_verbal_hint command...");
+      await pushRemoteCommand(validSessionId, "trigger_verbal_hint");
+      showToast("Gửi lệnh Gợi ý Lời nói thành công!");
+    } catch (e: any) {
+      console.error("Failed to send trigger_verbal_hint command:", e.message);
+      showToast("Lỗi: Không thể gửi lệnh Gợi ý Lời nói.");
+    }
+  };
+
+  const handleTriggerVisualHint = async () => {
+    if (!validSessionId) return;
+    try {
+      console.log("[LiveSessionPage] Sending trigger_visual_hint command...");
+      await pushRemoteCommand(validSessionId, "trigger_visual_hint");
+      showToast("Gửi lệnh Gợi ý Hình ảnh thành công!");
+    } catch (e: any) {
+      console.error("Failed to send trigger_visual_hint command:", e.message);
+      showToast("Lỗi: Không thể gửi lệnh Gợi ý Hình ảnh.");
+    }
+  };
+
+  const handleForceSkip = async () => {
+    if (!validSessionId) return;
+    try {
+      console.log("[LiveSessionPage] Sending skip_quest command...");
+      await pushRemoteCommand(validSessionId, "skip_quest");
+      showToast("Gửi lệnh Skip Quest thành công!");
+    } catch (e: any) {
+      console.error("Failed to send skip_quest command:", e.message);
+      showToast("Lỗi: Không thể gửi lệnh Skip Quest.");
+    }
+  };
+
+  const handleAdjustVolume = async (volume: number) => {
+    if (!validSessionId) return;
+    try {
+      console.log(`[LiveSessionPage] Sending set_volume (${volume}) command...`);
+      await pushRemoteCommand(validSessionId, "set_volume", volume);
+      showToast("Đã gửi yêu cầu đổi âm lượng!");
+    } catch (e: any) {
+      console.error("Failed to send set_volume command:", e.message);
+      showToast("Lỗi: Không thể đổi âm lượng.");
+    }
+  };
 
   // Cuộn thanh ngang alert sang phải mỗi khi có alert mới
   useEffect(() => {
@@ -131,7 +200,10 @@ export default function LiveSessionPage() {
   };
 
   const handleFinalSave = async (summary: any) => {
-    if (!childId) return;
+    if (!childId) {
+      router.push("/dashboard/expert");
+      return;
+    }
     
     try {
       const res = await finalizeSession(childId as string, sessionId as string, {
@@ -148,7 +220,13 @@ export default function LiveSessionPage() {
         console.log("Session saved successfully!");
         setIsSummaryModalOpen(false);
         // Redirect to child stats/history page instead of profile selection
-        router.push(`/dashboard/expert/stats?childId=${childId}`);
+        const q = new URLSearchParams();
+        if (childId) q.set("childId", childId);
+        if (pin) {
+          q.set("vr", "connected");
+          q.set("pin", pin);
+        }
+        router.push(`/dashboard/expert/stats?${q.toString()}`);
       } else {
         alert("Lỗi khi lưu báo cáo: " + res.error);
       }
@@ -201,6 +279,13 @@ export default function LiveSessionPage() {
         </button>
       </header>
 
+      {/* TOAST UI */}
+      {toastMessage && (
+        <div className="absolute top-16 left-1/2 transform -translate-x-1/2 z-50 bg-emerald-600 text-white px-4 py-2 rounded-full shadow-lg font-bold text-xs animate-bounce">
+          {toastMessage}
+        </div>
+      )}
+
       {/* VÙNG GIỮA: CHIA 2 CỘT */}
       <div className="flex-1 flex min-h-0">
         
@@ -248,17 +333,36 @@ export default function LiveSessionPage() {
           <div className="flex-1 p-4 overflow-y-auto">
             <h3 className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold mb-3">Tác Động Tự Xa (Remote)</h3>
             <div className="flex flex-col gap-2">
-              <button className="flex items-center gap-3 w-full bg-zinc-900 border border-white/5 hover:border-zinc-500 p-3 rounded-lg text-left transition-all group">
+              <button 
+                onClick={handleTriggerVerbalHint}
+                className="flex items-center gap-3 w-full bg-zinc-900 border border-white/5 hover:border-zinc-500 p-3 rounded-lg text-left transition-all group"
+              >
                 <div className="w-8 h-8 rounded-full bg-blue-500/10 text-blue-400 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
-                  <Lightbulb size={16} />
+                  <MessageCircle size={16} />
                 </div>
                 <div className="flex-1">
-                  <div className="text-sm font-bold text-zinc-200">Kích Hoạt Gợi Ý</div>
-                  <div className="text-[10px] text-zinc-500">Phát loa NPC dỗ dành</div>
+                  <div className="text-sm font-bold text-zinc-200">Gợi Ý Lời Nói (Verbal)</div>
+                  <div className="text-[10px] text-zinc-500">Phát loa NPC dỗ dành/nhắc nhở</div>
                 </div>
               </button>
 
-              <button className="flex items-center gap-3 w-full bg-zinc-900 border border-white/5 hover:border-zinc-500 p-3 rounded-lg text-left transition-all group">
+              <button 
+                onClick={handleTriggerVisualHint}
+                className="flex items-center gap-3 w-full bg-zinc-900 border border-white/5 hover:border-zinc-500 p-3 rounded-lg text-left transition-all group"
+              >
+                <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
+                  <Eye size={16} />
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm font-bold text-zinc-200">Gợi Ý Thị Giác (Visual)</div>
+                  <div className="text-[10px] text-zinc-500">Chớp nháy viền vật thể</div>
+                </div>
+              </button>
+
+              <button 
+                onClick={handleForceSkip}
+                className="flex items-center gap-3 w-full bg-zinc-900 border border-white/5 hover:border-zinc-500 p-3 rounded-lg text-left transition-all group"
+              >
                 <div className="w-8 h-8 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center group-hover:bg-amber-500/20 transition-colors">
                   <SkipForward size={16} />
                 </div>
@@ -268,7 +372,10 @@ export default function LiveSessionPage() {
                 </div>
               </button>
 
-              <button className="flex items-center gap-3 w-full bg-zinc-900 border border-white/5 hover:border-zinc-500 p-3 rounded-lg text-left transition-all group">
+              <button 
+                onClick={() => handleAdjustVolume(0.2)}
+                className="flex items-center gap-3 w-full bg-zinc-900 border border-white/5 hover:border-zinc-500 p-3 rounded-lg text-left transition-all group"
+              >
                 <div className="w-8 h-8 rounded-full bg-fuchsia-500/10 text-fuchsia-400 flex items-center justify-center group-hover:bg-fuchsia-500/20 transition-colors">
                   <Volume2 size={16} />
                 </div>
