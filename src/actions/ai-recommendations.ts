@@ -156,6 +156,7 @@ export async function generateAIRecommendations(
         description: l.description ?? "",
         min_age: l.min_age ?? 0,
         duration_min: l.duration_min ?? 0,
+        thumbnail_url: l.thumbnail_url ?? null,
       };
     });
     // Lọc bài học phù hợp tuổi để giảm kích thước payload
@@ -202,15 +203,24 @@ export async function generateAIRecommendations(
     );
 
     // 7. Validate: lessonId phải tồn tại trong Firestore lessons
-    const validRecs = (geminiResult.recommendations ?? []).filter((r) => {
-      if (!lessonIds.has(r.lessonId)) {
-        console.warn(`[AI] Loại bỏ bài không tồn tại: ${r.lessonId}`);
-        return false;
-      }
-      if (r.confidence < 0 || r.confidence > 1) return false;
-      if (!["high", "medium", "low"].includes(r.priority)) return false;
-      return true;
-    });
+    const lessonMap = new Map(eligibleLessons.map((l) => [l.id, l]));
+    const validRecs = (geminiResult.recommendations ?? [])
+      .filter((r) => {
+        if (!lessonIds.has(r.lessonId)) {
+          console.warn(`[AI] Loại bỏ bài không tồn tại: ${r.lessonId}`);
+          return false;
+        }
+        if (r.confidence < 0 || r.confidence > 1) return false;
+        if (!["high", "medium", "low"].includes(r.priority)) return false;
+        return true;
+      })
+      .map((r) => {
+        const matchingLesson = lessonMap.get(r.lessonId);
+        return {
+          ...r,
+          thumbnailUrl: matchingLesson?.thumbnail_url ?? null,
+        };
+      });
 
     if (validRecs.length === 0) {
       return {
@@ -385,6 +395,7 @@ function buildDemoRecommendations(
     lessonTitle: l.lesson_name,
     levelName: l.level_name,
     type: l.type,
+    thumbnailUrl: l.thumbnail_url ?? null,
     targetSkill: l.type === "practical" ? "Kỹ năng thực hành và hoàn thành nhiệm vụ" : "Kỹ năng nhận thức và giao tiếp xã hội",
     priority: priorities[Math.min(i, 2)],
     confidence: parseFloat((0.85 - i * 0.08).toFixed(2)),

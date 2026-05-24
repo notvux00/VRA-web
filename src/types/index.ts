@@ -121,6 +121,7 @@ export interface AILessonRecommendation {
   lessonTitle: string;
   levelName: string;
   type: string;
+  thumbnailUrl?: string | null;
   targetSkill: string;
   priority: RecommendationPriority;
   /** Điểm tin cậy từ 0 đến 1 */
