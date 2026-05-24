@@ -1,6 +1,6 @@
 export default function SkeletonCards() {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+    <div className="flex flex-col gap-6">
       {[...Array(3)].map((_, i) => (
         <div
           key={i}
@@ -23,7 +23,7 @@ export default function SkeletonCards() {
           </div>
 
           {/* Content */}
-          <div className="space-y-3 pt-4 border-t border-zinc-50 dark:border-zinc-800">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-zinc-50 dark:border-zinc-800">
             {[...Array(3)].map((_, j) => (
               <div key={j} className="bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl p-4 space-y-2">
                 <div className="h-2.5 w-24 bg-zinc-200 dark:bg-zinc-700 rounded-full" />

@@ -82,7 +82,7 @@ export default function RecommendationCard({ rec, index }: Props) {
       </div>
 
       {/* Content rows */}
-      <div className="space-y-4 border-t border-zinc-50 dark:border-zinc-800 pt-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-zinc-50 dark:border-zinc-800 pt-4">
         <InfoRow icon={<BookOpen size={14} />} label="Lý do đề xuất" value={rec.reason} />
         <InfoRow icon={<TrendingUp size={14} />} label="Lợi ích kỳ vọng" value={rec.expectedBenefit} />
         <InfoRow icon={<Shield size={14} />} label="Lưu ý chuyên gia" value={rec.specialistNotes} highlight />
