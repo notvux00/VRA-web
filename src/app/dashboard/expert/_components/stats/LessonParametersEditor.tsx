@@ -16,6 +16,7 @@ interface LessonParamsEditorProps {
 // -1 = dùng mặc định hệ thống (VR Inspector fallback)
 const DEFAULT_PARAMS = {
   actions: {
+    enable_auto_hint: true,
     enable_visual_guidance: true,
     enable_bubble_hints: true,
     speech_silence_timeout: -1,
@@ -120,6 +121,14 @@ export default function LessonParametersEditor({ childId, initialParams }: Lesso
 
         {/* ── Dạng bài: Actions ── */}
         <Section icon={<Zap size={16} className="text-amber-500" />} title="Bài tập Hành vi (Actions)">
+          {/* Enable Auto Hint toggle */}
+          <ToggleRow
+            label="Tự động nhắc nhở (Auto Hint)"
+            description="Bật/Tắt chế độ tự động nhắc nhở hoặc hiển thị nháy viền từ hệ thống."
+            icon={<Zap size={16} />}
+            checked={params.actions.enable_auto_hint}
+            onChange={v => setActions({ enable_auto_hint: v })}
+          />
           {/* Visual Guidance toggle */}
           <ToggleRow
             label="Hiệu ứng viền phát sáng (Outline)"
