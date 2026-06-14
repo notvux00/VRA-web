@@ -157,6 +157,10 @@ export async function generateAIRecommendations(
         min_age: l.min_age ?? 0,
         duration_min: l.duration_min ?? 0,
         thumbnail_url: l.thumbnail_url ?? null,
+        scene_name: l.scene_name ?? "",
+        target_skills: l.target_skills ?? [],
+        difficulty_level: l.difficulty_level ?? "",
+        prerequisites: l.prerequisites ?? [],
       };
     });
     // Lọc bài học phù hợp tuổi để giảm kích thước payload
@@ -174,6 +178,17 @@ export async function generateAIRecommendations(
       diagnosis_notes: childData.diagnosis_notes,
       sessionCount: childData.sessionCount,
     };
+
+    // Chuẩn bị sessions cho AI: Xóa lesson_id để triệt tiêu khả năng AI nhắc đến ID trong câu văn
+    const lessonMapAll = new Map(allLessons.map((l) => [l.id, l]));
+    const anonymizedSessions = sessions.map((s) => {
+      const lessonInfo = lessonMapAll.get(s.lesson_id);
+      const { lesson_id, ...rest } = s; // Xóa lesson_id
+      return {
+        ...rest,
+        lesson_name: s.lesson_name || lessonInfo?.lesson_name || "Bài học VR",
+      };
+    });
 
     // 5. Nếu thiếu API key → Demo Mode
     const apiKey = process.env.GEMINI_API_KEY;
@@ -194,7 +209,7 @@ export async function generateAIRecommendations(
     const geminiResult = await callGemini(
       apiKey,
       anonymizedChild,
-      sessions,
+      anonymizedSessions,
       eligibleLessons,
       childId,
       auth.uid,
@@ -204,6 +219,26 @@ export async function generateAIRecommendations(
 
     // 7. Validate: lessonId phải tồn tại trong Firestore lessons
     const lessonMap = new Map(eligibleLessons.map((l) => [l.id, l]));
+
+    // Hàm dọn dẹp chuỗi: Xóa mã ID trong ngoặc, hoặc thay ID bằng tên bài học
+    const cleanAIText = (text: string) => {
+      if (!text) return text;
+      let res = text;
+      eligibleLessons.forEach((l) => {
+        const id = l.lesson_id || l.id;
+        const name = l.lesson_name || "bài học này";
+        if (id) {
+          // Xóa "(ID)" hoặc " (ID)"
+          res = res.replace(new RegExp(`\\s*\\(${id}\\)`, "g"), "");
+          // Thay ID đứng độc lập thành tên bài học
+          res = res.replace(new RegExp(id, "g"), name);
+        }
+      });
+      return res;
+    };
+
+    geminiResult.summary = cleanAIText(geminiResult.summary);
+
     const validRecs = (geminiResult.recommendations ?? [])
       .filter((r) => {
         if (!lessonIds.has(r.lessonId)) {
@@ -218,7 +253,12 @@ export async function generateAIRecommendations(
         const matchingLesson = lessonMap.get(r.lessonId);
         return {
           ...r,
+          reason: cleanAIText(r.reason),
+          expectedBenefit: cleanAIText(r.expectedBenefit),
+          specialistNotes: cleanAIText(r.specialistNotes),
           thumbnailUrl: matchingLesson?.thumbnail_url ?? null,
+          sceneName: matchingLesson?.scene_name ?? "",
+          difficultyLevel: matchingLesson?.difficulty_level ?? "Chưa xác định",
         };
       });
 
@@ -309,10 +349,14 @@ Quy tắc bắt buộc:
 - Tuyệt đối KHÔNG thay thế vai trò của chuyên gia lâm sàng.
 - Chỉ sử dụng dữ liệu được cung cấp trong prompt.
 - Chỉ được gợi ý bài học CÓ TRONG danh sách lessonCatalog. Tuyệt đối không tự tạo bài học mới.
+- Tuân thủ nghiêm ngặt lộ trình học: Ưu tiên đề xuất bài học nếu trẻ đã học xong các bài trong trường prerequisites (nếu có).
+- Điều hướng độ khó (Scaffolding): Dựa vào điểm số (score) của các phiên học gần nhất, nếu trẻ hoàn thành xuất sắc (>80%) các bài ở mức độ 'Dễ', hãy thử thách bằng bài học mức 'Trung bình' hoặc 'Khó' có cùng target_skills. Nếu trẻ chật vật (điểm thấp, dùng nhiều hints), hãy giữ nguyên hoặc lùi lại bài học 'Dễ'.
+- Nhận diện lỗ hổng kỹ năng: Sử dụng target_skills của các bài học điểm thấp trong lịch sử để biết trẻ đang yếu kỹ năng gì, từ đó đề xuất bài học bù đắp.
 - Mọi lý do phân tích phải dựa trên bằng chứng từ dữ liệu hồ sơ và lịch sử phiên học.
 - Nếu dữ liệu không đủ để phân tích, vẫn đề xuất nhưng đặt insufficientData = true.
 - Trả về JSON hợp lệ, không có ký tự markdown, không có văn bản ngoài khối JSON.
-- Tất cả trường văn bản tự do (summary, targetSkill, reason, expectedBenefit, specialistNotes) PHẢI viết bằng tiếng Việt có dấu, văn phong lâm sàng ôn hòa, dễ hiểu với trị liệu viên Việt Nam.`;
+- Tất cả trường văn bản tự do (summary, targetSkill, reason, expectedBenefit, specialistNotes) PHẢI viết bằng tiếng Việt có dấu, văn phong lâm sàng ôn hòa, dễ hiểu với trị liệu viên Việt Nam.
+- CẤM TUYỆT ĐỐI VIỆC ĐƯA MÃ ID BÀI HỌC VÀO CÁC TRƯỜNG VĂN BẢN (reason, expectedBenefit, specialistNotes). Việc xuất hiện các mã như 'WashingHand_1', 'Farm_2' trong câu văn là VI PHẠM LỖI NGHIÊM TRỌNG. Thay vì dùng ID, CHỈ ĐƯỢC PHÉP dùng Tên bài học kết hợp với Cấp độ (Ví dụ: "Rửa tay cơ bản ở mức độ Dễ").`;
 
   const userPrompt = `Phân tích hồ sơ trẻ và lịch sử buổi học, sau đó gợi ý 3-5 bài học phù hợp nhất từ danh sách bài học được cung cấp.
 
@@ -396,6 +440,8 @@ function buildDemoRecommendations(
     levelName: l.level_name,
     type: l.type,
     thumbnailUrl: l.thumbnail_url ?? null,
+    sceneName: l.scene_name ?? "",
+    difficultyLevel: l.difficulty_level ?? "Dễ",
     targetSkill: l.type === "practical" ? "Kỹ năng thực hành và hoàn thành nhiệm vụ" : "Kỹ năng nhận thức và giao tiếp xã hội",
     priority: priorities[Math.min(i, 2)],
     confidence: parseFloat((0.85 - i * 0.08).toFixed(2)),

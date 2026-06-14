@@ -6,7 +6,7 @@ import React from "react";
 import SuggestionsClient from "./_components/SuggestionsClient";
 
 interface PageProps {
-  searchParams: Promise<{ childId?: string }>;
+  searchParams: Promise<{ childId?: string; pin?: string }>;
 }
 
 interface Child {
@@ -19,6 +19,7 @@ interface Child {
 export default async function ExpertSuggestionsPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const childId = params.childId;
+  const pin = params.pin || "";
 
   // ── Chưa chọn trẻ ──
   if (!childId) {
@@ -49,11 +50,18 @@ export default async function ExpertSuggestionsPage({ searchParams }: PageProps)
     try {
       const lessonsSnap = await adminDb.collection("lessons").get();
       const lessonMap = new Map(
-        lessonsSnap.docs.map((d) => [d.id, d.data().thumbnail_url ?? null])
+        lessonsSnap.docs.map((d) => [
+          d.id, 
+          { 
+            thumbnailUrl: d.data().thumbnail_url ?? null,
+            sceneName: d.data().scene_name ?? ""
+          }
+        ])
       );
       initial.recommendations = initial.recommendations.map((r) => ({
         ...r,
-        thumbnailUrl: r.thumbnailUrl || lessonMap.get(r.lessonId) || null,
+        thumbnailUrl: r.thumbnailUrl || lessonMap.get(r.lessonId)?.thumbnailUrl || null,
+        sceneName: r.sceneName || lessonMap.get(r.lessonId)?.sceneName || "",
       }));
     } catch (e) {
       console.error("[ExpertSuggestionsPage] Lỗi phục hồi ảnh từ cache:", e);
@@ -82,12 +90,6 @@ export default async function ExpertSuggestionsPage({ searchParams }: PageProps)
           </div>
         </div>
 
-        <div className="hidden lg:flex items-center gap-2 bg-amber-50 dark:bg-amber-500/10 px-5 py-3 rounded-2xl border border-amber-100 dark:border-amber-900/40">
-          <Brain size={18} className="text-amber-600" />
-          <span className="text-xs font-black text-amber-700 dark:text-amber-500 uppercase tracking-widest">
-            Gemini 2.5 Flash
-          </span>
-        </div>
       </div>
 
       {/* ── Main Content (Client) ── */}
@@ -95,6 +97,7 @@ export default async function ExpertSuggestionsPage({ searchParams }: PageProps)
         childId={childId}
         childName={childName}
         initial={initial}
+        pin={pin}
       />
     </div>
   );

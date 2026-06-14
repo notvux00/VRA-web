@@ -129,6 +129,8 @@ export interface AILessonRecommendation {
   reason: string;
   expectedBenefit: string;
   specialistNotes: string;
+  sceneName?: string;
+  difficultyLevel?: string;
 }
 
 /** Document lưu trong Firestore tại ai_recommendations/{childId} */

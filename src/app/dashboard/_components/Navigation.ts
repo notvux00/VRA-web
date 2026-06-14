@@ -25,6 +25,7 @@ export const expertNavigation = [
   { name: "Thống kê trẻ", href: "/dashboard/expert/stats", icon: BarChart3 },
   { name: "Danh sách bài học", href: "/dashboard/expert/lessons", icon: PlayCircle },
   { name: "Bài học gợi ý", href: "/dashboard/expert/suggestions", icon: Sparkles },
+  { name: "Thời khóa biểu", href: "/dashboard/expert/schedule", icon: Calendar },
   { name: "Lịch sử học", href: "/dashboard/expert/history", icon: History },
   { name: "Kết nối thiết bị VR", href: "/dashboard/expert/connection", icon: Cast },
   { name: "Nhắn tin", href: "/dashboard/expert/messages", icon: MessageSquare },

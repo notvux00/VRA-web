@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePathname, useSearchParams } from "next/navigation";
 import Sidebar from "./_components/Sidebar";
@@ -8,7 +8,7 @@ import Header from "./_components/Header";
 import { getNavigationByRole, getRoleName } from "./_components/Navigation";
 import VRConnectionMonitor from "@/app/dashboard/expert/_components/VRConnectionMonitor";
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, role, userName } = useAuth();
   const pathname = usePathname();
@@ -67,5 +67,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </main>
       </div>
     </div>
+  );
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={<div className="h-screen bg-zinc-50 dark:bg-black" />}>
+      <DashboardLayoutInner>{children}</DashboardLayoutInner>
+    </Suspense>
   );
 }

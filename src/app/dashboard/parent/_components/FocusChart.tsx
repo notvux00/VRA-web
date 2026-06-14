@@ -31,8 +31,8 @@ export default function FocusChart({ childId }: FocusChartProps) {
 
   useEffect(() => {
     getChildDashboardAnalytics(childId).then(res => {
-      if (res.success) {
-        setData(res);
+      if (res.success && res.radarData && res.trendData) {
+        setData({ radarData: res.radarData, trendData: res.trendData });
       }
       setLoading(false);
     });

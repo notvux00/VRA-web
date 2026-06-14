@@ -12,9 +12,10 @@ interface Props {
   childId: string;
   childName: string;
   initial: GenerateAIRecommendationsResult;
+  pin: string;
 }
 
-export default function SuggestionsClient({ childId, childName, initial }: Props) {
+export default function SuggestionsClient({ childId, childName, initial, pin }: Props) {
   const [data, setData] = useState<GenerateAIRecommendationsResult>(initial);
   const [isPending, startTransition] = useTransition();
 
@@ -110,9 +111,8 @@ export default function SuggestionsClient({ childId, childName, initial }: Props
       {data.summary && hasCache && !isPending && (
         <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-500/5 dark:to-orange-500/5 border border-amber-100 dark:border-amber-900/30 rounded-3xl p-7">
           <div className="flex items-center gap-3 mb-3">
-            <Brain size={18} className="text-amber-600" />
             <span className="text-xs font-black text-amber-600 uppercase tracking-widest">
-              Nhận xét tổng quan của AI
+              Nhận xét tổng quan
             </span>
           </div>
           <p className="text-base text-zinc-700 dark:text-zinc-300 leading-relaxed font-medium">
@@ -136,9 +136,15 @@ export default function SuggestionsClient({ childId, childName, initial }: Props
 
       {/* ── Recommendation Cards ── */}
       {!isPending && recs.length > 0 && (
-        <div className="flex flex-col gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {recs.map((rec, i) => (
-            <RecommendationCard key={rec.lessonId + i} rec={rec} index={i} />
+            <RecommendationCard 
+              key={rec.lessonId + i} 
+              rec={rec} 
+              index={i} 
+              childId={childId}
+              pin={pin}
+            />
           ))}
         </div>
       )}

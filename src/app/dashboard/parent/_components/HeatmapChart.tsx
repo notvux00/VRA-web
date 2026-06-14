@@ -22,7 +22,7 @@ export default function HeatmapChart({ childId }: HeatmapChartProps) {
   useEffect(() => {
     setLoading(true);
     getChildHeatmapData(childId).then(res => {
-      if (res.success) {
+      if (res.success && res.heatmapData) {
         setData(res.heatmapData);
       }
       setLoading(false);
