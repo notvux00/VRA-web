@@ -91,7 +91,7 @@ export default async function ExpertHistoryPage({ searchParams }: PageProps) {
              <p className="text-zinc-500 font-bold italic">{error || "Chưa có dữ liệu lịch sử."}</p>
           </div>
         ) : (
-          sessions.map((session: Session) => {
+          sessions!.map((session: Session) => {
             const date = new Date(session.start_time).toLocaleDateString("vi-VN", { 
               day: "2-digit", 
               month: "2-digit"

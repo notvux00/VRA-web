@@ -9,7 +9,6 @@ import {
 export const dynamic = "force-dynamic";
 import Link from "next/link";
 import React from "react";
-import AlertProfileEditor from "../_components/stats/AlertProfileEditor";
 import LessonParametersEditor from "../_components/stats/LessonParametersEditor";
 import ChildAchievements from "../../parent/_components/ChildAchievements";
 import ChildChartsContainer from "../../parent/_components/ChildChartsContainer";
@@ -150,12 +149,6 @@ export default async function ExpertStatsPage({ searchParams }: PageProps) {
 
         {/* Right Column: Alert Profile & History & Achievements */}
         <div className="lg:col-span-8 space-y-10">
-           {/* Alert Profile Configuration */}
-           <AlertProfileEditor 
-             childId={child.id} 
-             initialProfile={child.alert_profile} 
-           />
-
            {/* Lesson Parameters Configuration (Story 2.3) */}
            <LessonParametersEditor
              childId={child.id}

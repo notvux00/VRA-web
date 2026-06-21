@@ -35,6 +35,9 @@ export default function LiveSessionPage() {
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
   const [manualLogs, setManualLogs] = useState<any[]>([]);
   const [toastMessage, setToastMessage] = useState("");
+  const [npcText, setNpcText] = useState("");
+  const [sendingNpc, setSendingNpc] = useState(false);
+  const [volumeLevel, setVolumeLevel] = useState(0.5);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -108,7 +111,8 @@ export default function LiveSessionPage() {
   const { telemetry, activeAlerts, sessionTime, currentQuest } = useLiveTelemetry(
     isSessionActive && vrReady ? validSessionId : null,
     isSessionActive,
-    mutedGroups
+    mutedGroups,
+    child?.default_lesson_params?.actions
   );
   
   // 4. WebRTC POV Logic
@@ -160,6 +164,45 @@ export default function LiveSessionPage() {
     } catch (e: any) {
       console.error("Failed to send set_volume command:", e.message);
       showToast("Lỗi: Không thể đổi âm lượng.");
+    }
+  };
+
+  const handleSendNpcScript = async () => {
+    if (!validSessionId || !npcText.trim()) return;
+    setSendingNpc(true);
+    try {
+      console.log("[LiveSessionPage] Calling /api/tts to generate audio...");
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: npcText.trim(),
+          sessionId: validSessionId,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Không thể tạo file âm thanh");
+      }
+
+      const { url } = await res.json();
+      console.log("[LiveSessionPage] TTS generated successfully. URL:", url);
+
+      await pushRemoteCommand(validSessionId, "play_npc_script", {
+        audio_url: url,
+        text: npcText.trim(),
+      });
+
+      showToast("Đã gửi câu thoại thành công tới NPC!");
+      setNpcText("");
+    } catch (e: any) {
+      console.error("Failed to send play_npc_script command:", e.message);
+      showToast(`Lỗi: ${e.message || "Không thể gửi lệnh thoại NPC."}`);
+    } finally {
+      setSendingNpc(false);
     }
   };
 
@@ -372,17 +415,61 @@ export default function LiveSessionPage() {
                 </div>
               </button>
 
-              <button 
-                onClick={() => handleAdjustVolume(0.2)}
-                className="flex items-center gap-3 w-full bg-zinc-900 border border-white/5 hover:border-zinc-500 p-3 rounded-lg text-left transition-all group"
+              <div className="w-full bg-zinc-900 border border-white/5 p-4 rounded-lg flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-fuchsia-500/10 text-fuchsia-400 flex items-center justify-center">
+                      <Volume2 size={16} />
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-zinc-200">Âm lượng hệ thống</div>
+                      <div className="text-[10px] text-zinc-500 font-medium">Kéo trượt để điều hòa âm thanh VR</div>
+                    </div>
+                  </div>
+                  <span className="text-xs font-mono font-bold text-fuchsia-400">{Math.round(volumeLevel * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={volumeLevel}
+                  onChange={async (e) => {
+                    const val = parseFloat(e.target.value);
+                    setVolumeLevel(val);
+                    await handleAdjustVolume(val);
+                  }}
+                  className="w-full accent-fuchsia-500 h-1.5 bg-zinc-800 rounded-lg cursor-pointer appearance-none"
+                />
+              </div>
+            </div>
+
+            {/* NPC Script Input Panel */}
+            <div className="mt-4 p-4 bg-zinc-900 border border-white/5 rounded-lg flex flex-col gap-3">
+              <div className="text-xs font-bold text-zinc-200 flex items-center gap-2">
+                <MessageCircle size={14} className="text-blue-400" />
+                <span>Nói qua NPC (TTS)</span>
+              </div>
+              <textarea
+                value={npcText}
+                onChange={(e) => setNpcText(e.target.value)}
+                placeholder="Nhập nội dung thoại tiếng Việt (tối đa 200 ký tự)..."
+                maxLength={200}
+                className="w-full bg-black border border-white/10 rounded p-2.5 text-xs text-white resize-none h-20 focus:outline-none focus:border-zinc-500"
+              />
+              <button
+                disabled={sendingNpc || !npcText.trim()}
+                onClick={handleSendNpcScript}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-800 disabled:text-zinc-500 text-white font-bold py-2 rounded text-xs transition-colors flex items-center justify-center gap-2 active:scale-95"
               >
-                <div className="w-8 h-8 rounded-full bg-fuchsia-500/10 text-fuchsia-400 flex items-center justify-center group-hover:bg-fuchsia-500/20 transition-colors">
-                  <Volume2 size={16} />
-                </div>
-                <div className="flex-1">
-                  <div className="text-sm font-bold text-zinc-200">Điều hòa âm thanh</div>
-                  <div className="text-[10px] text-zinc-500">Giảm tiếng ồn môi trường</div>
-                </div>
+                {sendingNpc ? (
+                  <>
+                    <Loader2 size={12} className="animate-spin" />
+                    <span>Đang gửi...</span>
+                  </>
+                ) : (
+                  <span>Gửi câu thoại</span>
+                )}
               </button>
             </div>
           </div>

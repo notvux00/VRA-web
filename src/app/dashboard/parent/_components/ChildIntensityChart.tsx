@@ -67,7 +67,7 @@ export default function ChildIntensityChart({ sessions }: ChildIntensityChartPro
             contentStyle={{ backgroundColor: '#18181b', border: 'none', borderRadius: '16px', padding: '12px' }}
             itemStyle={{ color: '#fff', fontSize: '12px', fontWeight: 'bold' }}
             labelStyle={{ color: '#71717a', fontSize: '10px', marginBottom: '4px', fontWeight: 'bold' }}
-            formatter={(value: number, name: string, props: any) => [props.payload.formattedTime, "Thời lượng"]}
+            formatter={(value: any, name: any, props: any) => [props.payload.formattedTime, "Thời lượng"]}
           />
           <Bar dataKey="duration" fill="#8b5cf6" radius={[6, 6, 0, 0]} name="Thời lượng" />
         </BarChart>

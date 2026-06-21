@@ -5,7 +5,7 @@ import { subscribeToTelemetry } from "@/lib/firebase/rtdb";
 
 export interface Alert {
   id: string;
-  type: "freeze" | "distraction" | "hesitation" | "stimming" | "idle";
+  type: "freeze" | "distraction" | "hesitation" | "idle";
   group: "stress_overwhelm" | "distraction" | "execution_difficulty";
   quest_index: number;
   severity: "high" | "medium" | "low";
@@ -19,13 +19,17 @@ export interface Alert {
 
 const typeToGroup: Record<Alert["type"], Alert["group"]> = {
   freeze: "stress_overwhelm",
-  stimming: "distraction",
   distraction: "distraction",
   hesitation: "execution_difficulty",
   idle: "execution_difficulty",
 };
 
-export function useLiveTelemetry(sessionId: string | null, isActive: boolean, mutedGroups: string[] = []) {
+export function useLiveTelemetry(
+  sessionId: string | null,
+  isActive: boolean,
+  mutedGroups: string[] = [],
+  lessonParams?: { enable_auto_hint?: boolean; action_reminder_cycle?: number }
+) {
   const [telemetry, setTelemetry] = useState<any>(null);
   const [activeAlerts, setActiveAlerts] = useState<Alert[]>([]);
   const [sessionTime, setSessionTime] = useState(0);
@@ -42,9 +46,7 @@ export function useLiveTelemetry(sessionId: string | null, isActive: boolean, mu
   const activeHesitationAlertId = useRef<string | null>(null);
   const hesitationGraceTimer = useRef<number | null>(null); // To handle flickering
   
-  const stimmingStartOffset = useRef<number | null>(null);
-  const activeStimmingAlertId = useRef<string | null>(null);
-  const lastStimmingPeakTime = useRef<number | null>(null); // For grace period
+  const activeIdleAlertId = useRef<string | null>(null);
 
   useEffect(() => {
     if (!isActive || !sessionId) return;
@@ -84,27 +86,6 @@ export function useLiveTelemetry(sessionId: string | null, isActive: boolean, mu
         };
       };
 
-      // 1. Stimming Detection (Improved with 4s Grace Period)
-      const isStimmingPeak = snapshot.ang_vel_y_peak > 150 || snapshot.ang_vel_x_peak > 150;
-      if (isStimmingPeak) {
-        lastStimmingPeakTime.current = elapsed;
-        if (stimmingStartOffset.current === null) stimmingStartOffset.current = elapsed;
-        
-        const duration = Math.max(2, elapsed - stimmingStartOffset.current);
-        if (!activeStimmingAlertId.current) {
-          const alert = createAlert("stimming", "high", "Lắc đầu mạnh (Stimming / Meltdown)", stimmingStartOffset.current, duration);
-          activeStimmingAlertId.current = alert.id;
-          newAlerts.push(alert);
-        } else {
-          updates.push({ id: activeStimmingAlertId.current, duration });
-        }
-      } else if (stimmingStartOffset.current !== null) {
-        // Check if grace period (4s) has passed
-        if (elapsed - (lastStimmingPeakTime.current || 0) > 4) {
-          stimmingStartOffset.current = null;
-          activeStimmingAlertId.current = null;
-        }
-      }
 
       // 2. Distraction Detection (Standard 6s threshold)
       if (snapshot.focus_ratio < 0.3) {
@@ -154,6 +135,28 @@ export function useLiveTelemetry(sessionId: string | null, isActive: boolean, mu
         }
       }
 
+      // 4. Idle/Unresponsive Detection (When EnableAutoHint is False)
+      const autoHintEnabled = lessonParams?.enable_auto_hint ?? true;
+      const reminderCycle = lessonParams?.action_reminder_cycle ?? -1;
+
+      if (
+        !autoHintEnabled &&
+        reminderCycle > 0 &&
+        snapshot.last_visual_hint_time >= 0 &&
+        (snapshot.time_offset - snapshot.last_visual_hint_time) >= reminderCycle
+      ) {
+        const duration = snapshot.time_offset - snapshot.last_visual_hint_time;
+        if (!activeIdleAlertId.current) {
+          const alert = createAlert("idle", "medium", "Đã lâu không phản hồi", snapshot.last_visual_hint_time, duration);
+          activeIdleAlertId.current = alert.id;
+          newAlerts.push(alert);
+        } else {
+          updates.push({ id: activeIdleAlertId.current, duration });
+        }
+      } else {
+        activeIdleAlertId.current = null;
+      }
+
       // Apply changes to state
       if (newAlerts.length > 0 || updates.length > 0) {
         setActiveAlerts(prev => {
@@ -167,7 +170,7 @@ export function useLiveTelemetry(sessionId: string | null, isActive: boolean, mu
     });
 
     return () => unsubscribe();
-  }, [isActive, sessionId, questIndex]);
+  }, [isActive, sessionId, questIndex, lessonParams]);
 
   return { telemetry, activeAlerts, sessionTime, currentQuest, questIndex };
 }

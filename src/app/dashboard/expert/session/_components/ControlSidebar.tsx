@@ -4,7 +4,7 @@ import React from "react";
 import { 
   Play, Pause, RotateCcw, 
   ArrowRight, Target, Brain, 
-  Clock, Zap, Loader2, Info
+  Clock, Zap, Loader2, Info, MessageCircle
 } from "lucide-react";
 
 interface ControlSidebarProps {
@@ -13,6 +13,7 @@ interface ControlSidebarProps {
   onPauseLesson?: () => void;
   onForceSkip?: () => void;
   onResumeLesson?: () => void;
+  onSendNpcScript?: (text: string) => Promise<void>;
 }
 
 export default function ControlSidebar({ 
@@ -20,7 +21,8 @@ export default function ControlSidebar({
   telemetry,
   onPauseLesson,
   onForceSkip,
-  onResumeLesson
+  onResumeLesson,
+  onSendNpcScript
 }: ControlSidebarProps) {
   const formatTime = (sec: number) => {
     const m = Math.floor(sec / 60);
@@ -31,6 +33,9 @@ export default function ControlSidebar({
   // State to track if session is currently paused in UI
   const [isPaused, setIsPaused] = React.useState(false);
 
+  const [npcText, setNpcText] = React.useState("");
+  const [sendingNpc, setSendingNpc] = React.useState(false);
+
   const handlePauseToggle = () => {
     if (isPaused) {
       onResumeLesson?.();
@@ -38,6 +43,19 @@ export default function ControlSidebar({
     } else {
       onPauseLesson?.();
       setIsPaused(true);
+    }
+  };
+
+  const handleSendNpc = async () => {
+    if (!npcText.trim()) return;
+    setSendingNpc(true);
+    try {
+      await onSendNpcScript?.(npcText);
+      setNpcText("");
+    } catch (e) {
+      console.error("Failed to send NPC script:", e);
+    } finally {
+      setSendingNpc(false);
     }
   };
 
@@ -102,8 +120,37 @@ export default function ControlSidebar({
                 onClick={onForceSkip}
               />
               <CommandButton icon={Target} label="CALIBRATE" />
-           </div>
-        </div>
+            </div>
+
+            {/* NPC TTS Input */}
+            <div className="mt-4 p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-zinc-800 space-y-3">
+              <div className="flex items-center gap-2 text-zinc-900 dark:text-white">
+                 <MessageCircle size={14} className="text-blue-500" />
+                 <span className="text-[10px] font-black uppercase tracking-wider">Nói qua NPC (TTS)</span>
+              </div>
+              <textarea
+                value={npcText}
+                onChange={(e) => setNpcText(e.target.value)}
+                placeholder="Nhập nội dung thoại tiếng Việt (tối đa 200 ký tự)..."
+                maxLength={200}
+                className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 text-xs text-zinc-900 dark:text-white resize-none h-20 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500"
+              />
+              <button
+                onClick={handleSendNpc}
+                disabled={sendingNpc || !npcText.trim()}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-200 disabled:dark:bg-zinc-800 disabled:text-zinc-400 text-white font-black py-2.5 rounded-xl text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 active:scale-95"
+              >
+                {sendingNpc ? (
+                  <>
+                    <Loader2 size={12} className="animate-spin" />
+                    <span>Đang gửi...</span>
+                  </>
+                ) : (
+                  <span>Gửi câu thoại</span>
+                )}
+              </button>
+            </div>
+         </div>
       </div>
 
       <div className="p-6 bg-zinc-50 dark:bg-zinc-800/30 border-t border-zinc-100 dark:border-zinc-800">

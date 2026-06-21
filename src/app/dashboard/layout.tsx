@@ -8,7 +8,7 @@ import Header from "./_components/Header";
 import { getNavigationByRole, getRoleName } from "./_components/Navigation";
 import VRConnectionMonitor from "@/app/dashboard/expert/_components/VRConnectionMonitor";
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+function DashboardContent({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, role, userName } = useAuth();
   const pathname = usePathname();
@@ -67,5 +67,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </main>
       </div>
     </div>
+  );
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <React.Suspense fallback={
+      <div className="h-screen w-screen flex items-center justify-center bg-zinc-50 dark:bg-black">
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <DashboardContent>{children}</DashboardContent>
+    </React.Suspense>
   );
 }

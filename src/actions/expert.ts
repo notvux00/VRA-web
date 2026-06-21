@@ -214,10 +214,12 @@ export async function finalizeSession(childId: string, sessionId: string, data: 
  */
 export async function updateDefaultLessonParams(childId: string, lessonParams: {
   actions: {
+    enable_auto_hint: boolean;
     enable_visual_guidance: boolean;
     enable_bubble_hints: boolean;
     speech_silence_timeout: number;
     action_reminder_cycle: number;
+    gaze_cone_angle: number;
   };
   quiz: {
     quiz_intro_delay: number;

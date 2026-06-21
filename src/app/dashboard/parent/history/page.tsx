@@ -106,7 +106,7 @@ export default async function SessionHistoryPage({ searchParams }: PageProps) {
              <p className="text-zinc-500 font-medium italic">{error || "Chưa có lịch sử học tập được ghi nhận."}</p>
           </div>
         ) : (
-          sessions.map((session: Session) => {
+          sessions!.map((session: Session) => {
             const date = new Date(session.start_time).toLocaleDateString("vi-VN", { 
               day: "2-digit", 
               month: "2-digit",

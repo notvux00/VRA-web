@@ -7,7 +7,7 @@ interface FocusChartProps {
 
 export default async function FocusChart({ childId }: FocusChartProps) {
   const result = await getChildSessions(childId);
-  const sessions = result.success ? result.sessions : [];
+  const sessions = result.success && result.sessions ? result.sessions : [];
 
   // Mock Skill Data (Derived from Session Types later)
   const skills = [
