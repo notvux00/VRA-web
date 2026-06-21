@@ -5,12 +5,14 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { 
   ArrowLeft, Loader2, AlertCircle, 
   MessageSquarePlus, Save, Eye, Video, 
-  ThumbsUp, Frown, Lightbulb, SkipForward, Volume2, Mic, MessageCircle
+  ThumbsUp, Frown, Lightbulb, SkipForward, Volume2, Mic, MessageCircle,
+  Bell, BellOff, ChevronDown, ChevronUp
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLiveTelemetry } from "../../_hooks/useLiveTelemetry";
 import SessionSummaryModal from "../_components/SessionSummaryModal";
 import { getAssignedChildDetail, finalizeSession, syncAndGetChildPhrases } from "@/actions/expert";
+import { getLessonDetail } from "@/actions/lessons";
 import AlertSidebar from "../_components/AlertSidebar";
 import POVMonitor from "../_components/POVMonitor";
 import { endLessonOnDevice, subscribeToVrHandshake, pushRemoteCommand } from "@/lib/firebase/rtdb";
@@ -27,6 +29,7 @@ export default function LiveSessionPage() {
   const router = useRouter();
   
   const [child, setChild] = useState<any>(null);
+  const [lessonDetail, setLessonDetail] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isSessionActive, setIsSessionActive] = useState(false);
@@ -38,6 +41,24 @@ export default function LiveSessionPage() {
   const [npcText, setNpcText] = useState("");
   const [sendingNpc, setSendingNpc] = useState(false);
   const [volumeLevel, setVolumeLevel] = useState(0.5);
+  const [leftWidth, setLeftWidth] = useState(60);
+  const [isFooterCollapsed, setIsFooterCollapsed] = useState(false);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const newWidth = (moveEvent.clientX / window.innerWidth) * 100;
+      if (newWidth >= 35 && newWidth <= 75) {
+        setLeftWidth(newWidth);
+      }
+    };
+    const handleMouseUp = () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  };
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -48,7 +69,7 @@ export default function LiveSessionPage() {
   const alertsHistoryRef = useRef<any[]>([]);
   const manualLogsRef = useRef<any[]>([]);
 
-  // 1. Lấy thông tin bé và đồng bộ các câu thoại mẫu
+  // 1. Lấy thông tin bé, bài học và đồng bộ các câu thoại mẫu
   useEffect(() => {
     async function fetchData() {
       if (!user?.uid || !childId) return;
@@ -57,6 +78,12 @@ export default function LiveSessionPage() {
         if (lessonDocId) {
           // Tự động đồng bộ các mẫu câu mới nhất của bài học vào hồ sơ trẻ nếu chưa có (self-healing)
           await syncAndGetChildPhrases(childId as string, lessonDocId);
+          
+          // Tải thông tin chi tiết của bài học (để lấy tiêu đề tiếng Việt của quest)
+          const lessonRes = await getLessonDetail(lessonDocId);
+          if (lessonRes.success) {
+            setLessonDetail(lessonRes.lesson);
+          }
         }
 
         const res = await getAssignedChildDetail(childId as string);
@@ -339,11 +366,14 @@ export default function LiveSessionPage() {
         </div>
       )}
 
-      {/* VÙNG GIỮA: CHIA 2 CỘT */}
+      {/* VÙNG GIỮA: CHIA 2 CỘT (60% POV - 40% CONTROLS) */}
       <div className="flex-1 flex min-h-0">
         
-        {/* CỘT TRÁI: POV & TELEMETRY HUD (75% width) */}
-        <div className="flex-1 border-r border-white/5 relative bg-zinc-950 flex flex-col">
+        {/* CỘT TRÁI: POV */}
+        <div 
+          style={{ width: `${leftWidth}%` }} 
+          className="relative bg-zinc-950 flex flex-col min-w-[35%] max-w-[75%]"
+        >
           {/* POV Video Container */}
           <div className="absolute inset-4 rounded-xl overflow-hidden border border-white/10 bg-black flex items-center justify-center">
             
@@ -356,163 +386,194 @@ export default function LiveSessionPage() {
                  connectionState={connectionState} 
                />
             </div>
-            
-            {/* HUD Overlay cho Telemetry */}
-            <div className="absolute top-4 left-4 flex gap-2">
-              <div className="bg-black/50 backdrop-blur border border-white/10 px-3 py-1.5 rounded font-mono text-[10px] text-zinc-300">
-                HEAD_VEL: {telemetry ? Math.round(telemetry.head_vel_avg * 100) / 100 : "0.00"}
-              </div>
-              <div className="bg-black/50 backdrop-blur border border-white/10 px-3 py-1.5 rounded font-mono text-[10px] text-zinc-300">
-                DIST: {telemetry && telemetry.min_hand_dist >= 0 ? `${(Math.round(telemetry.min_hand_dist * 100))} cm` : "--"}
-              </div>
-            </div>
-            <div className="absolute bottom-4 right-4 bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 backdrop-blur-md px-4 py-1.5 rounded font-bold text-xs uppercase tracking-widest shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+            <div className="absolute bottom-4 right-4 bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 backdrop-blur-md px-4 py-1.5 rounded font-bold text-xs uppercase tracking-widest shadow-[0_0_15px_rgba(16,185,129,0.2)] z-10">
               {currentQuest}
             </div>
           </div>
         </div>
 
-        {/* CỘT PHẢI: CHIẾN DỊCH & REMOTE CONTROL (25% width) */}
-        <div className="w-80 bg-zinc-950 flex flex-col">
-          
-          <div className="p-4 border-b border-white/5">
-            <h3 className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold mb-3">Thông Tin Bài Học</h3>
-            <div className="bg-white/5 rounded-lg p-3 border border-white/5">
-              <div className="text-xs text-zinc-400 mb-1">Quest Hiện Tại</div>
-              <div className="text-sm font-bold text-emerald-400 leading-tight">{currentQuest}</div>
-            </div>
-          </div>
+        {/* ĐƯỜNG PHÂN CHIA CO GIÃN (DRAGGABLE DIVIDER) */}
+        <div 
+          onMouseDown={handleMouseDown}
+          className="w-1.5 cursor-col-resize bg-zinc-900 border-l border-r border-white/5 hover:bg-emerald-500 active:bg-emerald-500 transition-colors z-20 self-stretch select-none flex-shrink-0"
+        />
 
-          <div className="flex-1 p-4 overflow-y-auto">
-            <h3 className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold mb-3">Tác Động Tự Xa (Remote)</h3>
-            <div className="flex flex-col gap-2">
-              <button 
-                onClick={handleTriggerVerbalHint}
-                className="flex items-center gap-3 w-full bg-zinc-900 border border-white/5 hover:border-zinc-500 p-3 rounded-lg text-left transition-all group"
-              >
-                <div className="w-8 h-8 rounded-full bg-blue-500/10 text-blue-400 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
-                  <MessageCircle size={16} />
-                </div>
-                <div className="flex-1">
-                  <div className="text-sm font-bold text-zinc-200">Gợi Ý Lời Nói (Verbal)</div>
-                  <div className="text-[10px] text-zinc-500">Phát loa NPC dỗ dành/nhắc nhở</div>
-                </div>
-              </button>
+        {/* CỘT PHẢI: CHIẾN DỊCH & REMOTE CONTROL */}
+        <div 
+          style={{ width: `${100 - leftWidth}%` }} 
+          className="bg-zinc-950 flex flex-col min-h-0 min-w-[25%] max-w-[65%] @container"
+        >
+          <div className="flex-1 grid grid-cols-1 @xl:grid-cols-2 gap-4 p-4 overflow-y-auto min-h-0">
+            
 
-              <button 
-                onClick={handleTriggerVisualHint}
-                className="flex items-center gap-3 w-full bg-zinc-900 border border-white/5 hover:border-zinc-500 p-3 rounded-lg text-left transition-all group"
-              >
-                <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
-                  <Eye size={16} />
-                </div>
-                <div className="flex-1">
-                  <div className="text-sm font-bold text-zinc-200">Gợi Ý Thị Giác (Visual)</div>
-                  <div className="text-[10px] text-zinc-500">Chớp nháy viền vật thể</div>
-                </div>
-              </button>
-
-              <button 
-                onClick={handleForceSkip}
-                className="flex items-center gap-3 w-full bg-zinc-900 border border-white/5 hover:border-zinc-500 p-3 rounded-lg text-left transition-all group"
-              >
-                <div className="w-8 h-8 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center group-hover:bg-amber-500/20 transition-colors">
-                  <SkipForward size={16} />
-                </div>
-                <div className="flex-1">
-                  <div className="text-sm font-bold text-zinc-200">Force Skip</div>
-                  <div className="text-[10px] text-zinc-500">Bỏ qua nhanh câu này</div>
-                </div>
-              </button>
-
-              <div className="w-full bg-zinc-900 border border-white/5 p-4 rounded-lg flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-fuchsia-500/10 text-fuchsia-400 flex items-center justify-center">
-                      <Volume2 size={16} />
+              {/* Tác động từ xa */}
+              <div className="bg-white/5 rounded-xl p-4 border border-white/5 space-y-3">
+                <h3 className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Tác Động Từ Xa (Remote)</h3>
+                <div className="flex flex-col gap-2">
+                  <button 
+                    onClick={handleTriggerVerbalHint}
+                    className="flex items-center gap-3 w-full bg-zinc-900/60 border border-white/5 hover:border-zinc-500 p-2.5 rounded-lg text-left transition-all group"
+                  >
+                    <div className="w-7 h-7 rounded-full bg-blue-500/10 text-blue-400 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
+                      <MessageCircle size={14} />
                     </div>
-                    <div>
-                      <div className="text-sm font-bold text-zinc-200">Âm lượng hệ thống</div>
-                      <div className="text-[10px] text-zinc-500 font-medium">Kéo trượt để điều hòa âm thanh VR</div>
+                    <div className="flex-1">
+                      <div className="text-xs font-bold text-zinc-200">Gợi Ý Lời Nói (Verbal)</div>
                     </div>
+                  </button>
+
+                  <button 
+                    onClick={handleTriggerVisualHint}
+                    className="flex items-center gap-3 w-full bg-zinc-900/60 border border-white/5 hover:border-zinc-500 p-2.5 rounded-lg text-left transition-all group"
+                  >
+                    <div className="w-7 h-7 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
+                      <Eye size={14} />
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-xs font-bold text-zinc-200">Gợi Ý Thị Giác (Visual)</div>
+                    </div>
+                  </button>
+
+                  <button 
+                    onClick={handleForceSkip}
+                    className="flex items-center gap-3 w-full bg-zinc-900/60 border border-white/5 hover:border-zinc-500 p-2.5 rounded-lg text-left transition-all group"
+                  >
+                    <div className="w-7 h-7 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center group-hover:bg-amber-500/20 transition-colors">
+                      <SkipForward size={14} />
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-xs font-bold text-zinc-200">Force Skip</div>
+                    </div>
+                  </button>
+
+                  <div className="w-full bg-zinc-900/60 border border-white/5 p-3 rounded-lg flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-full bg-fuchsia-500/10 text-fuchsia-400 flex items-center justify-center">
+                          <Volume2 size={14} />
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-zinc-200">Âm lượng hệ thống</div>
+                        </div>
+                      </div>
+                      <span className="text-xs font-mono font-bold text-fuchsia-400">{Math.round(volumeLevel * 100)}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={volumeLevel}
+                      onChange={async (e) => {
+                        const val = parseFloat(e.target.value);
+                        setVolumeLevel(val);
+                        await handleAdjustVolume(val);
+                      }}
+                      className="w-full accent-fuchsia-500 h-1 bg-zinc-800 rounded-lg cursor-pointer appearance-none"
+                    />
                   </div>
-                  <span className="text-xs font-mono font-bold text-fuchsia-400">{Math.round(volumeLevel * 100)}%</span>
                 </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.05"
-                  value={volumeLevel}
-                  onChange={async (e) => {
-                    const val = parseFloat(e.target.value);
-                    setVolumeLevel(val);
-                    await handleAdjustVolume(val);
-                  }}
-                  className="w-full accent-fuchsia-500 h-1.5 bg-zinc-800 rounded-lg cursor-pointer appearance-none"
+              </div>
+
+            {/* Cột 2: Giao tiếp NPC, Mẫu câu nhanh */}
+            <div className="space-y-4">
+              {/* Nói qua NPC (TTS) */}
+              <div className="bg-white/5 rounded-xl p-4 border border-white/5 flex flex-col gap-3">
+                <div className="text-xs font-bold text-zinc-200 flex items-center gap-2">
+                  <MessageCircle size={14} className="text-blue-400" />
+                  <span>Nói qua NPC (TTS)</span>
+                </div>
+                <textarea
+                  value={npcText}
+                  onChange={(e) => setNpcText(e.target.value)}
+                  placeholder="Nhập nội dung thoại tiếng Việt (tối đa 200 ký tự)..."
+                  maxLength={200}
+                  className="w-full bg-black border border-white/10 rounded p-2.5 text-xs text-white resize-none h-16 focus:outline-none focus:border-zinc-500"
                 />
+                <button
+                  disabled={sendingNpc || !npcText.trim()}
+                  onClick={() => handleSendNpcScript()}
+                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-800 disabled:text-zinc-500 text-white font-bold py-2 rounded text-xs transition-colors flex items-center justify-center gap-2 active:scale-95"
+                >
+                  {sendingNpc ? (
+                    <>
+                      <Loader2 size={12} className="animate-spin" />
+                      <span>Đang gửi...</span>
+                    </>
+                  ) : (
+                    <span>Gửi câu thoại</span>
+                  )}
+                </button>
               </div>
-            </div>
 
-            {/* NPC Script Input Panel */}
-            <div className="mt-4 p-4 bg-zinc-900 border border-white/5 rounded-lg flex flex-col gap-3">
-              <div className="text-xs font-bold text-zinc-200 flex items-center gap-2">
-                <MessageCircle size={14} className="text-blue-400" />
-                <span>Nói qua NPC (TTS)</span>
-              </div>
-              <textarea
-                value={npcText}
-                onChange={(e) => setNpcText(e.target.value)}
-                placeholder="Nhập nội dung thoại tiếng Việt (tối đa 200 ký tự)..."
-                maxLength={200}
-                className="w-full bg-black border border-white/10 rounded p-2.5 text-xs text-white resize-none h-20 focus:outline-none focus:border-zinc-500"
-              />
-              <button
-                disabled={sendingNpc || !npcText.trim()}
-                onClick={() => handleSendNpcScript()}
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-800 disabled:text-zinc-500 text-white font-bold py-2 rounded text-xs transition-colors flex items-center justify-center gap-2 active:scale-95"
-              >
-                {sendingNpc ? (
-                  <>
-                    <Loader2 size={12} className="animate-spin" />
-                    <span>Đang gửi...</span>
-                  </>
-                ) : (
-                  <span>Gửi câu thoại</span>
-                )}
-              </button>
-            </div>
+              {/* Mẫu câu nhanh */}
+              {(() => {
+                const lessonDocId = searchParams.get("lesson") || "";
+                const childPhrases = child?.quick_phrases || {};
+                const lessonPhrases = childPhrases[lessonDocId] || {};
+                const lessonQuestKeys = Object.keys(lessonPhrases).filter(k => k !== "general");
+                const activeQuestPhrases = lessonPhrases[currentQuest] || [];
+                const generalPhrases = lessonPhrases["general"] || childPhrases["general"] || ["Con làm tốt lắm!", "Tuyệt vời!", "Cố lên con!"];
+                const otherQuests = lessonQuestKeys.filter(k => k !== currentQuest);
 
-            {/* Quick Phrases Panel */}
-            {(() => {
-              const lessonDocId = searchParams.get("lesson") || "";
-              const childPhrases = child?.quick_phrases || {};
-              const lessonPhrases = childPhrases[lessonDocId] || {};
-              const lessonQuestKeys = Object.keys(lessonPhrases).filter(k => k !== "general");
-              const activeQuestPhrases = lessonPhrases[currentQuest] || [];
-              const generalPhrases = lessonPhrases["general"] || childPhrases["general"] || ["Con làm tốt lắm!", "Tuyệt vời!", "Cố lên con!"];
-              const otherQuests = lessonQuestKeys.filter(k => k !== currentQuest);
+                const questsList = lessonDetail?.quests || [];
+                const activeQuestObj = questsList.find((q: any) => q.id === currentQuest);
+                const activeQuestTitle = activeQuestObj ? activeQuestObj.title : currentQuest;
 
-              return (
-                <div className="mt-4 p-4 bg-zinc-900 border border-white/5 rounded-lg flex flex-col gap-4">
-                  <div className="text-xs font-bold text-zinc-200 flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <MessageSquarePlus size={14} className="text-emerald-400" />
-                      <span>Mẫu câu nhanh</span>
-                    </span>
-                  </div>
-
-                  {/* Active Quest Phrases */}
-                  <div className="space-y-2">
-                    <div className="text-[10px] text-zinc-400 uppercase tracking-wider font-bold">
-                      Nhiệm vụ: {currentQuest}
+                return (
+                  <div className="bg-white/5 rounded-xl p-4 border border-white/5 flex flex-col gap-4 max-h-[450px] overflow-y-auto">
+                    <div className="text-xs font-bold text-zinc-200 flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <MessageSquarePlus size={14} className="text-emerald-400" />
+                        <span>Mẫu câu nhanh</span>
+                      </span>
                     </div>
-                    {activeQuestPhrases.length > 0 ? (
+
+                    {/* Active Quest Phrases */}
+                    <div className="space-y-2">
+                      <div className="text-[10px] text-zinc-400 uppercase tracking-wider font-bold">
+                        Nhiệm vụ: {activeQuestTitle}
+                      </div>
+                      {activeQuestPhrases.length > 0 ? (
+                        <div className="flex flex-col gap-1.5">
+                          {activeQuestPhrases.map((phrase: string, idx: number) => (
+                            <div
+                              key={idx}
+                              className="group flex items-center justify-between gap-2 bg-black/40 border border-white/5 hover:border-blue-500/30 rounded-lg p-2 text-xs transition-colors"
+                            >
+                              <button
+                                onClick={() => setNpcText(phrase)}
+                                className="text-left text-zinc-300 hover:text-white flex-1 line-clamp-2"
+                                title="Click để chỉnh sửa câu thoại"
+                              >
+                                {phrase}
+                              </button>
+                              <button
+                                onClick={() => handleSendNpcScript(phrase)}
+                                disabled={sendingNpc}
+                                className="p-1 hover:bg-emerald-500/10 text-zinc-500 hover:text-emerald-400 rounded transition-colors active:scale-95 disabled:opacity-50"
+                                title="Gửi ngay câu thoại này"
+                              >
+                                <Volume2 size={12} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-[10px] text-zinc-500 italic">Không có mẫu câu cho nhiệm vụ này.</p>
+                      )}
+                    </div>
+
+                    {/* General Phrases */}
+                    <div className="space-y-2">
+                      <div className="text-[10px] text-zinc-400 uppercase tracking-wider font-bold">
+                        Khích lệ chung
+                      </div>
                       <div className="flex flex-col gap-1.5">
-                        {activeQuestPhrases.map((phrase: string, idx: number) => (
+                        {generalPhrases.map((phrase: string, idx: number) => (
                           <div
                             key={idx}
-                            className="group flex items-center justify-between gap-2 bg-black/40 border border-white/5 hover:border-blue-500/30 rounded-lg p-2 text-xs transition-colors"
+                            className="group flex items-center justify-between gap-2 bg-black/40 border border-white/5 hover:border-purple-500/30 rounded-lg p-2 text-xs transition-colors"
                           >
                             <button
                               onClick={() => setNpcText(phrase)}
@@ -532,152 +593,170 @@ export default function LiveSessionPage() {
                           </div>
                         ))}
                       </div>
-                    ) : (
-                      <p className="text-[10px] text-zinc-500 italic">Không có mẫu câu cho nhiệm vụ này.</p>
+                    </div>
+
+                    {/* Other Quests Accordion */}
+                    {otherQuests.length > 0 && (
+                      <details className="group/details space-y-2">
+                        <summary className="text-[10px] text-zinc-500 group-open/details:text-zinc-400 uppercase tracking-wider font-bold cursor-pointer hover:text-zinc-300 transition-colors select-none list-none flex items-center justify-between">
+                          <span>Nhiệm vụ khác ({otherQuests.length})</span>
+                          <span className="text-[8px] transition-transform group-open/details:rotate-180">▼</span>
+                        </summary>
+                        <div className="space-y-4 pt-2 border-t border-white/5">
+                          {otherQuests.map((qKey: string) => {
+                            const questObj = questsList.find((q: any) => q.id === qKey);
+                            const questTitle = questObj ? questObj.title : qKey;
+                            const phrases = lessonPhrases[qKey] || [];
+                            if (phrases.length === 0) return null;
+                            return (
+                              <div key={qKey} className="space-y-2">
+                                <div className="text-[9px] text-zinc-500 font-bold uppercase">{questTitle}</div>
+                                <div className="flex flex-col gap-1.5">
+                                  {phrases.map((phrase: string, idx: number) => (
+                                    <div
+                                      key={idx}
+                                      className="group flex items-center justify-between gap-2 bg-black/20 border border-white/5 hover:border-zinc-500/30 rounded-lg p-2 text-xs transition-colors"
+                                    >
+                                      <button
+                                        onClick={() => setNpcText(phrase)}
+                                        className="text-left text-zinc-400 hover:text-white flex-1 line-clamp-2"
+                                        title="Click để chỉnh sửa câu thoại"
+                                      >
+                                        {phrase}
+                                      </button>
+                                      <button
+                                        onClick={() => handleSendNpcScript(phrase)}
+                                        disabled={sendingNpc}
+                                        className="p-1 hover:bg-emerald-500/10 text-zinc-500 hover:text-emerald-400 rounded transition-colors active:scale-95 disabled:opacity-50"
+                                        title="Gửi ngay câu thoại này"
+                                      >
+                                        <Volume2 size={12} />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </details>
                     )}
                   </div>
-
-                  {/* General Phrases */}
-                  <div className="space-y-2">
-                    <div className="text-[10px] text-zinc-400 uppercase tracking-wider font-bold">
-                      Khích lệ chung
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      {generalPhrases.map((phrase: string, idx: number) => (
-                        <div
-                          key={idx}
-                          className="group flex items-center justify-between gap-2 bg-black/40 border border-white/5 hover:border-purple-500/30 rounded-lg p-2 text-xs transition-colors"
-                        >
-                          <button
-                            onClick={() => setNpcText(phrase)}
-                            className="text-left text-zinc-300 hover:text-white flex-1 line-clamp-2"
-                            title="Click để chỉnh sửa câu thoại"
-                          >
-                            {phrase}
-                          </button>
-                          <button
-                            onClick={() => handleSendNpcScript(phrase)}
-                            disabled={sendingNpc}
-                            className="p-1 hover:bg-emerald-500/10 text-zinc-500 hover:text-emerald-400 rounded transition-colors active:scale-95 disabled:opacity-50"
-                            title="Gửi ngay câu thoại này"
-                          >
-                            <Volume2 size={12} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Other Quests Accordion */}
-                  {otherQuests.length > 0 && (
-                    <details className="group/details space-y-2">
-                      <summary className="text-[10px] text-zinc-505 group-open/details:text-zinc-400 uppercase tracking-wider font-bold cursor-pointer hover:text-zinc-300 transition-colors select-none list-none flex items-center justify-between">
-                        <span>Nhiệm vụ khác ({otherQuests.length})</span>
-                        <span className="text-[8px] transition-transform group-open/details:rotate-180">▼</span>
-                      </summary>
-                      <div className="space-y-4 pt-2 border-t border-white/5">
-                        {otherQuests.map((qKey: string) => {
-                          const phrases = lessonPhrases[qKey] || [];
-                          if (phrases.length === 0) return null;
-                          return (
-                            <div key={qKey} className="space-y-2">
-                              <div className="text-[9px] text-zinc-500 font-bold uppercase">{qKey}</div>
-                              <div className="flex flex-col gap-1.5">
-                                {phrases.map((phrase: string, idx: number) => (
-                                  <div
-                                    key={idx}
-                                    className="group flex items-center justify-between gap-2 bg-black/20 border border-white/5 hover:border-zinc-500/30 rounded-lg p-2 text-xs transition-colors"
-                                  >
-                                    <button
-                                      onClick={() => setNpcText(phrase)}
-                                      className="text-left text-zinc-400 hover:text-white flex-1 line-clamp-2"
-                                      title="Click để chỉnh sửa câu thoại"
-                                    >
-                                      {phrase}
-                                    </button>
-                                    <button
-                                      onClick={() => handleSendNpcScript(phrase)}
-                                      disabled={sendingNpc}
-                                      className="p-1 hover:bg-emerald-500/10 text-zinc-500 hover:text-emerald-400 rounded transition-colors active:scale-95 disabled:opacity-50"
-                                      title="Gửi ngay câu thoại này"
-                                    >
-                                      <Volume2 size={12} />
-                                    </button>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </details>
-                  )}
-                </div>
-              );
-            })()}
+                );
+              })()}
+            </div>
+            
           </div>
-
-          {/* Alert Controls & Active List */}
-          <AlertSidebar 
-            activeAlerts={activeAlerts.filter(a => !mutedGroups.includes(a.group))} 
-            mutedGroups={mutedGroups}
-            onToggleMute={toggleMute}
-          />
         </div>
+
       </div>
 
-      {/* VÙNG DƯỚI: HORIZONTAL LOGS & MANUAL BUTTONS (Khoảng 30% height) */}
-      <div className="h-44 border-t border-white/5 bg-black flex flex-col shrink-0">
-        
-        {/* Hàng ngang chứa các thẻ Alert trôi */}
-        <div 
-          ref={alertsScrollRef}
-          className="flex-1 flex gap-3 p-4 overflow-x-auto items-end no-scrollbar bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-zinc-900/40 to-transparent"
-        >
-          {activeAlerts.length === 0 && (
-            <div className="text-xs font-mono text-zinc-600 opacity-50 absolute left-4 bottom-8">
-              [SYSTEM_LOG] Đang nhận luồng dữ liệu 50Hz...
-            </div>
-          )}
+      {/* VÙNG DƯỚI: ALERT CONTROL & HORIZONTAL LOGS & MANUAL BUTTONS */}
+      <div 
+        className={`relative border-t border-white/5 bg-black flex flex-col shrink-0 transition-all duration-300 overflow-hidden ${
+          isFooterCollapsed ? 'h-12' : 'h-52'
+        }`}
+      >
+        {/* Nút thu gọn ở góc trên cùng bên phải */}
+        {!isFooterCollapsed && (
+          <button
+            onClick={() => setIsFooterCollapsed(true)}
+            className="absolute top-3 right-3 p-1.5 rounded-lg bg-zinc-900 border border-white/10 text-zinc-400 hover:text-white z-30 transition-all hover:bg-zinc-800 active:scale-95"
+            title="Thu gọn cảnh báo"
+          >
+            <ChevronDown size={14} />
+          </button>
+        )}
 
-          {activeAlerts.filter(a => !mutedGroups.includes(a.group)).map((alert, idx) => (
-            <div key={`${alert.id}-${idx}`} className={`shrink-0 min-w-[200px] border px-3 py-2 rounded-lg flex flex-col gap-1 shadow-lg
-              ${alert.severity === 'high' ? 'bg-red-500/10 border-red-500/30 text-red-100' : ''}
-              ${alert.severity === 'medium' ? 'bg-amber-500/10 border-amber-500/30 text-amber-100' : ''}
-              ${alert.severity === 'low' ? 'bg-blue-500/10 border-blue-500/30 text-blue-100' : ''}
-            `}>
-              <div className="flex items-center justify-between opacity-60">
-                <div className="text-[9px] font-mono uppercase tracking-wider">
-                  {alert.group.replace('_', ' ')} <span className="mx-1">/</span> {alert.type}
-                </div>
-                <div className="text-[9px] font-mono">{new Date(alert.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'})}</div>
-              </div>
-              <div className="text-xs font-bold mb-1">{alert.message}</div>
-              <div className="flex items-center gap-1.5 mt-auto">
-                <div className="h-1 flex-1 bg-white/10 rounded-full overflow-hidden">
-                  <div className="h-full bg-current opacity-30 animate-pulse" style={{ width: '100%' }}></div>
-                </div>
-                <span className="text-[10px] font-mono font-bold opacity-80">{alert.duration_sec}s</span>
-              </div>
+        <div className={`flex-1 flex min-h-0 transition-all duration-300 ${isFooterCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+          {/* CỘT PHỤ TRÁI: BỘ NÚT BẬT TẮT ALERT CONTROL */}
+          <div className="w-80 border-r border-white/5 p-4 bg-zinc-950/40 flex flex-col justify-center gap-2 select-none shrink-0">
+            <h3 className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold flex items-center gap-2 mb-1">
+              <Bell size={12} /> Bật/Tắt Cảnh Báo
+            </h3>
+            <div className="flex flex-col gap-1.5">
+              {[
+                { key: "stress_overwhelm", label: "Stress / Overwhelm", icon: "😰" },
+                { key: "distraction", label: "Mất tập trung", icon: "😵" },
+                { key: "execution_difficulty", label: "Khó thực hiện", icon: "🤔" },
+              ].map((group) => {
+                const isMuted = mutedGroups.includes(group.key);
+                const isActive = activeAlerts.some(a => a.group === group.key);
+                return (
+                  <button
+                    key={group.key}
+                    onClick={() => toggleMute(group.key)}
+                    className={`px-3 py-1.5 rounded-lg flex items-center justify-between transition-all border text-left ${
+                      isMuted 
+                        ? 'bg-zinc-900/40 border-white/5 opacity-40 hover:opacity-60' 
+                        : isActive 
+                          ? 'bg-red-500/10 border-red-500/30' 
+                          : 'bg-zinc-900/80 border-white/10 hover:border-zinc-700'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">{group.icon}</span>
+                      <span className="text-xs font-bold text-zinc-200">{group.label}</span>
+                    </div>
+                    <span className="text-zinc-500">
+                      {isMuted ? <BellOff size={12} /> : <Bell size={12} className="text-blue-400" />}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-          ))}
+          </div>
 
-          {manualLogs.map((log) => (
-            <div key={log.log_id} className="shrink-0 min-w-[180px] border border-emerald-500/30 bg-emerald-500/10 text-emerald-100 px-3 py-2 rounded-lg flex flex-col gap-1 shadow-lg">
-              <div className="flex items-center justify-between opacity-60">
-                <div className="text-[9px] font-mono uppercase tracking-wider">Expert Log</div>
-                <div className="text-[9px] font-mono">
-                  {Math.floor(log.time_offset/60)}:{(Math.floor(log.time_offset%60)).toString().padStart(2,'0')}
+          {/* CỘT PHỤ PHẢI: HÀNG NGANG CHỨA CÁC THẺ ALERT TRÔI */}
+          <div 
+            ref={alertsScrollRef}
+            className="flex-1 flex gap-3 p-4 overflow-x-auto items-center no-scrollbar bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-zinc-900/20 to-transparent"
+          >
+            {activeAlerts.length === 0 && (
+              <div className="text-xs font-mono text-zinc-600 opacity-50 pl-2">
+                [SYSTEM_LOG] Đang nhận luồng dữ liệu 50Hz...
+              </div>
+            )}
+
+            {activeAlerts.filter(a => !mutedGroups.includes(a.group)).map((alert, idx) => (
+              <div key={`${alert.id}-${idx}`} className={`shrink-0 min-w-[200px] border px-3 py-2 rounded-lg flex flex-col gap-1 shadow-lg
+                ${alert.severity === 'high' ? 'bg-red-500/10 border-red-500/30 text-red-100' : ''}
+                ${alert.severity === 'medium' ? 'bg-amber-500/10 border-amber-500/30 text-amber-100' : ''}
+                ${alert.severity === 'low' ? 'bg-blue-500/10 border-blue-500/30 text-blue-100' : ''}
+              `}>
+                <div className="flex items-center justify-between opacity-60">
+                  <div className="text-[9px] font-mono uppercase tracking-wider">
+                    {alert.group.replace('_', ' ')} <span className="mx-1">/</span> {alert.type}
+                  </div>
+                  <div className="text-[9px] font-mono">{new Date(alert.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'})}</div>
+                </div>
+                <div className="text-xs font-bold mb-1">{alert.message}</div>
+                <div className="flex items-center gap-1.5 mt-auto">
+                  <div className="h-1 flex-1 bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full bg-current opacity-30 animate-pulse" style={{ width: '100%' }}></div>
+                  </div>
+                  <span className="text-[10px] font-mono font-bold opacity-80">{alert.duration_sec}s</span>
                 </div>
               </div>
-              <div className="text-xs font-bold">{log.event}</div>
-              {log.note && log.event === "Note" && (
-                <div className="text-[10px] opacity-80 italic line-clamp-1 border-t border-emerald-500/20 mt-1 pt-1">
-                  {log.note}
+            ))}
+
+            {manualLogs.map((log) => (
+              <div key={log.log_id} className="shrink-0 min-w-[180px] border border-emerald-500/30 bg-emerald-500/10 text-emerald-100 px-3 py-2 rounded-lg flex flex-col gap-1 shadow-lg">
+                <div className="flex items-center justify-between opacity-60">
+                  <div className="text-[9px] font-mono uppercase tracking-wider">Expert Log</div>
+                  <div className="text-[9px] font-mono">
+                    {Math.floor(log.time_offset/60)}:{(Math.floor(log.time_offset%60)).toString().padStart(2,'0')}
+                  </div>
                 </div>
-              )}
-            </div>
-          ))}
+                <div className="text-xs font-bold">{log.event}</div>
+                {log.note && log.event === "Note" && (
+                  <div className="text-[10px] opacity-80 italic line-clamp-1 border-t border-emerald-500/20 mt-1 pt-1">
+                    {log.note}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Action Bar dưới cùng */}
@@ -709,6 +788,17 @@ export default function LiveSessionPage() {
           >
             <MessageSquarePlus size={14} /> Viết Ghi Chú...
           </button>
+
+          {isFooterCollapsed && (
+            <button 
+              onClick={() => setIsFooterCollapsed(false)}
+              className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-xs font-bold transition-all active:scale-95 flex-shrink-0"
+              title="Mở rộng cảnh báo"
+            >
+              <ChevronUp size={14} />
+              <span>Hiện Cảnh Báo</span>
+            </button>
+          )}
         </div>
 
       </div>

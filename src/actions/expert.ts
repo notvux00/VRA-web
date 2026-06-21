@@ -314,9 +314,13 @@ export async function syncAndGetChildPhrases(childId: string, lessonDocId: strin
       const lessonDoc = await adminDb.collection("lessons").doc(lessonDocId).get();
       if (lessonDoc.exists) {
         const lessonData = lessonDoc.data();
-        const defaultPhrases = lessonData?.default_phrases || {};
+        const quests = lessonData?.quests || [];
+        const questPhrases: Record<string, string[]> = {};
+        quests.forEach((q: any) => {
+          questPhrases[q.id] = q.default_phrases || [];
+        });
         
-        quickPhrases[lessonDocId] = defaultPhrases;
+        quickPhrases[lessonDocId] = questPhrases;
         
         await childRef.update({
           quick_phrases: quickPhrases,

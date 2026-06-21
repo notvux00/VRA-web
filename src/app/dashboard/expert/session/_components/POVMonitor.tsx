@@ -78,33 +78,6 @@ export default function POVMonitor({ telemetry, childName, stream, connectionSta
 
       {/* Target Reticle Removed */}
 
-      {/* Telemetry Minimal Overlay */}
-      <div className="absolute bottom-6 left-6 flex gap-4 pointer-events-none">
-        <TelemetryTag label="YAW" value={telemetry?.head?.yaw?.toFixed(1) || "0.0"} />
-        <TelemetryTag label="ANG VEL" value={telemetry?.head?.angular_velocity?.toFixed(2) || "0.00"} />
-        <TelemetryTag label="DEV" value={telemetry?.task_zone?.deviation_deg?.toFixed(1) || "0.0"} highlight={(telemetry?.task_zone?.deviation_deg || 0) > 30} />
-      </div>
-
-      {/* Hands interaction Indicator */}
-      <div className="absolute bottom-6 right-6 flex gap-2">
-        <div className={`px-2 py-1 rounded bg-black/50 border border-white/10 flex items-center gap-1.5 ${telemetry?.left_hand?.near_object ? 'text-blue-400' : 'text-white/40'}`}>
-          <MousePointer2 size={10} />
-          <span className="text-[9px] font-black uppercase">L-HAND</span>
-        </div>
-        <div className={`px-2 py-1 rounded bg-black/50 border border-white/10 flex items-center gap-1.5 ${telemetry?.right_hand?.near_object ? 'text-blue-400' : 'text-white/40'}`}>
-          <MousePointer2 size={10} />
-          <span className="text-[9px] font-black uppercase">R-HAND</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function TelemetryTag({ label, value, highlight = false }: { label: string, value: string, highlight?: boolean }) {
-  return (
-    <div className={`bg-black/50 backdrop-blur-md px-3 py-1.5 border rounded-lg flex flex-col ${highlight ? 'border-red-500/50 text-red-400' : 'border-white/10 text-white/60'}`}>
-      <span className="text-[8px] font-black uppercase tracking-tighter leading-none mb-1 opacity-50">{label}</span>
-      <span className="text-xs font-black tracking-widest leading-none">{value}</span>
     </div>
   );
 }

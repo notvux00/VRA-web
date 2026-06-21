@@ -2,6 +2,12 @@
 
 import { adminDb } from "@/lib/firebase/admin";
 
+export interface QuestMetadata {
+  id: string;
+  title: string;
+  default_phrases: string[];
+}
+
 export interface LessonData {
   /** Document ID trên Firestore (VD: "WashingHand_1") — dùng để truyền cho VR */
   id: string;
@@ -17,7 +23,7 @@ export interface LessonData {
   thumbnail_url: string;
   min_age: number;
   duration_min: number;
-  default_phrases?: Record<string, string[]>;
+  quests?: QuestMetadata[];
 }
 
 /**
@@ -44,7 +50,7 @@ export async function getLessons(): Promise<{ success: boolean; lessons?: Lesson
         thumbnail_url: d.thumbnail_url || "",
         min_age: d.min_age ?? 3,
         duration_min: d.duration_min ?? 15,
-        default_phrases: d.default_phrases || {},
+        quests: d.quests || [],
       };
     });
     // Sắp xếp trong memory (tránh yêu cầu Composite Index trên Firestore)
@@ -60,7 +66,7 @@ export async function getLessons(): Promise<{ success: boolean; lessons?: Lesson
 /**
  * Fetch a specific lesson detail by its document ID
  */
-export async function getLessonDetail(lessonId: string): Promise<{ success: boolean; lesson?: LessonData & { default_phrases?: Record<string, string[]> }; error?: string }> {
+export async function getLessonDetail(lessonId: string): Promise<{ success: boolean; lesson?: LessonData; error?: string }> {
   try {
     const doc = await adminDb.collection("lessons").doc(lessonId).get();
     if (!doc.exists) {
@@ -82,7 +88,7 @@ export async function getLessonDetail(lessonId: string): Promise<{ success: bool
       thumbnail_url: d?.thumbnail_url || "",
       min_age: d?.min_age ?? 3,
       duration_min: d?.duration_min ?? 15,
-      default_phrases: d?.default_phrases || {}
+      quests: d?.quests || []
     };
 
     return { success: true, lesson };
