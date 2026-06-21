@@ -10,7 +10,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useLiveTelemetry } from "../../_hooks/useLiveTelemetry";
 import SessionSummaryModal from "../_components/SessionSummaryModal";
-import { getAssignedChildDetail, finalizeSession } from "@/actions/expert";
+import { getAssignedChildDetail, finalizeSession, syncAndGetChildPhrases } from "@/actions/expert";
 import AlertSidebar from "../_components/AlertSidebar";
 import POVMonitor from "../_components/POVMonitor";
 import { endLessonOnDevice, subscribeToVrHandshake, pushRemoteCommand } from "@/lib/firebase/rtdb";
@@ -48,11 +48,17 @@ export default function LiveSessionPage() {
   const alertsHistoryRef = useRef<any[]>([]);
   const manualLogsRef = useRef<any[]>([]);
 
-  // 1. Lấy thông tin bé
+  // 1. Lấy thông tin bé và đồng bộ các câu thoại mẫu
   useEffect(() => {
     async function fetchData() {
       if (!user?.uid || !childId) return;
       try {
+        const lessonDocId = searchParams.get("lesson");
+        if (lessonDocId) {
+          // Tự động đồng bộ các mẫu câu mới nhất của bài học vào hồ sơ trẻ nếu chưa có (self-healing)
+          await syncAndGetChildPhrases(childId as string, lessonDocId);
+        }
+
         const res = await getAssignedChildDetail(childId as string);
         if (res.success) {
           setChild(res.child);
@@ -60,13 +66,14 @@ export default function LiveSessionPage() {
           setError(res.error || "Không tìm thấy thông tin trẻ");
         }
       } catch (err) {
+        console.error("Lỗi khi tải thông tin bé hoặc đồng bộ câu thoại:", err);
         setError("Lỗi kết nối máy chủ");
       } finally {
         setLoading(false);
       }
     }
     if (!authLoading) fetchData();
-  }, [childId, user?.uid, authLoading]);
+  }, [childId, user?.uid, authLoading, searchParams]);
 
   // 2. Handshake VR
   useEffect(() => {
@@ -167,8 +174,9 @@ export default function LiveSessionPage() {
     }
   };
 
-  const handleSendNpcScript = async () => {
-    if (!validSessionId || !npcText.trim()) return;
+  const handleSendNpcScript = async (customText?: any) => {
+    const textToSend = (typeof customText === "string" ? customText : npcText).trim();
+    if (!validSessionId || !textToSend) return;
     setSendingNpc(true);
     try {
       console.log("[LiveSessionPage] Calling /api/tts to generate audio...");
@@ -178,7 +186,7 @@ export default function LiveSessionPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          text: npcText.trim(),
+          text: textToSend,
           sessionId: validSessionId,
         }),
       });
@@ -193,11 +201,13 @@ export default function LiveSessionPage() {
 
       await pushRemoteCommand(validSessionId, "play_npc_script", {
         audio_url: url,
-        text: npcText.trim(),
+        text: textToSend,
       });
 
       showToast("Đã gửi câu thoại thành công tới NPC!");
-      setNpcText("");
+      if (typeof customText !== "string") {
+        setNpcText("");
+      }
     } catch (e: any) {
       console.error("Failed to send play_npc_script command:", e.message);
       showToast(`Lỗi: ${e.message || "Không thể gửi lệnh thoại NPC."}`);
@@ -459,7 +469,7 @@ export default function LiveSessionPage() {
               />
               <button
                 disabled={sendingNpc || !npcText.trim()}
-                onClick={handleSendNpcScript}
+                onClick={() => handleSendNpcScript()}
                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-800 disabled:text-zinc-500 text-white font-bold py-2 rounded text-xs transition-colors flex items-center justify-center gap-2 active:scale-95"
               >
                 {sendingNpc ? (
@@ -472,6 +482,139 @@ export default function LiveSessionPage() {
                 )}
               </button>
             </div>
+
+            {/* Quick Phrases Panel */}
+            {(() => {
+              const lessonDocId = searchParams.get("lesson") || "";
+              const childPhrases = child?.quick_phrases || {};
+              const lessonPhrases = childPhrases[lessonDocId] || {};
+              const lessonQuestKeys = Object.keys(lessonPhrases).filter(k => k !== "general");
+              const activeQuestPhrases = lessonPhrases[currentQuest] || [];
+              const generalPhrases = lessonPhrases["general"] || childPhrases["general"] || ["Con làm tốt lắm!", "Tuyệt vời!", "Cố lên con!"];
+              const otherQuests = lessonQuestKeys.filter(k => k !== currentQuest);
+
+              return (
+                <div className="mt-4 p-4 bg-zinc-900 border border-white/5 rounded-lg flex flex-col gap-4">
+                  <div className="text-xs font-bold text-zinc-200 flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <MessageSquarePlus size={14} className="text-emerald-400" />
+                      <span>Mẫu câu nhanh</span>
+                    </span>
+                  </div>
+
+                  {/* Active Quest Phrases */}
+                  <div className="space-y-2">
+                    <div className="text-[10px] text-zinc-400 uppercase tracking-wider font-bold">
+                      Nhiệm vụ: {currentQuest}
+                    </div>
+                    {activeQuestPhrases.length > 0 ? (
+                      <div className="flex flex-col gap-1.5">
+                        {activeQuestPhrases.map((phrase: string, idx: number) => (
+                          <div
+                            key={idx}
+                            className="group flex items-center justify-between gap-2 bg-black/40 border border-white/5 hover:border-blue-500/30 rounded-lg p-2 text-xs transition-colors"
+                          >
+                            <button
+                              onClick={() => setNpcText(phrase)}
+                              className="text-left text-zinc-300 hover:text-white flex-1 line-clamp-2"
+                              title="Click để chỉnh sửa câu thoại"
+                            >
+                              {phrase}
+                            </button>
+                            <button
+                              onClick={() => handleSendNpcScript(phrase)}
+                              disabled={sendingNpc}
+                              className="p-1 hover:bg-emerald-500/10 text-zinc-500 hover:text-emerald-400 rounded transition-colors active:scale-95 disabled:opacity-50"
+                              title="Gửi ngay câu thoại này"
+                            >
+                              <Volume2 size={12} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-[10px] text-zinc-500 italic">Không có mẫu câu cho nhiệm vụ này.</p>
+                    )}
+                  </div>
+
+                  {/* General Phrases */}
+                  <div className="space-y-2">
+                    <div className="text-[10px] text-zinc-400 uppercase tracking-wider font-bold">
+                      Khích lệ chung
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      {generalPhrases.map((phrase: string, idx: number) => (
+                        <div
+                          key={idx}
+                          className="group flex items-center justify-between gap-2 bg-black/40 border border-white/5 hover:border-purple-500/30 rounded-lg p-2 text-xs transition-colors"
+                        >
+                          <button
+                            onClick={() => setNpcText(phrase)}
+                            className="text-left text-zinc-300 hover:text-white flex-1 line-clamp-2"
+                            title="Click để chỉnh sửa câu thoại"
+                          >
+                            {phrase}
+                          </button>
+                          <button
+                            onClick={() => handleSendNpcScript(phrase)}
+                            disabled={sendingNpc}
+                            className="p-1 hover:bg-emerald-500/10 text-zinc-500 hover:text-emerald-400 rounded transition-colors active:scale-95 disabled:opacity-50"
+                            title="Gửi ngay câu thoại này"
+                          >
+                            <Volume2 size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Other Quests Accordion */}
+                  {otherQuests.length > 0 && (
+                    <details className="group/details space-y-2">
+                      <summary className="text-[10px] text-zinc-505 group-open/details:text-zinc-400 uppercase tracking-wider font-bold cursor-pointer hover:text-zinc-300 transition-colors select-none list-none flex items-center justify-between">
+                        <span>Nhiệm vụ khác ({otherQuests.length})</span>
+                        <span className="text-[8px] transition-transform group-open/details:rotate-180">▼</span>
+                      </summary>
+                      <div className="space-y-4 pt-2 border-t border-white/5">
+                        {otherQuests.map((qKey: string) => {
+                          const phrases = lessonPhrases[qKey] || [];
+                          if (phrases.length === 0) return null;
+                          return (
+                            <div key={qKey} className="space-y-2">
+                              <div className="text-[9px] text-zinc-500 font-bold uppercase">{qKey}</div>
+                              <div className="flex flex-col gap-1.5">
+                                {phrases.map((phrase: string, idx: number) => (
+                                  <div
+                                    key={idx}
+                                    className="group flex items-center justify-between gap-2 bg-black/20 border border-white/5 hover:border-zinc-500/30 rounded-lg p-2 text-xs transition-colors"
+                                  >
+                                    <button
+                                      onClick={() => setNpcText(phrase)}
+                                      className="text-left text-zinc-400 hover:text-white flex-1 line-clamp-2"
+                                      title="Click để chỉnh sửa câu thoại"
+                                    >
+                                      {phrase}
+                                    </button>
+                                    <button
+                                      onClick={() => handleSendNpcScript(phrase)}
+                                      disabled={sendingNpc}
+                                      className="p-1 hover:bg-emerald-500/10 text-zinc-500 hover:text-emerald-400 rounded transition-colors active:scale-95 disabled:opacity-50"
+                                      title="Gửi ngay câu thoại này"
+                                    >
+                                      <Volume2 size={12} />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </details>
+                  )}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Alert Controls & Active List */}

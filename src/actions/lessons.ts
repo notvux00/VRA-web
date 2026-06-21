@@ -17,6 +17,7 @@ export interface LessonData {
   thumbnail_url: string;
   min_age: number;
   duration_min: number;
+  default_phrases?: Record<string, string[]>;
 }
 
 /**
@@ -43,6 +44,7 @@ export async function getLessons(): Promise<{ success: boolean; lessons?: Lesson
         thumbnail_url: d.thumbnail_url || "",
         min_age: d.min_age ?? 3,
         duration_min: d.duration_min ?? 15,
+        default_phrases: d.default_phrases || {},
       };
     });
     // Sắp xếp trong memory (tránh yêu cầu Composite Index trên Firestore)
@@ -54,3 +56,39 @@ export async function getLessons(): Promise<{ success: boolean; lessons?: Lesson
     return { success: false, error: error.message };
   }
 }
+
+/**
+ * Fetch a specific lesson detail by its document ID
+ */
+export async function getLessonDetail(lessonId: string): Promise<{ success: boolean; lesson?: LessonData & { default_phrases?: Record<string, string[]> }; error?: string }> {
+  try {
+    const doc = await adminDb.collection("lessons").doc(lessonId).get();
+    if (!doc.exists) {
+      return { success: false, error: "Lesson not found" };
+    }
+    
+    const d = doc.data();
+    const lesson = {
+      id: doc.id,
+      lesson_id: d?.lesson_id || "",
+      scene_name: d?.scene_name || "",
+      lesson_name: d?.lesson_name || "",
+      level_name: d?.level_name || "",
+      lesson_index: d?.lesson_index ?? 0,
+      level_index: d?.level_index ?? 0,
+      type: d?.type || "practical",
+      level_id: d?.level_id || "",
+      description: d?.description || "",
+      thumbnail_url: d?.thumbnail_url || "",
+      min_age: d?.min_age ?? 3,
+      duration_min: d?.duration_min ?? 15,
+      default_phrases: d?.default_phrases || {}
+    };
+
+    return { success: true, lesson };
+  } catch (error: any) {
+    console.error("Error fetching lesson detail:", error);
+    return { success: false, error: error.message };
+  }
+}
+

@@ -259,3 +259,76 @@ export async function updateDefaultLessonParams(childId: string, lessonParams: {
     return { success: false, error: error.message };
   }
 }
+
+/**
+ * Update the custom quick phrases for a child (Story 3.9)
+ * Saves to childRef: { quick_phrases: Record<string, Record<string, string[]>> }
+ */
+export async function updateChildQuickPhrases(childId: string, quickPhrases: Record<string, any>) {
+  const session = await getSession();
+  if (!session) return { success: false, error: "Unauthorized" };
+
+  try {
+    const childRef = adminDb.collection("child_profiles").doc(childId);
+    const childDoc = await childRef.get();
+
+    if (!childDoc.exists) return { success: false, error: "Child profile not found" };
+
+    const data = childDoc.data();
+    const isAssigned = data?.expertUid === session.uid || data?.expertUids?.includes(session.uid);
+    if (!isAssigned) {
+      return { success: false, error: "Unauthorized: You are not assigned to this child" };
+    }
+
+    await childRef.update({
+      quick_phrases: quickPhrases,
+      updatedAt: new Date().toISOString()
+    });
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error updating child quick phrases:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Lazy-syncs a lesson's default phrases to the child's quick_phrases if they don't have them yet.
+ * Returns the child's phrases for this specific lesson.
+ */
+export async function syncAndGetChildPhrases(childId: string, lessonDocId: string) {
+  const session = await getSession();
+  if (!session) return { success: false, error: "Unauthorized" };
+
+  try {
+    const childRef = adminDb.collection("child_profiles").doc(childId);
+    const childDoc = await childRef.get();
+
+    if (!childDoc.exists) return { success: false, error: "Child profile not found" };
+
+    const childData = childDoc.data();
+    let quickPhrases = childData?.quick_phrases || {};
+
+    if (!quickPhrases[lessonDocId]) {
+      // Fetch default phrases from the lesson document
+      const lessonDoc = await adminDb.collection("lessons").doc(lessonDocId).get();
+      if (lessonDoc.exists) {
+        const lessonData = lessonDoc.data();
+        const defaultPhrases = lessonData?.default_phrases || {};
+        
+        quickPhrases[lessonDocId] = defaultPhrases;
+        
+        await childRef.update({
+          quick_phrases: quickPhrases,
+          updatedAt: new Date().toISOString()
+        });
+      }
+    }
+
+    return { success: true, phrases: quickPhrases[lessonDocId] || {} };
+  } catch (error: any) {
+    console.error("Error syncing child quick phrases:", error);
+    return { success: false, error: error.message };
+  }
+}
+
