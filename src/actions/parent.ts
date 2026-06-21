@@ -166,10 +166,10 @@ export async function getChildStats(childId: string) {
     const sessions = await fetchSessionsForChild(childId);
     
     const totalSessions = sessions.length;
-    const totalDurationSeconds = sessions.reduce((acc, s) => acc + (s.duration || 0), 0);
+    const totalDurationSeconds = sessions.reduce((acc, s: any) => acc + (s.duration || 0), 0);
     const totalDurationMinutes = totalDurationSeconds / 60;
     const avgScore = totalSessions > 0 
-      ? sessions.reduce((acc, s) => acc + (s.score || 0), 0) / totalSessions 
+      ? sessions.reduce((acc, s: any) => acc + (s.score || 0), 0) / totalSessions 
       : 0;
 
     // Define Achievement Logic
@@ -215,7 +215,7 @@ export async function getChildStats(childId: string) {
     };
 
     const sessionDates = sessions
-      .map(s => {
+      .map((s: any) => {
         const rawDate = s.start_time || s.startTime;
         if (!rawDate) return null;
         
@@ -381,7 +381,7 @@ export async function getChildDashboardAnalytics(childId: string) {
     let totalResponseTime = 0;
     let totalScore = 0;
 
-    sessions.forEach(s => {
+    sessions.forEach((s: any) => {
       const logs = s.quest_logs || [];
       totalQuests += logs.length;
       totalScore += (s.score || 0);
@@ -405,7 +405,7 @@ export async function getChildDashboardAnalytics(childId: string) {
     const totalRecent = recentSessions.length || 1;
     let totalPenalties = { chudoong: 0, tutin: 0, taptrung: 0, ondinh: 0, binhtinh: 0 };
 
-    recentSessions.forEach(s => {
+    recentSessions.forEach((s: any) => {
       const alerts = s.auto_alerts || [];
       
       // 1. CHỦ ĐỘNG (idle - Low: -30đ mỗi 5s, max -100đ)
@@ -440,7 +440,7 @@ export async function getChildDashboardAnalytics(childId: string) {
     ];
 
     // 2. Trend Data (Last 10 sessions)
-    const trendData = sessions.slice(0, 10).reverse().map(s => {
+    const trendData = sessions.slice(0, 10).reverse().map((s: any) => {
       let dateStr = "";
       if (s.start_time?.toDate) {
         dateStr = s.start_time.toDate().toLocaleDateString("vi-VN", { day: 'numeric', month: 'short' });
@@ -480,7 +480,7 @@ export async function getChildHeatmapData(childId: string) {
     fullYearAgo.setDate(fullYearAgo.getDate() - 370);
     const fullYearAgoStr = fullYearAgo.toISOString();
 
-    sessions.forEach(data => {
+    sessions.forEach((data: any) => {
       // Filter by time in memory for safety
       const startTime = data.start_time || data.startTime;
       if (typeof startTime === 'string' && startTime < fullYearAgoStr) return;

@@ -17,7 +17,7 @@ export default async function FocusChart({ childId }: FocusChartProps) {
   ];
 
   // Simplified Focus Trend (Last 5 sessions)
-  const trendData = sessions.slice(0, 5).reverse().map(s => s.score || 70);
+  const trendData = (sessions || []).slice(0, 5).reverse().map((s: any) => s.score || 70);
 
   return (
     <div className="bg-white dark:bg-zinc-900/50 backdrop-blur border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm dark:shadow-none">

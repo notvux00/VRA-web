@@ -111,3 +111,56 @@ export interface Session {
   evaluation?: string;
   notes?: string;
 }
+
+// ─── AI Lesson Recommender Types ─────────────────────────────────────────────
+
+export type RecommendationPriority = "high" | "medium" | "low";
+
+export interface AILessonRecommendation {
+  lessonId: string;
+  lessonTitle: string;
+  levelName: string;
+  type: string;
+  thumbnailUrl?: string | null;
+  targetSkill: string;
+  priority: RecommendationPriority;
+  /** Điểm tin cậy từ 0 đến 1 */
+  confidence: number;
+  reason: string;
+  expectedBenefit: string;
+  specialistNotes: string;
+  sceneName?: string;
+  difficultyLevel?: string;
+}
+
+/** Document lưu trong Firestore tại ai_recommendations/{childId} */
+export interface AIRecommendationCache {
+  childId: string;
+  model: string;
+  generatedAt: string;
+  generatedBy: string;
+  /** Luôn sắp xếp theo finish_time desc — mới nhất trước */
+  basedOnSessionIds: string[];
+  status: "draft";
+  insufficientData: boolean;
+  summary: string;
+  recommendations: AILessonRecommendation[];
+  /** true khi chạy ở chế độ Demo (thiếu API key) */
+  isDemo?: boolean;
+}
+
+/** Kiểu trả về của Server Actions ai-recommendations */
+export interface GenerateAIRecommendationsResult {
+  success: boolean;
+  source?: "cache" | "gemini" | "demo";
+  childId?: string;
+  generatedAt?: string;
+  basedOnSessionIds?: string[];
+  /** true nếu danh sách 3 session mới nhất đã thay đổi so với cache */
+  hasNewSessionData?: boolean;
+  summary?: string;
+  recommendations?: AILessonRecommendation[];
+  insufficientData?: boolean;
+  isDemo?: boolean;
+  error?: string;
+}
