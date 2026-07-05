@@ -55,9 +55,10 @@ interface ScheduleClientProps {
   initialSchedules: Schedule[];
   lessons: LessonData[];
   suggestedLessonIds: string[];
+  readOnly?: boolean;
 }
 
-export default function ScheduleClient({ expertUid, childId, initialSchedules, lessons, suggestedLessonIds }: ScheduleClientProps) {
+export default function ScheduleClient({ expertUid, childId, initialSchedules, lessons, suggestedLessonIds, readOnly = false }: ScheduleClientProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isPending, startTransition] = useTransition();
 
@@ -198,13 +199,15 @@ export default function ScheduleClient({ expertUid, childId, initialSchedules, l
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
-          <button 
-            onClick={openCreateModal}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm shadow-blue-500/20 transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Tạo phiên học</span>
-          </button>
+          {!readOnly && (
+            <button 
+              onClick={openCreateModal}
+              className="px-4 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl font-semibold flex items-center gap-2 hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors shadow-sm"
+            >
+              <Plus size={18} />
+              <span>Thêm phiên học</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -288,8 +291,10 @@ export default function ScheduleClient({ expertUid, childId, initialSchedules, l
                     return (
                       <div
                         key={schedule.id}
-                        onClick={() => openEditModal(schedule)}
-                        className={`absolute left-1 right-1 rounded-md border p-2 overflow-hidden cursor-pointer hover:shadow-md hover:ring-2 hover:ring-blue-400/50 transition-all group z-20 flex flex-col ${schedule.color} ${isPending ? "opacity-50" : ""}`}
+                        onClick={() => { if (!readOnly) openEditModal(schedule); }}
+                        className={`absolute left-1 right-1 rounded-xl p-2.5 text-xs shadow-sm border flex flex-col justify-between overflow-hidden transition-all group z-20 ${
+                          readOnly ? "cursor-default" : "cursor-pointer hover:shadow-md hover:scale-[1.02]"
+                        } ${schedule.color || COLOR_OPTIONS[0].style} ${isPending ? "opacity-50" : ""}`}
                         style={getBlockStyle(schedule.startHour, schedule.startMinute, schedule.durationMinutes)}
                       >
                         <div className="text-xs sm:text-sm font-semibold leading-tight mb-1">

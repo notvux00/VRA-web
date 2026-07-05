@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Award, Zap, Shield, Clock, Lock, Sparkles } from "lucide-react";
+import { Award, Zap, Shield, Clock, Lock, Sparkles, Flame, Headphones, Trophy, Hourglass, Crown } from "lucide-react";
 
 interface Achievement {
   id: string;
@@ -21,7 +21,12 @@ const iconMap: Record<string, any> = {
   Award,
   Zap,
   Shield,
-  Clock
+  Clock,
+  Flame,
+  Headphones,
+  Trophy,
+  Hourglass,
+  Crown
 };
 
 export default function ChildAchievements({ achievements }: ChildAchievementsProps) {

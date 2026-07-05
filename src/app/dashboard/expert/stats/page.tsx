@@ -3,7 +3,7 @@ import { getChildStats, getChildSessions } from "@/actions/parent";
 import { getChildAlertStats } from "@/actions/analytics";
 import { 
   Baby, Ruler, Scale, 
-  Activity, History, Info, ShieldCheck
+  Activity, History, Info, ShieldCheck, BarChart3
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -11,8 +11,8 @@ import Link from "next/link";
 import React from "react";
 import AlertProfileEditor from "../_components/stats/AlertProfileEditor";
 import LessonParametersEditor from "../_components/stats/LessonParametersEditor";
+import GoalSettingsEditor from "../_components/stats/GoalSettingsEditor";
 import ChildAchievements from "../../parent/_components/ChildAchievements";
-import ChildChartsContainer from "../../parent/_components/ChildChartsContainer";
 
 interface PageProps {
   searchParams: Promise<{ childId?: string }>;
@@ -34,6 +34,7 @@ interface Child {
   anxiety_triggers?: string[];
   alert_profile?: any;
   default_lesson_params?: any;
+  goals?: any[];
 }
 
 export default async function ExpertStatsPage({ searchParams }: PageProps) {
@@ -156,20 +157,15 @@ export default async function ExpertStatsPage({ searchParams }: PageProps) {
              initialProfile={child.alert_profile} 
            />
 
+           <GoalSettingsEditor childId={child.id} initialGoals={child.goals || []} />
+
            {/* Lesson Parameters Configuration (Story 2.3) */}
            <LessonParametersEditor
              childId={child.id}
              initialParams={child.default_lesson_params}
            />
            
-           {/* Achievements Section */}
            <ChildAchievements achievements={stats?.achievements || []} />
-
-           {/* Analytics Charts - Replaced SessionHistory */}
-           <ChildChartsContainer 
-             sessions={sessions} 
-             radarData={radarData} 
-           />
         </div>
       </div>
     </div>

@@ -20,7 +20,15 @@ interface SidebarProps {
 export default function Sidebar({ sidebarOpen, setSidebarOpen, navigation }: SidebarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const childId = searchParams.get("childId");
+  
+  let childId = searchParams.get("childId");
+  if (!childId && pathname.startsWith("/dashboard/parent/children/")) {
+    const parts = pathname.split("/");
+    if (parts.length >= 5) {
+      childId = parts[4];
+    }
+  }
+
   const isParentRoute = pathname.startsWith("/dashboard/parent");
   const isExpertRoute = pathname.startsWith("/dashboard/expert");
   const isCenterRoute = pathname.startsWith("/dashboard/center");

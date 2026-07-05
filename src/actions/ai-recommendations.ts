@@ -168,6 +168,7 @@ export async function generateAIRecommendations(
     const lessonIds = new Set(eligibleLessons.map((l) => l.id));
 
     // 4. Ẩn danh hóa hồ sơ trẻ — chỉ giữ các trường lâm sàng
+    // 4. Ẩn danh hóa hồ sơ trẻ — chỉ giữ các trường lâm sàng và mục tiêu
     const anonymizedChild = {
       age: childData.age,
       gender: childData.gender,
@@ -177,6 +178,7 @@ export async function generateAIRecommendations(
       anxiety_triggers: childData.anxiety_triggers,
       diagnosis_notes: childData.diagnosis_notes,
       sessionCount: childData.sessionCount,
+      goals: childData.goals || [],
     };
 
     // Chuẩn bị sessions cho AI: Xóa lesson_id để triệt tiêu khả năng AI nhắc đến ID trong câu văn
@@ -352,7 +354,8 @@ Quy tắc bắt buộc:
 - Tuân thủ nghiêm ngặt lộ trình học: Ưu tiên đề xuất bài học nếu trẻ đã học xong các bài trong trường prerequisites (nếu có).
 - Điều hướng độ khó (Scaffolding): Dựa vào điểm số (score) của các phiên học gần nhất, nếu trẻ hoàn thành xuất sắc (>80%) các bài ở mức độ 'Dễ', hãy thử thách bằng bài học mức 'Trung bình' hoặc 'Khó' có cùng target_skills. Nếu trẻ chật vật (điểm thấp, dùng nhiều hints), hãy giữ nguyên hoặc lùi lại bài học 'Dễ'.
 - Nhận diện lỗ hổng kỹ năng: Sử dụng target_skills của các bài học điểm thấp trong lịch sử để biết trẻ đang yếu kỹ năng gì, từ đó đề xuất bài học bù đắp.
-- Mọi lý do phân tích phải dựa trên bằng chứng từ dữ liệu hồ sơ và lịch sử phiên học.
+- Đặc biệt chú ý đến trường 'goals' trong hồ sơ trẻ. Nếu trẻ có mục tiêu cụ thể (ví dụ: 'Cải thiện giao tiếp', 'Tăng điểm tập trung'), hãy ƯU TIÊN HÀNG ĐẦU các bài học giúp trẻ đạt được mục tiêu đó.
+- Mọi lý do phân tích phải dựa trên bằng chứng từ dữ liệu hồ sơ, lịch sử phiên học và mục tiêu hiện tại.
 - Nếu dữ liệu không đủ để phân tích, vẫn đề xuất nhưng đặt insufficientData = true.
 - Trả về JSON hợp lệ, không có ký tự markdown, không có văn bản ngoài khối JSON.
 - Tất cả trường văn bản tự do (summary, targetSkill, reason, expectedBenefit, specialistNotes) PHẢI viết bằng tiếng Việt có dấu, văn phong lâm sàng ôn hòa, dễ hiểu với trị liệu viên Việt Nam.

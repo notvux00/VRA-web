@@ -1,10 +1,10 @@
 import { getChildProfileDetail, getChildStats, getChildSessions } from "@/actions/parent";
 import { getChildAlertStats } from "@/actions/analytics";
-import { Baby, Calendar, Ruler, Scale, Activity, History, ShieldCheck, Mail, Info, UserCheck } from "lucide-react";
+import { Baby, Calendar, Ruler, Scale, Activity, History, ShieldCheck, Mail, Info, UserCheck, BarChart3 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import ChildChartsContainer from "../../_components/ChildChartsContainer";
 import ChildAchievements from "../../_components/ChildAchievements";
+import GoalProgressRings from "../../_components/GoalProgressRings";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -143,8 +143,8 @@ export default async function ChildDetailPage({ params, searchParams }: PageProp
              </div>
            </div>
 
+           <GoalProgressRings goals={result.child.goals || []} sessions={sessionsResult.sessions || []} />
            <ChildAchievements achievements={stats?.achievements || []} />
-           <ChildChartsContainer sessions={sessions} radarData={radarData} />
         </div>
       </div>
     </div>
