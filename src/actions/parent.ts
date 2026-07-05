@@ -200,13 +200,13 @@ export async function getChildStats(childId: string) {
       const now = new Date();
       
       // We start checking from TODAY
-      let checkDate = new Date(now);
-      let todayStr = formatDate(checkDate);
+      const checkDate = new Date(now);
+      const todayStr = formatDate(checkDate);
       
       // If no session today, we check if it starts from YESTERDAY
       if (!uniqueDates.includes(todayStr)) {
         checkDate.setDate(checkDate.getDate() - 1);
-        let yesterdayStr = formatDate(checkDate);
+        const yesterdayStr = formatDate(checkDate);
         if (!uniqueDates.includes(yesterdayStr)) {
           // No session today or yesterday = streak is 0
           streak = 0;
@@ -453,7 +453,7 @@ export async function getChildDashboardAnalytics(childId: string) {
     // 1. Calculate Radar Data (Strictly follow RADAR_CHART_METRICS.md - Focus on LAST 5 SESSIONS)
     const recentSessions = sessions.slice(0, 5);
     const totalRecent = recentSessions.length || 1;
-    let totalPenalties = { chudoong: 0, tutin: 0, taptrung: 0, ondinh: 0, binhtinh: 0 };
+    const totalPenalties = { chudoong: 0, tutin: 0, taptrung: 0, ondinh: 0, binhtinh: 0 };
 
     recentSessions.forEach((s: any) => {
       const alerts = s.auto_alerts || [];

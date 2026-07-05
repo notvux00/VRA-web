@@ -340,7 +340,7 @@ export async function syncAndGetChildPhrases(childId: string, lessonDocId: strin
     if (!childDoc.exists) return { success: false, error: "Child profile not found" };
 
     const childData = childDoc.data();
-    let quickPhrases = childData?.quick_phrases || {};
+    const quickPhrases = childData?.quick_phrases || {};
 
     if (!quickPhrases[lessonDocId]) {
       // Fetch default phrases from the lesson document

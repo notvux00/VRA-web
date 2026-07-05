@@ -1,7 +1,5 @@
 import { getChildProfileDetail, getChildStats, getChildSessions } from "@/actions/parent";
-import { getChildAlertStats } from "@/actions/analytics";
-import { Baby, Calendar, Ruler, Scale, Activity, History, ShieldCheck, Mail, Info, UserCheck, BarChart3 } from "lucide-react";
-import Link from "next/link";
+import { Baby, Ruler, Scale, Activity, History, ShieldCheck, Mail, UserCheck } from "lucide-react";
 import { notFound } from "next/navigation";
 import ChildAchievements from "../../_components/ChildAchievements";
 import GoalProgressRings from "../../_components/GoalProgressRings";
@@ -11,22 +9,20 @@ interface PageProps {
   searchParams: Promise<{ childId?: string }>;
 }
 
-export default async function ChildDetailPage({ params, searchParams }: PageProps) {
+export default async function ChildDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const [result, statsResult, sessionsResult, alertResult] = await Promise.all([
+  const [result, statsResult, sessionsResult] = await Promise.all([
     getChildProfileDetail(id),
     getChildStats(id),
-    getChildSessions(id),
-    getChildAlertStats(id)
+    getChildSessions(id)
   ]);
 
   if (!result.success || !result.child) return notFound();
   
-  const child = result.child as any;
-  const expert = result.expert as any;
+  const child = result.child as import("@/types").ChildProfile;
+  const expert = result.expert as import("@/types").Expert;
   const stats = statsResult.success ? statsResult.stats : null;
-  const sessions = (sessionsResult as any).success ? ((sessionsResult as any).sessions || []) : [];
-  const radarData = (alertResult as any).success ? ((alertResult as any).radarData || []) : [];
+  const sessions = sessionsResult && "success" in sessionsResult && sessionsResult.success ? ((sessionsResult.sessions as unknown) as import("@/types").Session[]) || [] : [];
 
   // Biometric Items
   const metrics = [
@@ -44,7 +40,7 @@ export default async function ChildDetailPage({ params, searchParams }: PageProp
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-3xl font-black text-zinc-900 dark:text-white tracking-tight">
-                {child.name || child.display_name || "Hồ sơ trẻ"}
+                {child.name || "Hồ sơ trẻ"}
               </h1>
               <span className="px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-tighter bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 border border-emerald-500/20">
                 Đang hoạt động
@@ -143,7 +139,7 @@ export default async function ChildDetailPage({ params, searchParams }: PageProp
              </div>
            </div>
 
-           <GoalProgressRings goals={result.child.goals || []} sessions={sessionsResult.sessions || []} />
+           <GoalProgressRings goals={child.goals || []} sessions={sessions} />
            <ChildAchievements achievements={stats?.achievements || []} />
         </div>
       </div>

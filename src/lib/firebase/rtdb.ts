@@ -1,7 +1,7 @@
 "use client";
 
 import { rtdb } from "@/lib/firebase/client";
-import { ref, get, update, remove, onValue, off, onChildAdded, push, set, serverTimestamp } from "firebase/database";
+import { ref, get, update, remove, onValue, onChildAdded, push, set, serverTimestamp } from "firebase/database";
 
 // ─────────────────────────────────────────────────────
 // Tất cả logic RTDB pairing nằm ở đây, các component chỉ gọi hàm
@@ -131,7 +131,7 @@ export function subscribeToVrHandshake(
   });
 
   // Trả về hàm dọn dẹp listener khi component unmount
-  return () => off(vrStateRef, "value", unsubscribe);
+  return unsubscribe;
 }
 
 /**
@@ -150,7 +150,7 @@ export function subscribeToTelemetry(
     }
   });
 
-  return () => off(telemetryRef, "child_added", unsubscribe);
+  return unsubscribe;
 }
 
 
@@ -167,7 +167,7 @@ export function subscribeToWebRTCOffer(
       onOffer(snapshot.val());
     }
   });
-  return () => off(offerRef, 'value', unsubscribe);
+  return unsubscribe;
 }
 
 /**
@@ -200,7 +200,7 @@ export function subscribeToVRCandidates(
       onCandidate(snapshot.val());
     }
   });
-  return () => off(candidatesRef, 'child_added', unsubscribe);
+  return unsubscribe;
 }
 
 /**

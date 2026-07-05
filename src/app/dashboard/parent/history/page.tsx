@@ -2,15 +2,8 @@ import { getParentChildren } from "@/actions/parent";
 import { getChildSessionHistory } from "@/actions/history";
 import { 
   History, 
-  Calendar, 
-  Clock, 
-  CheckCircle2, 
-  XCircle, 
   Search, 
-  Filter, 
-  Gamepad2,
   ChevronRight,
-  TrendingUp,
   BarChart2
 } from "lucide-react";
 import { notFound } from "next/navigation";
@@ -23,7 +16,7 @@ interface PageProps {
 
 export default async function SessionHistoryPage({ searchParams }: PageProps) {
   const { childId: currentChildId } = await searchParams;
-  const { children, success: listSuccess } = await getParentChildren() as { children: any[], success: boolean };
+  const { children, success: listSuccess } = await getParentChildren() as { children: import("@/types").ChildProfile[], success: boolean };
 
   if (!listSuccess || !children || children.length === 0) {
     return (

@@ -13,6 +13,7 @@ export default function GoalProgressRings({ goals, sessions }: GoalProgressRings
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
@@ -41,7 +42,7 @@ export default function GoalProgressRings({ goals, sessions }: GoalProgressRings
         return thisWeekSessions.reduce((acc, s) => acc + (s.duration || 0), 0) / 60; // tính bằng phút (s.duration thường lưu giây, chia 60)
       case "target_focus_score":
         if (thisWeekSessions.length === 0) return 0;
-        const totalFocus = thisWeekSessions.reduce((acc, s) => acc + ((s as any).score_attention || (s.score as any)?.attention || 0), 0);
+        const totalFocus = thisWeekSessions.reduce((acc, s) => acc + (((s as unknown) as { score_attention?: number, score?: { attention?: number } }).score_attention || ((s as unknown) as { score?: { attention?: number } }).score?.attention || 0), 0);
         return Math.round((totalFocus / thisWeekSessions.length) * 10) / 10;
       case "streak_days":
         // Demo logic cho streak (thực tế cần tính toán ngày học liên tục)
@@ -50,17 +51,6 @@ export default function GoalProgressRings({ goals, sessions }: GoalProgressRings
         return goal.currentValue || 0;
       default:
         return 0;
-    }
-  };
-
-  const getGoalIcon = (type: string) => {
-    switch (type) {
-      case "weekly_sessions": return <PlayCircle className="w-5 h-5 text-blue-500" />;
-      case "target_duration_minutes": return <Clock className="w-5 h-5 text-amber-500" />;
-      case "target_focus_score": return <Target className="w-5 h-5 text-emerald-500" />;
-      case "streak_days": return <Flame className="w-5 h-5 text-orange-500" />;
-      case "custom": return <Star className="w-5 h-5 text-purple-500" />;
-      default: return <CheckCircle2 className="w-5 h-5 text-zinc-500" />;
     }
   };
 

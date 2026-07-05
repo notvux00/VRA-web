@@ -1,5 +1,5 @@
 import React from "react";
-import { redirect } from "next/navigation";
+
 import { getLessons } from "@/actions/lessons";
 import { getSchedules } from "@/actions/schedule";
 import ScheduleClient from "../../expert/schedule/ScheduleClient";

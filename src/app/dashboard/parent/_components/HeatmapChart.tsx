@@ -20,7 +20,6 @@ export default function HeatmapChart({ childId }: HeatmapChartProps) {
 
   // 1. Fetch data
   useEffect(() => {
-    setLoading(true);
     getChildHeatmapData(childId).then(res => {
       if (res.success && res.heatmapData) {
         setData(res.heatmapData);
@@ -35,7 +34,6 @@ export default function HeatmapChart({ childId }: HeatmapChartProps) {
     const year = selectedYear;
     const isCurrent = year === today.getFullYear();
     const startDate = new Date(year, 0, 1); // Jan 1st
-    const endDate = new Date(year, 11, 31); // Dec 31st
     
     // Align start to the beginning of the week (Monday-based for our 7-row logic)
     // In our grid: T2, T3, T4, T5, T6, T7, CN

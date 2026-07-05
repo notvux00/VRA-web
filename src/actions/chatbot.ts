@@ -102,7 +102,7 @@ ${JSON.stringify(childContext, null, 2)}
       systemInstruction: systemInstruction 
     });
 
-    let formattedHistory = history.map(h => ({
+    const formattedHistory = history.map(h => ({
       role: h.role,
       parts: [{ text: h.text }]
     }));

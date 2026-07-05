@@ -11,7 +11,7 @@ interface PageProps {
 }
 
 export default async function ParentDashboard({ searchParams }: PageProps) {
-  const { children, centerPhone, success } = await getParentChildren() as { children: any[], centerPhone: string | null, success: boolean };
+  const { children, centerPhone, success } = await getParentChildren() as { children: import("@/types").ChildProfile[], centerPhone: string | null, success: boolean };
   const params = await searchParams;
   const childId = params.childId;
 

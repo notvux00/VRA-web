@@ -19,9 +19,9 @@ export default async function ChildChartsPage({ params }: PageProps) {
 
   if (!result.success || !result.child) return notFound();
   
-  const child = result.child as any;
-  const sessions = (sessionsResult as any).success ? ((sessionsResult as any).sessions || []) : [];
-  const radarData = (alertResult as any).success ? ((alertResult as any).radarData || []) : [];
+  const child = result.child as import("@/types").ChildProfile;
+  const sessions = "success" in sessionsResult && sessionsResult.success ? (((sessionsResult as unknown) as { sessions: import("@/types").Session[] }).sessions || []) : [];
+  const radarData = "success" in alertResult && alertResult.success ? (((alertResult as unknown) as { radarData: { subject: string; A: number; fullMark: number }[] }).radarData || []) : [];
 
   return (
     <div className="p-4 sm:p-8 max-w-5xl mx-auto space-y-8 pb-20 animate-in fade-in duration-700">

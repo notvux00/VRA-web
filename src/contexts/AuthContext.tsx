@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           if (parsed.centerId) setCenterId(parsed.centerId);
           if (parsed.centerName) setCenterName(parsed.centerName);
           if (parsed.userName) setUserName(parsed.userName);
-        } catch(e) {}
+        } catch {}
       }
     }
 
