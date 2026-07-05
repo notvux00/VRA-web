@@ -15,6 +15,7 @@ if (!admin.apps.length) {
           ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/gm, "\n")
           : undefined,
       }),
+      storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
     });
   } catch (error) {
     console.error("Firebase Admin initialization error", error);

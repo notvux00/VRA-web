@@ -28,7 +28,7 @@ export async function getChildAlertStats(childId: string) {
     const totalRecent = recentSessions.length || 1;
     let totalPenalties = { chudoong: 0, tutin: 0, taptrung: 0, ondinh: 0, binhtinh: 0 };
 
-    recentSessions.forEach(s => {
+    recentSessions.forEach((s: any) => {
       const alerts = s.auto_alerts || [];
       
       // 1. CHỦ ĐỘNG (idle - Low: -30đ mỗi 5s, max -100đ)

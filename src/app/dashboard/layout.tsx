@@ -10,7 +10,7 @@ import VRConnectionMonitor from "@/app/dashboard/expert/_components/VRConnection
 import VraChatbot from "@/app/dashboard/_components/VraChatbot";
 import { useParams } from "next/navigation";
 
-function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
+function DashboardContent({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, role, userName } = useAuth();
   const pathname = usePathname();
@@ -77,8 +77,12 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <Suspense fallback={<div className="h-screen bg-zinc-50 dark:bg-black" />}>
-      <DashboardLayoutInner>{children}</DashboardLayoutInner>
-    </Suspense>
+    <React.Suspense fallback={
+      <div className="h-screen w-screen flex items-center justify-center bg-zinc-50 dark:bg-black">
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <DashboardContent>{children}</DashboardContent>
+    </React.Suspense>
   );
 }

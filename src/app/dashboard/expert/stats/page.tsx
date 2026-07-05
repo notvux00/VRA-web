@@ -9,9 +9,9 @@ import {
 export const dynamic = "force-dynamic";
 import Link from "next/link";
 import React from "react";
-import AlertProfileEditor from "../_components/stats/AlertProfileEditor";
 import LessonParametersEditor from "../_components/stats/LessonParametersEditor";
 import GoalSettingsEditor from "../_components/stats/GoalSettingsEditor";
+import AlertProfileEditor from "@/components/shared/AlertProfileEditor";
 import ChildAchievements from "../../parent/_components/ChildAchievements";
 
 interface PageProps {
@@ -158,7 +158,6 @@ export default async function ExpertStatsPage({ searchParams }: PageProps) {
            />
 
            <GoalSettingsEditor childId={child.id} initialGoals={child.goals || []} />
-
            {/* Lesson Parameters Configuration (Story 2.3) */}
            <LessonParametersEditor
              childId={child.id}

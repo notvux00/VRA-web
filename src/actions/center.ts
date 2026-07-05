@@ -160,8 +160,27 @@ export async function createChildProfile(
   try {
     // 1. Generate a One-Time Link Code (6 capital letters/numbers)
     const linkCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-    
-    // 2. Create Child Document
+    // 2. Fetch all lessons to get their default phrases for child profile initialization
+    const lessonsSnap = await adminDb.collection("lessons").get();
+    const defaultPhrasesMap: Record<string, any> = {
+      general: [
+        "Con làm tốt lắm!",
+        "Tuyệt vời!",
+        "Cố lên con!"
+      ]
+    };
+    lessonsSnap.docs.forEach((doc) => {
+      const lessonData = doc.data();
+      if (lessonData?.quests) {
+        const questPhrases: Record<string, string[]> = {};
+        lessonData.quests.forEach((q: any) => {
+          questPhrases[q.id] = q.default_phrases || [];
+        });
+        defaultPhrasesMap[doc.id] = questPhrases;
+      }
+    });
+
+    // 3. Create Child Document
     const childRef = adminDb.collection("child_profiles").doc();
     const childId = childRef.id;
 
@@ -185,7 +204,8 @@ export async function createChildProfile(
       status: "Active",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      sessionCount: 0
+      sessionCount: 0,
+      quick_phrases: defaultPhrasesMap
     });
  
     // 3. Update parent center stats (totalChildren)

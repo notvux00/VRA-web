@@ -16,10 +16,12 @@ interface LessonParamsEditorProps {
 // -1 = dùng mặc định hệ thống (VR Inspector fallback)
 const DEFAULT_PARAMS = {
   actions: {
+    enable_auto_hint: true,
     enable_visual_guidance: true,
     enable_bubble_hints: true,
     speech_silence_timeout: -1,
     action_reminder_cycle: -1,
+    gaze_cone_angle: -1,
   },
   quiz: {
     quiz_intro_delay: -1,
@@ -33,12 +35,31 @@ const DEFAULT_PARAMS = {
 };
 
 function mergeWithDefaults(initial: any) {
-  if (!initial) return DEFAULT_PARAMS;
-  return {
-    actions: { ...DEFAULT_PARAMS.actions, ...(initial.actions || {}) },
-    quiz: { ...DEFAULT_PARAMS.quiz, ...(initial.quiz || {}) },
-    exploration: { ...DEFAULT_PARAMS.exploration, ...(initial.exploration || {}) },
+  const res = {
+    actions: { ...DEFAULT_PARAMS.actions },
+    quiz: { ...DEFAULT_PARAMS.quiz },
+    exploration: { ...DEFAULT_PARAMS.exploration },
   };
+  if (!initial) return res;
+
+  const mergeCategory = (category: "actions" | "quiz" | "exploration") => {
+    if (initial[category]) {
+      Object.keys(res[category]).forEach((k) => {
+        const key = k as keyof typeof DEFAULT_PARAMS[typeof category];
+        const val = initial[category][key];
+        if (val !== undefined && val !== null) {
+          // @ts-ignore
+          res[category][key] = val;
+        }
+      });
+    }
+  };
+
+  mergeCategory("actions");
+  mergeCategory("quiz");
+  mergeCategory("exploration");
+
+  return res;
 }
 
 export default function LessonParametersEditor({ childId, initialParams }: LessonParamsEditorProps) {
@@ -120,6 +141,14 @@ export default function LessonParametersEditor({ childId, initialParams }: Lesso
 
         {/* ── Dạng bài: Actions ── */}
         <Section icon={<Zap size={16} className="text-amber-500" />} title="Bài tập Hành vi (Actions)">
+          {/* Enable Auto Hint toggle */}
+          <ToggleRow
+            label="Tự động nhắc nhở (Auto Hint)"
+            description="Bật/Tắt chế độ tự động nhắc nhở hoặc hiển thị nháy viền từ hệ thống."
+            icon={<Zap size={16} />}
+            checked={params.actions.enable_auto_hint}
+            onChange={v => setActions({ enable_auto_hint: v })}
+          />
           {/* Visual Guidance toggle */}
           <ToggleRow
             label="Hiệu ứng viền phát sáng (Outline)"
@@ -136,16 +165,6 @@ export default function LessonParametersEditor({ childId, initialParams }: Lesso
             checked={params.actions.enable_bubble_hints}
             onChange={v => setActions({ enable_bubble_hints: v })}
           />
-          {/* Speech Silence Timeout */}
-          <SentinelSlider
-            label="Khoảng lặng trước nhắc nhở (giây)"
-            description="Thời gian im lặng tối đa trước khi phát âm thanh gợi ý."
-            value={params.actions.speech_silence_timeout}
-            min={2}
-            max={30}
-            systemDefault={5}
-            onChange={v => setActions({ speech_silence_timeout: v })}
-          />
           {/* Action Reminder Cycle */}
           <SentinelSlider
             label="Chu kỳ nhắc nhở tự động (giây)"
@@ -155,6 +174,16 @@ export default function LessonParametersEditor({ childId, initialParams }: Lesso
             max={60}
             systemDefault={10}
             onChange={v => setActions({ action_reminder_cycle: v })}
+          />
+          {/* Gaze Cone Angle */}
+          <SentinelSlider
+            label="Góc mở nón thị giác (độ)"
+            description="Góc mở toàn phần của hình nón thị giác (từ 5 đến 15 độ) dùng để theo dõi độ tập trung ánh nhìn."
+            value={params.actions.gaze_cone_angle}
+            min={5}
+            max={15}
+            systemDefault={10}
+            onChange={v => setActions({ gaze_cone_angle: v })}
           />
         </Section>
 
@@ -271,7 +300,7 @@ function SentinelSlider({ label, description, value, min, max, systemDefault, st
   value: number; min: number; max: number; systemDefault: number;
   step?: number; onChange: (v: number) => void;
 }) {
-  const isDefault = value === -1;
+  const isDefault = value === -1 || value === undefined || value === null;
   const displayValue = isDefault ? systemDefault : value;
 
   return (

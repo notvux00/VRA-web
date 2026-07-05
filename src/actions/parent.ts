@@ -144,7 +144,7 @@ async function fetchSessionsForChild(childId: string) {
     return data.child_profile_id === targetId || data.child_id === targetId || data.childId === targetId;
   });
 
-  return matches.map(doc => ({ id: doc.id, ...doc.data() }));
+  return matches.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
 }
 
 export async function getChildStats(childId: string) {
