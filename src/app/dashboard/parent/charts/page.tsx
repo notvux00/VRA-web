@@ -41,7 +41,7 @@ export default async function ParentChartsPage({ searchParams }: PageProps) {
         <div>
           <h1 className="text-2xl font-black text-zinc-900 dark:text-white flex items-center gap-3 tracking-tight">
             <BarChart3 className="text-blue-500" /> 
-            Báo cáo Thống kê: {child.name || child.display_name}
+            Báo cáo Thống kê: {child.name}
           </h1>
           <p className="text-xs text-zinc-500 font-medium mt-1">Phân tích chuyên sâu về tiến độ và hành vi của trẻ</p>
         </div>

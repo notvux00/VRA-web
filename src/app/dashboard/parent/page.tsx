@@ -11,7 +11,7 @@ interface PageProps {
 }
 
 export default async function ParentDashboard({ searchParams }: PageProps) {
-  const { children, centerPhone, success } = await getParentChildren() as { children: import("@/types").ChildProfile[], centerPhone: string | null, success: boolean };
+  const { children, centerPhone, success } = await getParentChildren() as unknown as { children: import("@/types").ChildProfile[], centerPhone: string | null, success: boolean };
   const params = await searchParams;
   const childId = params.childId;
 
@@ -78,7 +78,7 @@ export default async function ParentDashboard({ searchParams }: PageProps) {
              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
                <Baby size={16} />
              </div>
-             <p className="text-xs font-black text-blue-600 uppercase tracking-widest">{selectedChild.display_name || selectedChild.name}</p>
+             <p className="text-xs font-black text-blue-600 uppercase tracking-widest">{selectedChild.name}</p>
           </div>
           <h1 className="text-2xl font-black tracking-tight text-zinc-900 dark:text-white uppercase transition-all">
             Báo cáo tiến trình chi tiết

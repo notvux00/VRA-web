@@ -66,7 +66,7 @@ export default function ProfilePicker({ childrenList }: ProfilePickerProps) {
             {/* Child Name - Always Visible & Prominent */}
             <div className="text-center space-y-1">
               <h3 className="text-xl md:text-2xl font-black text-zinc-800 dark:text-white group-hover:text-blue-600 transition-colors uppercase tracking-tight">
-                {child.display_name || child.name || "Bé"}
+                {child.name || "Bé"}
               </h3>
               {child.age && (
                 <p className="text-[11px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md mx-auto w-fit">
