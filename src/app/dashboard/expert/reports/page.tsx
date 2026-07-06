@@ -476,7 +476,7 @@ export default function ExpertReportsPage({ searchParams }: PageProps) {
                                  {Math.floor(log.time_offset/60)}:{(Math.floor(log.time_offset%60)).toString().padStart(2,'0')}
                               </span>
                            </div>
-                           <p className="text-xs font-bold text-zinc-800 dark:text-zinc-200 line-clamp-2 italic">"{log.note}"</p>
+                           <p className="text-xs font-bold text-zinc-800 dark:text-zinc-200 line-clamp-2 italic">&quot;{log.note}&quot;</p>
                         </div>
                      ))}
                   </div>

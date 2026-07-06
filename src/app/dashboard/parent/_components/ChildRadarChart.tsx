@@ -140,7 +140,7 @@ function InfoCard({ icon: Icon, color, label, tracking, meaning }: any) {
       <div>
         <p className="text-xs font-black text-zinc-900 dark:text-white uppercase tracking-tighter mb-1">{label}</p>
         <p className="text-[10px] text-zinc-500 font-bold mb-1 opacity-80 italic">Đang theo dõi: {tracking}</p>
-        <p className="text-[11px] leading-relaxed text-zinc-600 dark:text-zinc-400 font-medium">"{meaning}"</p>
+        <p className="text-[11px] leading-relaxed text-zinc-600 dark:text-zinc-400 font-medium">&quot;{meaning}&quot;</p>
       </div>
     </div>
   );

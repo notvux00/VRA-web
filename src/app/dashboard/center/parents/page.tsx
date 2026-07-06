@@ -77,7 +77,7 @@ export default function CenterParentsPage() {
         </div>
       ) : (
         <div className="w-full">
-          <ParentList parents={filteredParents} children={children} onRefresh={fetchData} />
+          <ParentList parents={filteredParents} items={children} onRefresh={fetchData} />
         </div>
       )}
 

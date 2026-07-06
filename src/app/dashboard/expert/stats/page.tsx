@@ -124,7 +124,7 @@ export default async function ExpertStatsPage({ searchParams }: PageProps) {
               </div>
               {child.diagnosis_notes && (
                 <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
-                  <p className="text-xs opacity-80 italic italic leading-relaxed">"{child.diagnosis_notes}"</p>
+                  <p className="text-xs opacity-80 italic leading-relaxed">&quot;{child.diagnosis_notes}&quot;</p>
                 </div>
               )}
             </div>

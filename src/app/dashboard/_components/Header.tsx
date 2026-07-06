@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Menu, Search, Sun, Moon, Bell, Loader2, Building } from "lucide-react";
 import { collection, query, orderBy, startAt, endAt, limit, getDocs } from "firebase/firestore";
@@ -24,7 +23,6 @@ export default function Header({ setSidebarOpen, user, role, roleName, userName 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const pathname = usePathname();
   const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => setMounted(true), []);
@@ -134,7 +132,7 @@ export default function Header({ setSidebarOpen, user, role, roleName, userName 
                     !isSearching && (
                       <div className="p-8 text-center">
                         <Search size={32} className="mx-auto text-zinc-200 mb-3" />
-                        <p className="text-xs text-zinc-500 font-medium">Không tìm thấy trung tâm nào khớp với "{searchQuery}"</p>
+                        <p className="text-xs text-zinc-500 font-medium">Không tìm thấy trung tâm nào khớp với &quot;{searchQuery}&quot;</p>
                       </div>
                     )
                   )}
