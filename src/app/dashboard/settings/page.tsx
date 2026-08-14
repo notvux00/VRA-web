@@ -43,7 +43,7 @@ export default function SettingsPage() {
       } else {
         setProfileMessage({ type: "error", text: result.error || "Có lỗi xảy ra khi cập nhật hồ sơ." });
       }
-    } catch (error) {
+    } catch {
       setProfileMessage({ type: "error", text: "Lỗi kết nối máy chủ." });
     } finally {
       setIsProfileLoading(false);
@@ -83,9 +83,9 @@ export default function SettingsPage() {
       } else {
         setPasswordMessage({ type: "error", text: result.error || "Có lỗi xảy ra." });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Password update error:", error);
-      if (error.code === "auth/wrong-password") {
+      if (error instanceof Error && "code" in error && (error as { code: string }).code === "auth/wrong-password") {
         setPasswordMessage({ type: "error", text: "Mật khẩu hiện tại không chính xác." });
       } else {
         setPasswordMessage({ type: "error", text: "Xác thực thất bại. Vui lòng thử lại." });

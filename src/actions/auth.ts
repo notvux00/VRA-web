@@ -333,7 +333,7 @@ export async function getUserProfile(uid: string) {
     const userRecord = await adminAuth.getUser(uid);
     const role = userRecord.customClaims?.role || "parent";
     
-    let collectionName = getCollectionName(role);
+    const collectionName = getCollectionName(role);
 
     // 2. Tìm trong collection mới dựa theo Role
     let userDoc = await adminDb.collection(collectionName).doc(uid).get();

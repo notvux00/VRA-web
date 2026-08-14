@@ -7,14 +7,17 @@ import Sidebar from "./_components/Sidebar";
 import Header from "./_components/Header";
 import { getNavigationByRole, getRoleName } from "./_components/Navigation";
 import VRConnectionMonitor from "@/app/dashboard/expert/_components/VRConnectionMonitor";
+import VraChatbot from "@/app/dashboard/_components/VraChatbot";
+import { useParams } from "next/navigation";
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, role, userName } = useAuth();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const params = useParams();
 
-  const childId = searchParams.get("childId");
+  const childIdStr = searchParams.get("childId") || (params?.id as string) || "";
   const pin = searchParams.get("pin");
   const isVRConnected = searchParams.get("vr") === "connected";
   const navigation = getNavigationByRole(role || "");
@@ -22,8 +25,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
   // Netflix-style behavior: Hide UI if it's the selection screen
   const isProfileSelection =
-    (role === "parent" && pathname === "/dashboard/parent" && !childId) ||
-    ((role === "expert" || role === "therapist") && pathname === "/dashboard/expert" && !childId);
+    (role === "parent" && pathname === "/dashboard/parent" && !childIdStr) ||
+    ((role === "expert" || role === "therapist") && pathname === "/dashboard/expert" && !childIdStr);
 
   const isLiveSession = pathname?.includes("/dashboard/expert/session/");
 
@@ -66,6 +69,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           {isVRConnected && pin && <VRConnectionMonitor pin={pin} />}
         </main>
       </div>
+
+      <VraChatbot childId={childIdStr} />
     </div>
   );
 }

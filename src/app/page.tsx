@@ -1,18 +1,15 @@
 "use client";
 
 import React, { useState } from "react";
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
-import { createSession, setParentRole } from "@/actions/auth";
-import { useRouter } from "next/navigation";
+import { createSession } from "@/actions/auth";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -28,35 +25,14 @@ export default function LoginPage() {
       } else {
         setError(response.error || "Không thể tạo phiên đăng nhập");
       }
-    } catch (err: any) {
+    } catch {
       setError("Email hoặc mật khẩu không chính xác");
     } finally {
         setLoading(false);
     }
   };
 
-  const signInWithGoogle = async () => {
-    try {
-      setLoading(true);
-      const provider = new GoogleAuthProvider();
-      const userCredential = await signInWithPopup(auth, provider);
-      
-      // We will refresh token logic identical to old login page
-      await setParentRole(userCredential.user.uid);
-      const freshToken = await userCredential.user.getIdToken(true);
-      
-      const response = await createSession(freshToken);
-      if (response.success) {
-        window.location.href = "/dashboard";
-      } else {
-        setError(response.error || "Không thể tạo phiên đăng nhập bằng Google");
-      }
-    } catch (err: any) {
-      setError("Đăng nhập bằng Google thất bại");
-    } finally {
-      setLoading(false);
-    }
-  };
+
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black dark:bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] dark:from-zinc-900/40 dark:via-black dark:to-black text-zinc-900 dark:text-zinc-100 flex flex-col items-center justify-center p-4 relative overflow-hidden font-sans transition-colors duration-300">

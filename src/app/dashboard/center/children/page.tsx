@@ -2,11 +2,10 @@
 
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Baby, UserPlus, Loader2, ArrowLeft, Search } from "lucide-react";
+import { Baby, UserPlus, Loader2, Search } from "lucide-react";
 import ChildList from "../_components/ChildList";
 import AddChildModal from "../_components/AddChildModal";
 import { getCenterChildren, getCenterExperts, getCenterParents } from "@/actions/center";
-import Link from "next/link";
 
 export default function CenterChildrenPage() {
   const { centerId, centerName } = useAuth();
@@ -81,7 +80,7 @@ export default function CenterChildrenPage() {
         </div>
       ) : (
         <div className="w-full">
-          <ChildList children={filteredChildren} expert={experts} parents={parents} onRefresh={fetchData} />
+          <ChildList items={filteredChildren} expert={experts} parents={parents} onRefresh={fetchData} />
         </div>
       )}
 

@@ -5,6 +5,8 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --font-be-vietnam: "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
+  --font-outfit: "Outfit", var(--font-be-vietnam);
 }
 
 .dark {

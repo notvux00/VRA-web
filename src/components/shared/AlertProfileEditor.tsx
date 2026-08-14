@@ -70,7 +70,7 @@ export default function AlertProfileEditor({ childId, initialProfile }: AlertPro
       } else {
         setMessage({ type: "error", text: res.error || "Lỗi khi cập nhật cấu hình." });
       }
-    } catch (err) {
+    } catch {
       setMessage({ type: "error", text: "Lỗi kết nối máy chủ." });
     } finally {
       setLoading(false);

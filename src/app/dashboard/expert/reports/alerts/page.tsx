@@ -138,7 +138,7 @@ export default function AlertsDetailPage({ searchParams }: PageProps) {
                     {alert.note ? (
                       <div className="flex items-start gap-2 bg-blue-50 dark:bg-blue-900/10 p-3 rounded-xl border border-blue-100 dark:border-blue-900/20">
                         <FileText size={14} className="text-blue-500 mt-0.5 shrink-0" />
-                        <p className="text-xs text-blue-900 dark:text-blue-200 font-medium italic">"{alert.note}"</p>
+                        <p className="text-xs text-blue-900 dark:text-blue-200 font-medium italic">&quot;{alert.note}&quot;</p>
                       </div>
                     ) : (
                       <span className="text-xs text-zinc-300 italic font-medium">Không có ghi chú</span>

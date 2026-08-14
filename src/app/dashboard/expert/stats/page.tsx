@@ -3,15 +3,16 @@ import { getChildStats, getChildSessions } from "@/actions/parent";
 import { getChildAlertStats } from "@/actions/analytics";
 import { 
   Baby, Ruler, Scale, 
-  Activity, History, Info, ShieldCheck
+  Activity, History, Info, ShieldCheck, BarChart3
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 import Link from "next/link";
 import React from "react";
 import LessonParametersEditor from "../_components/stats/LessonParametersEditor";
+import GoalSettingsEditor from "../_components/stats/GoalSettingsEditor";
+import AlertProfileEditor from "@/components/shared/AlertProfileEditor";
 import ChildAchievements from "../../parent/_components/ChildAchievements";
-import ChildChartsContainer from "../../parent/_components/ChildChartsContainer";
 
 interface PageProps {
   searchParams: Promise<{ childId?: string }>;
@@ -33,7 +34,11 @@ interface Child {
   anxiety_triggers?: string[];
   alert_profile?: any;
   default_lesson_params?: any;
+<<<<<<< HEAD
   quick_phrases?: any;
+=======
+  goals?: any[];
+>>>>>>> 88e40298e413efc4c78962dd33f660f1cf0a54de
 }
 
 export default async function ExpertStatsPage({ searchParams }: PageProps) {
@@ -123,7 +128,7 @@ export default async function ExpertStatsPage({ searchParams }: PageProps) {
               </div>
               {child.diagnosis_notes && (
                 <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
-                  <p className="text-xs opacity-80 italic italic leading-relaxed">"{child.diagnosis_notes}"</p>
+                  <p className="text-xs opacity-80 italic leading-relaxed">&quot;{child.diagnosis_notes}&quot;</p>
                 </div>
               )}
             </div>
@@ -150,6 +155,13 @@ export default async function ExpertStatsPage({ searchParams }: PageProps) {
 
         {/* Right Column: Alert Profile & History & Achievements */}
         <div className="lg:col-span-8 space-y-10">
+           {/* Alert Profile Configuration */}
+           <AlertProfileEditor 
+             childId={child.id} 
+             initialProfile={child.alert_profile} 
+           />
+
+           <GoalSettingsEditor childId={child.id} initialGoals={child.goals || []} />
            {/* Lesson Parameters Configuration (Story 2.3) */}
            <LessonParametersEditor
              childId={child.id}
@@ -158,14 +170,7 @@ export default async function ExpertStatsPage({ searchParams }: PageProps) {
              initialPhrases={child.quick_phrases}
            />
            
-           {/* Achievements Section */}
            <ChildAchievements achievements={stats?.achievements || []} />
-
-           {/* Analytics Charts - Replaced SessionHistory */}
-           <ChildChartsContainer 
-             sessions={sessions} 
-             radarData={radarData} 
-           />
         </div>
       </div>
     </div>

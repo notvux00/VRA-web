@@ -6,11 +6,11 @@ import { linkParentToChild } from "@/actions/center";
 
 interface ParentListProps {
   parents: any[];
-  children: any[]; // All children for linking
+  items: any[]; // All children for linking
   onRefresh: () => void;
 }
 
-export default function ParentList({ parents, children, onRefresh }: ParentListProps) {
+export default function ParentList({ parents, items: children, onRefresh }: ParentListProps) {
   const [isLinking, setIsLinking] = useState<string | null>(null);
   const [selectedChild, setSelectedChild] = useState("");
   const [submitting, setSubmitting] = useState(false);

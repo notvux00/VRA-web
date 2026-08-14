@@ -26,7 +26,7 @@ export async function getChildAlertStats(childId: string) {
     // Focus on LAST 5 SESSIONS for maximum responsiveness
     const recentSessions = sessions.slice(0, 5);
     const totalRecent = recentSessions.length || 1;
-    let totalPenalties = { chudoong: 0, tutin: 0, taptrung: 0, ondinh: 0, binhtinh: 0 };
+    const totalPenalties = { chudoong: 0, tutin: 0, taptrung: 0, ondinh: 0, binhtinh: 0 };
 
     recentSessions.forEach((s: any) => {
       const alerts = s.auto_alerts || [];

@@ -2,15 +2,8 @@ import { getParentChildren } from "@/actions/parent";
 import { getChildSessionHistory } from "@/actions/history";
 import { 
   History, 
-  Calendar, 
-  Clock, 
-  CheckCircle2, 
-  XCircle, 
   Search, 
-  Filter, 
-  Gamepad2,
   ChevronRight,
-  TrendingUp,
   BarChart2
 } from "lucide-react";
 import { notFound } from "next/navigation";
@@ -23,7 +16,7 @@ interface PageProps {
 
 export default async function SessionHistoryPage({ searchParams }: PageProps) {
   const { childId: currentChildId } = await searchParams;
-  const { children, success: listSuccess } = await getParentChildren() as { children: any[], success: boolean };
+  const { children, success: listSuccess } = await getParentChildren() as unknown as { children: import("@/types").ChildProfile[], success: boolean };
 
   if (!listSuccess || !children || children.length === 0) {
     return (
@@ -80,7 +73,7 @@ export default async function SessionHistoryPage({ searchParams }: PageProps) {
             <h1 className="text-4xl font-black uppercase tracking-tighter text-zinc-900 dark:text-white leading-none mb-2">Lịch sử bài học</h1>
             <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest flex items-center gap-2">
                <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-               Hồ sơ: <span className="text-zinc-900 dark:text-zinc-200">{selectedChild.display_name || selectedChild.name}</span>
+               Hồ sơ: <span className="text-zinc-900 dark:text-zinc-200">{selectedChild.name}</span>
             </p>
           </div>
         </div>

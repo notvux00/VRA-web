@@ -3,7 +3,7 @@
 // VRA_DASHBOARD_VERSION: 1.1 (FORCE_MODAL_SYNC)
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Settings, UserPlus, Plus, Loader2 } from "lucide-react";
+import { UserPlus, Plus, Loader2 } from "lucide-react";
 import CenterOverviewStats from "./_components/CenterOverviewStats";
 import ExpertRoster from "./_components/ExpertRoster";
 import ChildList from "./_components/ChildList";
@@ -94,7 +94,7 @@ export default function CenterDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <ExpertRoster experts={experts} onRefresh={fetchData} />
-        <ChildList children={children} expert={experts} parents={parents} onRefresh={fetchData} />
+        <ChildList items={children} expert={experts} parents={parents} onRefresh={fetchData} />
       </div>
 
       <AddExpertModal 

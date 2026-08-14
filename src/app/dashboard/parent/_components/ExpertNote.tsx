@@ -25,7 +25,7 @@ export default async function ExpertNote({ childId }: ExpertNoteProps) {
         <div className="relative">
           <Quote className="absolute -top-4 -left-2 opacity-20 w-12 h-12" />
           <p className="text-xl font-medium leading-relaxed mb-6 italic">
-            "{result.note}"
+            &quot;{result.note}&quot;
           </p>
         </div>
 

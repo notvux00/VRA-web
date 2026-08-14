@@ -139,7 +139,7 @@ export default function SessionSummaryModal({
                         </span>
                       </div>
                     </div>
-                    <p className="text-xs font-bold text-zinc-800 mb-3">"{alert.message}"</p>
+                     <p className="text-xs font-bold text-zinc-800 mb-3">&quot;{alert.message}&quot;</p>
                     <input 
                       type="text"
                       placeholder="Nhập ghi chú lâm sàng cho sự kiện này..."

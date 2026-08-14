@@ -43,6 +43,39 @@ export async function getAssignedChildren() {
 }
 
 /**
+ * Update goals for a child
+ */
+export async function updateChildGoals(childId: string, goals: any[]) {
+  const session = await getSession();
+  if (!session) return { success: false, error: "Unauthorized" };
+
+  try {
+    const childRef = adminDb.collection("child_profiles").doc(childId);
+    const childDoc = await childRef.get();
+
+    if (!childDoc.exists) return { success: false, error: "Child profile not found" };
+
+    const data = childDoc.data();
+    const isAssigned = data?.expertUid === session.uid || data?.expertUids?.includes(session.uid);
+    if (!isAssigned) {
+      return { success: false, error: "Unauthorized: You are not assigned to this child" };
+    }
+
+    await childRef.update({
+      goals: goals,
+      updatedAt: new Date().toISOString()
+    });
+
+    revalidatePath(`/dashboard/expert/stats`);
+    revalidatePath(`/dashboard/parent/children/${childId}`);
+    
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
  * Fetch stats for the Expert Dashboard
  */
 export async function getExpertStats() {
@@ -307,7 +340,7 @@ export async function syncAndGetChildPhrases(childId: string, lessonDocId: strin
     if (!childDoc.exists) return { success: false, error: "Child profile not found" };
 
     const childData = childDoc.data();
-    let quickPhrases = childData?.quick_phrases || {};
+    const quickPhrases = childData?.quick_phrases || {};
 
     if (!quickPhrases[lessonDocId]) {
       // Fetch default phrases from the lesson document

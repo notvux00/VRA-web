@@ -4,13 +4,13 @@ import { assignExpertToChild, toggleChildStatus, linkParentToChild } from "@/act
 import Link from "next/link";
 
 interface ChildListProps {
-  children: any[];
+  items: any[];
   expert: any[];
   parents: any[];
   onRefresh: () => void;
 }
 
-export default function ChildList({ children, expert, parents, onRefresh }: ChildListProps) {
+export default function ChildList({ items: children, expert, parents, onRefresh }: ChildListProps) {
   const [isAssigning, setIsAssigning] = useState<string | null>(null);
   const [isLinkingParent, setIsLinkingParent] = useState<string | null>(null);
   const [selectedExpert, setSelectedExpert] = useState("");

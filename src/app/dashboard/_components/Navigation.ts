@@ -12,17 +12,21 @@ import {
   MessageSquare,
   Sparkles,
   Cast,
+  Settings
 } from "lucide-react";
 
 export const parentNavigation = [
   { name: "Tổng quan", href: "/dashboard/parent", icon: LayoutDashboard },
   { name: "Hồ sơ của trẻ", href: "/dashboard/parent/children", icon: Baby },
+  { name: "Biểu đồ thống kê", href: "/dashboard/parent/charts", icon: BarChart3 },
+  { name: "Thời khóa biểu", href: "/dashboard/parent/schedule", icon: Calendar },
   { name: "Lịch sử học", href: "/dashboard/parent/history", icon: History },
   { name: "Nhắn tin", href: "/dashboard/parent/messages", icon: MessageSquare },
 ];
 
 export const expertNavigation = [
-  { name: "Thống kê trẻ", href: "/dashboard/expert/stats", icon: BarChart3 },
+  { name: "Hồ sơ trẻ", href: "/dashboard/expert/stats", icon: Baby },
+  { name: "Biểu đồ thống kê", href: "/dashboard/expert/charts", icon: BarChart3 },
   { name: "Danh sách bài học", href: "/dashboard/expert/lessons", icon: PlayCircle },
   { name: "Bài học gợi ý", href: "/dashboard/expert/suggestions", icon: Sparkles },
   { name: "Thời khóa biểu", href: "/dashboard/expert/schedule", icon: Calendar },

@@ -40,6 +40,16 @@ export interface Expert {
   status: "Active" | "Inactive";
 }
 
+export interface ChildGoal {
+  id: string;
+  type: "weekly_sessions" | "target_duration_minutes" | "target_focus_score" | "streak_days" | "custom";
+  targetValue: number;
+  currentValue?: number;
+  title: string;
+  unit?: string;
+  createdAt?: string;
+}
+
 export interface ChildProfile {
   id: string;
   name: string;
@@ -62,6 +72,7 @@ export interface ChildProfile {
   createdAt: string;
   updatedAt: string;
   sessionCount: number;
+  goals?: ChildGoal[];
 }
 
 export interface Parent {

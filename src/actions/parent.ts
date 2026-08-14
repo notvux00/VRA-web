@@ -172,6 +172,59 @@ export async function getChildStats(childId: string) {
       ? sessions.reduce((acc, s: any) => acc + (s.score || 0), 0) / totalSessions 
       : 0;
 
+    const maxDuration = sessions.length > 0 ? Math.max(...sessions.map((s: any) => s.duration || 0)) : 0;
+
+    const formatDate = (date: Date) => {
+      return date.getFullYear() + "-" + 
+             String(date.getMonth() + 1).padStart(2, '0') + "-" + 
+             String(date.getDate()).padStart(2, '0');
+    };
+
+    const sessionDates = sessions
+      .map((s: any) => {
+        const rawDate = s.start_time || s.startTime;
+        if (!rawDate) return null;
+        
+        const d = (typeof rawDate === 'object' && rawDate.toDate) 
+          ? rawDate.toDate() 
+          : new Date(rawDate);
+          
+        return formatDate(d);
+      })
+      .filter(d => d !== null) as string[];
+
+    const uniqueDates = Array.from(new Set(sessionDates)).sort((a, b) => b.localeCompare(a));
+
+    let streak = 0;
+    if (uniqueDates.length > 0) {
+      const now = new Date();
+      
+      // We start checking from TODAY
+      const checkDate = new Date(now);
+      const todayStr = formatDate(checkDate);
+      
+      // If no session today, we check if it starts from YESTERDAY
+      if (!uniqueDates.includes(todayStr)) {
+        checkDate.setDate(checkDate.getDate() - 1);
+        const yesterdayStr = formatDate(checkDate);
+        if (!uniqueDates.includes(yesterdayStr)) {
+          // No session today or yesterday = streak is 0
+          streak = 0;
+        } else {
+          // Streak starts from yesterday
+          streak = 0; // Will be incremented in the loop
+        }
+      }
+
+      // If we found a starting point (today or yesterday)
+      if (uniqueDates.includes(formatDate(checkDate))) {
+        while (uniqueDates.includes(formatDate(checkDate))) {
+          streak++;
+          checkDate.setDate(checkDate.getDate() - 1);
+        }
+      }
+    }
+
     // Define Achievement Logic
     const achievementsList: Achievement[] = [
       {
@@ -205,59 +258,56 @@ export async function getChildStats(childId: string) {
         icon: "Clock",
         color: "text-purple-500",
         earned: (totalDurationSeconds / 3600) >= 10
+      },
+      {
+        id: "streak_master",
+        name: "Chuỗi ngày rực rỡ",
+        description: "Học liên tiếp 3 ngày trở lên",
+        icon: "Flame",
+        color: "text-orange-500",
+        earned: streak >= 3
+      },
+      {
+        id: "deep_focus",
+        name: "Tập trung sâu",
+        description: "Có ít nhất một buổi học trên 30 phút",
+        icon: "Headphones",
+        color: "text-blue-600",
+        earned: maxDuration >= 1800
+      },
+      {
+        id: "veteran",
+        name: "Chiến binh kỳ cựu",
+        description: "Hoàn thành từ 20 buổi học trở lên",
+        icon: "Trophy",
+        color: "text-rose-500",
+        earned: totalSessions >= 20
+      },
+      {
+        id: "discipline",
+        name: "Kỷ luật thép",
+        description: "Học liên tiếp 7 ngày trở lên",
+        icon: "Sparkles",
+        color: "text-indigo-500",
+        earned: streak >= 7
+      },
+      {
+        id: "time_expert",
+        name: "Chuyên gia thời gian",
+        description: "Tổng thời gian rèn luyện đạt 50 giờ",
+        icon: "Hourglass",
+        color: "text-teal-500",
+        earned: (totalDurationSeconds / 3600) >= 50
+      },
+      {
+        id: "legend",
+        name: "Huyền thoại",
+        description: "Hoàn thành từ 50 buổi học trở lên",
+        icon: "Crown",
+        color: "text-yellow-500",
+        earned: totalSessions >= 50
       }
     ];
-
-    const formatDate = (date: Date) => {
-      return date.getFullYear() + "-" + 
-             String(date.getMonth() + 1).padStart(2, '0') + "-" + 
-             String(date.getDate()).padStart(2, '0');
-    };
-
-    const sessionDates = sessions
-      .map((s: any) => {
-        const rawDate = s.start_time || s.startTime;
-        if (!rawDate) return null;
-        
-        const d = (typeof rawDate === 'object' && rawDate.toDate) 
-          ? rawDate.toDate() 
-          : new Date(rawDate);
-          
-        return formatDate(d);
-      })
-      .filter(d => d !== null) as string[];
-
-    const uniqueDates = Array.from(new Set(sessionDates)).sort((a, b) => b.localeCompare(a));
-
-    let streak = 0;
-    if (uniqueDates.length > 0) {
-      const now = new Date();
-      
-      // We start checking from TODAY
-      let checkDate = new Date(now);
-      let todayStr = formatDate(checkDate);
-      
-      // If no session today, we check if it starts from YESTERDAY
-      if (!uniqueDates.includes(todayStr)) {
-        checkDate.setDate(checkDate.getDate() - 1);
-        let yesterdayStr = formatDate(checkDate);
-        if (!uniqueDates.includes(yesterdayStr)) {
-          // No session today or yesterday = streak is 0
-          streak = 0;
-        } else {
-          // Streak starts from yesterday
-          streak = 0; // Will be incremented in the loop
-        }
-      }
-
-      // If we found a starting point (today or yesterday)
-      if (uniqueDates.includes(formatDate(checkDate))) {
-        while (uniqueDates.includes(formatDate(checkDate))) {
-          streak++;
-          checkDate.setDate(checkDate.getDate() - 1);
-        }
-      }
-    }
 
     return {
       success: true,
@@ -403,7 +453,7 @@ export async function getChildDashboardAnalytics(childId: string) {
     // 1. Calculate Radar Data (Strictly follow RADAR_CHART_METRICS.md - Focus on LAST 5 SESSIONS)
     const recentSessions = sessions.slice(0, 5);
     const totalRecent = recentSessions.length || 1;
-    let totalPenalties = { chudoong: 0, tutin: 0, taptrung: 0, ondinh: 0, binhtinh: 0 };
+    const totalPenalties = { chudoong: 0, tutin: 0, taptrung: 0, ondinh: 0, binhtinh: 0 };
 
     recentSessions.forEach((s: any) => {
       const alerts = s.auto_alerts || [];
