@@ -91,7 +91,8 @@ export default function LessonsList({ initialLessons, child, pin, isVRConnected 
     const fallback: Record<string, string[]> = {};
     if (level.quests) {
       level.quests.forEach(q => {
-        fallback[q.id] = q.default_phrases || [];
+        const questKey = q.id || q.title;
+        if (questKey) fallback[questKey] = q.default_phrases || [];
       });
     }
     return fallback;
@@ -139,7 +140,8 @@ export default function LessonsList({ initialLessons, child, pin, isVRConnected 
     const defaultPhrases: Record<string, string[]> = {};
     if (level.quests) {
       level.quests.forEach(q => {
-        defaultPhrases[q.id] = q.default_phrases || [];
+        const questKey = q.id || q.title;
+        if (questKey) defaultPhrases[questKey] = q.default_phrases || [];
       });
     }
     setPhrasesState(prev => ({
@@ -369,8 +371,8 @@ export default function LessonsList({ initialLessons, child, pin, isVRConnected 
                   const levelPhrases = getLevelPhrases(customizeLevel);
                   const quests = customizeLevel.quests || [];
                   
-                  return quests.map((q) => {
-                    const questKey = q.id;
+                  return quests.map((q, idx) => {
+                    const questKey = q.id || q.title || `quest_${idx}`;
                     const list = levelPhrases[questKey] || [];
 
                     return (

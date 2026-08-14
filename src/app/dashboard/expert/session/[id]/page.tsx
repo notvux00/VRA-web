@@ -510,15 +510,33 @@ export default function LiveSessionPage() {
               {(() => {
                 const lessonDocId = searchParams.get("lesson") || "";
                 const childPhrases = child?.quick_phrases || {};
-                const lessonPhrases = childPhrases[lessonDocId] || {};
-                const lessonQuestKeys = Object.keys(lessonPhrases).filter(k => k !== "general");
-                const activeQuestPhrases = lessonPhrases[currentQuest] || [];
-                const generalPhrases = lessonPhrases["general"] || childPhrases["general"] || ["Con làm tốt lắm!", "Tuyệt vời!", "Cố lên con!"];
-                const otherQuests = lessonQuestKeys.filter(k => k !== currentQuest);
-
                 const questsList = lessonDetail?.quests || [];
-                const activeQuestObj = questsList.find((q: any) => q.id === currentQuest);
+                const activeQuestObj = questsList.find((q: any) => (q.id && q.id === currentQuest) || q.title === currentQuest);
                 const activeQuestTitle = activeQuestObj ? activeQuestObj.title : currentQuest;
+
+                let activeQuestPhrases: string[] = [];
+                let otherQuestsList: Array<{ key: string; title: string; phrases: string[] }> = [];
+
+                if (Array.isArray(lessonPhrases)) {
+                  lessonPhrases.forEach((item: any, idx: number) => {
+                    const qName = item.quest_name || item.title || "";
+                    const phrasesArr = item.phrases || item.default_phrases || [];
+                    if (qName === currentQuest || idx.toString() === currentQuest || (activeQuestObj && qName === activeQuestObj.title)) {
+                      activeQuestPhrases = phrasesArr;
+                    } else {
+                      otherQuestsList.push({ key: qName || `quest_${idx}`, title: qName || `Nhiệm vụ ${idx + 1}`, phrases: phrasesArr });
+                    }
+                  });
+                } else if (typeof lessonPhrases === 'object' && lessonPhrases !== null) {
+                  const lessonQuestKeys = Object.keys(lessonPhrases).filter(k => k !== "general");
+                  activeQuestPhrases = lessonPhrases[currentQuest] || [];
+                  otherQuestsList = lessonQuestKeys.filter(k => k !== currentQuest).map(qKey => {
+                    const questObj = questsList.find((q: any) => (q.id && q.id === qKey) || q.title === qKey);
+                    return { key: qKey, title: questObj ? questObj.title : qKey, phrases: lessonPhrases[qKey] || [] };
+                  });
+                }
+
+                const generalPhrases = childPhrases["general"] || (typeof lessonPhrases === 'object' && !Array.isArray(lessonPhrases) && lessonPhrases["general"]) || ["Con làm tốt lắm!", "Tuyệt vời!", "Cố lên con!"];
 
                 return (
                   <div className="bg-white/5 rounded-xl p-4 border border-white/5 flex flex-col gap-4 max-h-[450px] overflow-y-auto">
@@ -596,20 +614,19 @@ export default function LiveSessionPage() {
                     </div>
 
                     {/* Other Quests Accordion */}
-                    {otherQuests.length > 0 && (
+                    {otherQuestsList.length > 0 && (
                       <details className="group/details space-y-2">
                         <summary className="text-[10px] text-zinc-500 group-open/details:text-zinc-400 uppercase tracking-wider font-bold cursor-pointer hover:text-zinc-300 transition-colors select-none list-none flex items-center justify-between">
-                          <span>Nhiệm vụ khác ({otherQuests.length})</span>
+                          <span>Nhiệm vụ khác ({otherQuestsList.length})</span>
                           <span className="text-[8px] transition-transform group-open/details:rotate-180">▼</span>
                         </summary>
                         <div className="space-y-4 pt-2 border-t border-white/5">
-                          {otherQuests.map((qKey: string) => {
-                            const questObj = questsList.find((q: any) => q.id === qKey);
-                            const questTitle = questObj ? questObj.title : qKey;
-                            const phrases = lessonPhrases[qKey] || [];
+                          {otherQuestsList.map((qItem) => {
+                            const questTitle = qItem.title;
+                            const phrases = qItem.phrases || [];
                             if (phrases.length === 0) return null;
                             return (
-                              <div key={qKey} className="space-y-2">
+                              <div key={qItem.key} className="space-y-2">
                                 <div className="text-[9px] text-zinc-500 font-bold uppercase">{questTitle}</div>
                                 <div className="flex flex-col gap-1.5">
                                   {phrases.map((phrase: string, idx: number) => (

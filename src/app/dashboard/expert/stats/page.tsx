@@ -33,6 +33,7 @@ interface Child {
   anxiety_triggers?: string[];
   alert_profile?: any;
   default_lesson_params?: any;
+  quick_phrases?: any;
 }
 
 export default async function ExpertStatsPage({ searchParams }: PageProps) {
@@ -152,7 +153,9 @@ export default async function ExpertStatsPage({ searchParams }: PageProps) {
            {/* Lesson Parameters Configuration (Story 2.3) */}
            <LessonParametersEditor
              childId={child.id}
+             childName={child.display_name || child.name || "Bé"}
              initialParams={child.default_lesson_params}
+             initialPhrases={child.quick_phrases}
            />
            
            {/* Achievements Section */}

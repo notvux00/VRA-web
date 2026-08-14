@@ -315,12 +315,16 @@ export async function syncAndGetChildPhrases(childId: string, lessonDocId: strin
       if (lessonDoc.exists) {
         const lessonData = lessonDoc.data();
         const quests = lessonData?.quests || [];
-        const questPhrases: Record<string, string[]> = {};
+        const questList: Array<{ quest_name: string; phrases: string[] }> = [];
         quests.forEach((q: any) => {
-          questPhrases[q.id] = q.default_phrases || [];
+          const questName = q.title || q.name || q.id || "";
+          questList.push({
+            quest_name: questName,
+            phrases: q.default_phrases || []
+          });
         });
         
-        quickPhrases[lessonDocId] = questPhrases;
+        quickPhrases[lessonDocId] = questList;
         
         await childRef.update({
           quick_phrases: quickPhrases,
@@ -332,6 +336,47 @@ export async function syncAndGetChildPhrases(childId: string, lessonDocId: strin
     return { success: true, phrases: quickPhrases[lessonDocId] || {} };
   } catch (error: any) {
     console.error("Error syncing child quick phrases:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Import child settings (quick phrases and/or default lesson parameters) (Story 3.9 / Duplication)
+ */
+export async function importChildSettings(
+  childId: string, 
+  settings: { quick_phrases?: Record<string, any>; default_lesson_params?: any }
+) {
+  const session = await getSession();
+  if (!session) return { success: false, error: "Unauthorized" };
+
+  try {
+    const childRef = adminDb.collection("child_profiles").doc(childId);
+    const childDoc = await childRef.get();
+
+    if (!childDoc.exists) return { success: false, error: "Child profile not found" };
+
+    const data = childDoc.data();
+    const isAssigned = data?.expertUid === session.uid || data?.expertUids?.includes(session.uid);
+    if (!isAssigned) {
+      return { success: false, error: "Unauthorized: You are not assigned to this child" };
+    }
+
+    const updates: any = {
+      updatedAt: new Date().toISOString()
+    };
+    if (settings.quick_phrases) {
+      updates.quick_phrases = settings.quick_phrases;
+    }
+    if (settings.default_lesson_params) {
+      updates.default_lesson_params = settings.default_lesson_params;
+    }
+
+    await childRef.update(updates);
+    revalidatePath(`/dashboard/expert/stats?childId=${childId}`);
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error importing child settings:", error);
     return { success: false, error: error.message };
   }
 }

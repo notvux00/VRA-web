@@ -3,7 +3,7 @@
 import { adminDb } from "@/lib/firebase/admin";
 
 export interface QuestMetadata {
-  id: string;
+  id?: string;
   title: string;
   default_phrases: string[];
 }

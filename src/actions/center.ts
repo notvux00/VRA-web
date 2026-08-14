@@ -172,11 +172,15 @@ export async function createChildProfile(
     lessonsSnap.docs.forEach((doc) => {
       const lessonData = doc.data();
       if (lessonData?.quests) {
-        const questPhrases: Record<string, string[]> = {};
+        const questList: Array<{ quest_name: string; phrases: string[] }> = [];
         lessonData.quests.forEach((q: any) => {
-          questPhrases[q.id] = q.default_phrases || [];
+          const questName = q.title || q.name || q.id || "";
+          questList.push({
+            quest_name: questName,
+            phrases: q.default_phrases || []
+          });
         });
-        defaultPhrasesMap[doc.id] = questPhrases;
+        defaultPhrasesMap[doc.id] = questList;
       }
     });
 
