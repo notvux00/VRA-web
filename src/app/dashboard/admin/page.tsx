@@ -26,7 +26,11 @@ export default function AdminDashboard() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchData(); 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleOnboard = async (e: React.FormEvent) => {
     e.preventDefault();

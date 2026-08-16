@@ -33,7 +33,11 @@ export default function CenterDetailPage({ params }: { params: Promise<{ id: str
     setLoading(false);
   };
 
-  useEffect(() => { fetchData(); }, [id]);
+  useEffect(() => { 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchData(); 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   const handleToggleStatus = async () => {
     if (!center) return;

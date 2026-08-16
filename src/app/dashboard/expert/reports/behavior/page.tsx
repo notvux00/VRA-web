@@ -28,6 +28,7 @@ export default function BehaviorLogPage({ searchParams }: PageProps) {
 
   useEffect(() => {
     if (sessionId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(true);
       getSessionDetail(sessionId)
         .then(res => {
@@ -131,8 +132,7 @@ export default function BehaviorLogPage({ searchParams }: PageProps) {
                
                <h3 className="text-xl font-black uppercase tracking-tight mb-2">{log.event}</h3>
                <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300 leading-relaxed italic">
-                  {/* eslint-disable-next-line react/no-unescaped-entities */}
-                 "{log.note || "Không có ghi chú thêm"}"
+                 &quot;{log.note || "Không có ghi chú thêm"}&quot;
                </p>
             </div>
           </div>

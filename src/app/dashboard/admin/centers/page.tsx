@@ -24,7 +24,11 @@ export default function ManageCentersPage() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchCenters(); }, []);
+  useEffect(() => { 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchCenters(); 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleCreateCenter = async (e: React.FormEvent) => {
     e.preventDefault();

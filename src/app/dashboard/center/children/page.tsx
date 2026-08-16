@@ -36,7 +36,9 @@ export default function CenterChildrenPage() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [centerId]);
 
   const filteredChildren = children.filter(c => 

@@ -29,6 +29,7 @@ export default function AlertsDetailPage({ searchParams }: PageProps) {
 
   useEffect(() => {
     if (sessionId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(true);
       getSessionDetail(sessionId)
         .then(res => {

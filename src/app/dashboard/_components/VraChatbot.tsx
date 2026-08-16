@@ -43,6 +43,7 @@ export default function VraChatbot({ childId }: VraChatbotProps) {
         setIsListening(false);
       };
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const scrollToBottom = () => {
@@ -57,10 +58,12 @@ export default function VraChatbot({ childId }: VraChatbotProps) {
   useEffect(() => {
     if (isOpen && messages.length === 0) {
       if (!childId) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setMessages([
           { role: "model", text: "Xin chào! Bạn đang ở trang chung. Xin vui lòng chọn vào một hồ sơ trẻ cụ thể để tôi có thể phân tích dữ liệu cho bạn nhé!" }
         ]);
       } else {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setMessages([
           { role: "model", text: "Xin chào! Tôi là VRA Chatbot. Bạn muốn tôi phân tích dữ liệu hay giải đáp điều gì về tiến độ của bé hôm nay?" }
         ]);

@@ -391,9 +391,8 @@ export default function LessonParametersEditor({ childId, childName, initialPara
 
         {/* Info note */}
         <div className="p-5 bg-indigo-50 dark:bg-indigo-900/10 rounded-[1.5rem] border border-indigo-100 dark:border-indigo-900/30 text-xs text-indigo-700 dark:text-indigo-400 font-medium leading-relaxed">
-          {/* eslint-disable react/no-unescaped-entities */}
           Các cài đặt này sẽ được đồng bộ tự động vào kính VR ngay khi buổi học bắt đầu.
-          Giá trị "<strong>Mặc định hệ thống</strong>" có nghĩa là kính VR sẽ dùng cấu hình được cài sẵn trong Unity Inspector — phù hợp khi không cần tùy chỉnh đặc biệt cho bé.
+          Giá trị &quot;<strong>Mặc định hệ thống</strong>&quot; có nghĩa là kính VR sẽ dùng cấu hình được cài sẵn trong Unity Inspector — phù hợp khi không cần tùy chỉnh đặc biệt cho bé.
         </div>
       </div>
     </div>
