@@ -34,11 +34,8 @@ interface Child {
   anxiety_triggers?: string[];
   alert_profile?: any;
   default_lesson_params?: any;
-<<<<<<< HEAD
   quick_phrases?: any;
-=======
   goals?: any[];
->>>>>>> 88e40298e413efc4c78962dd33f660f1cf0a54de
 }
 
 export default async function ExpertStatsPage({ searchParams }: PageProps) {

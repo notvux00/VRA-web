@@ -46,11 +46,23 @@ export async function startLessonOnDevice(pinCode: string, sceneName: string, le
   const pinRef = ref(rtdb, `pairing_codes/${pinCode}`);
   const sessionId = crypto.randomUUID();
 
+  let livekitToken = "";
+  try {
+    const tokenRes = await fetch(`/api/livekit-token?room=${sessionId}&username=vr_${pinCode}`);
+    if (tokenRes.ok) {
+      const tokenData = await tokenRes.json();
+      livekitToken = tokenData.token;
+    }
+  } catch (e) {
+    console.warn("[RTDB] Could not generate VR LiveKit token:", e);
+  }
+
   await update(pinRef, {
     current_lesson_id: lessonId,
     current_session_id: sessionId,
     target_scene_name: sceneName,
     host_id: hostId,
+    livekit_token: livekitToken,
   });
 
   return sessionId;

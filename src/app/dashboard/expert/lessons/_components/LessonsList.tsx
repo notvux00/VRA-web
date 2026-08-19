@@ -10,7 +10,7 @@ import StartLessonButton from "./StartLessonButton";
 import { updateChildQuickPhrases } from "@/actions/expert";
 
 interface QuestMetadata {
-  id: string;
+  id?: string;
   title: string;
   default_phrases: string[];
   description?: string;
