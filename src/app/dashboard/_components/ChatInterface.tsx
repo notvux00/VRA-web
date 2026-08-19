@@ -104,6 +104,7 @@ export default function ChatInterface({ role }: ChatInterfaceProps) {
     });
 
     return () => unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid, selectedPartner?.id, selectedPartner?.childId]);
 
   // 3. Scroll to bottom

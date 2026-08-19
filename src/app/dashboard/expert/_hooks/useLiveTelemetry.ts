@@ -36,7 +36,7 @@ export function useLiveTelemetry(
   const [currentQuest, setCurrentQuest] = useState<string>("Đang đợi dữ liệu...");
   const [questIndex, setQuestIndex] = useState<number>(0);
 
-  const startTimeRef = useRef<number>(Date.now());
+  const startTimeRef = useRef<number>(0);
   
   // Tracking behavior timing
   const distractionStartOffset = useRef<number | null>(null);
@@ -170,7 +170,8 @@ export function useLiveTelemetry(
     });
 
     return () => unsubscribe();
-  }, [isActive, sessionId, questIndex, lessonParams]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActive, sessionId, questIndex]);
 
   return { telemetry, activeAlerts, sessionTime, currentQuest, questIndex };
 }

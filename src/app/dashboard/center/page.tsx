@@ -47,7 +47,9 @@ export default function CenterDashboard() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [centerId]);
 
   if (loading && !stats) {

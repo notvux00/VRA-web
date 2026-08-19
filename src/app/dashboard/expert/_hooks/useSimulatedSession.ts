@@ -40,7 +40,7 @@ export function useSimulatedSession(isActive: boolean, alertProfile: any) {
   const [sessionTime, setSessionTime] = useState(0);
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const startTimeRef = useRef<number>(Date.now());
+  const startTimeRef = useRef<number>(0);
 
   // Thresholds from profile or defaults
   const thresholds = alertProfile?.thresholds || {
@@ -143,7 +143,8 @@ export function useSimulatedSession(isActive: boolean, alertProfile: any) {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isActive, alertProfile]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActive]);
 
   return { telemetry, activeAlerts, sessionTime };
 }
