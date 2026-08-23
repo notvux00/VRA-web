@@ -71,8 +71,8 @@ export default function ChildList({ items: children, expert, parents, onRefresh 
   };
 
   return (
-    <div className="bg-white dark:bg-zinc-900/50 backdrop-blur border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm dark:shadow-none overflow-hidden h-fit transition-all duration-300">
-      <div className="p-6 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center bg-zinc-50/30 dark:bg-zinc-800/20">
+    <div className="bg-white dark:bg-zinc-900/50 backdrop-blur border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm dark:shadow-none h-fit transition-all duration-300">
+      <div className="rounded-t-2xl p-6 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center bg-zinc-50/30 dark:bg-zinc-800/20">
         <div>
           <h2 className="text-lg font-semibold text-zinc-900 dark:text-white uppercase tracking-tight">Danh sách Trẻ em</h2>
           <p className="text-xs text-zinc-500 font-medium">Quản lý hồ sơ và kết nối nhân sự</p>

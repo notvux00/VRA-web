@@ -475,3 +475,83 @@ export async function syncAllCenterStats() {
     return { success: false, error: error.message };
   }
 }
+
+/**
+ * Lấy danh sách tài khoản System Admin
+ */
+export async function getAdminAccounts() {
+  try {
+    const snapshot = await adminDb.collection("system_admins").orderBy("updatedAt", "desc").get();
+    const admins = snapshot.docs.map(doc => ({
+      uid: doc.id,
+      ...doc.data()
+    }));
+    return { success: true, admins };
+  } catch (error: any) {
+    console.error("Error fetching admin accounts:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Lấy danh sách tài khoản Center Manager
+ */
+export async function getCenterManagers() {
+  try {
+    const snapshot = await adminDb.collection("center_managers").orderBy("updatedAt", "desc").get();
+    const managers = snapshot.docs.map(doc => ({
+      uid: doc.id,
+      ...doc.data()
+    }));
+    return { success: true, managers };
+  } catch (error: any) {
+    console.error("Error fetching center managers:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Đổi mật khẩu cho bất kỳ user nào (dành cho Admin / Center Manager)
+ */
+export async function resetUserPassword(uid: string, newPassword: string) {
+  try {
+    if (!newPassword || newPassword.length < 6) {
+      return { success: false, error: "Mật khẩu phải có ít nhất 6 ký tự." };
+    }
+    await adminAuth.updateUser(uid, { password: newPassword });
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error resetting password:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Tạo tài khoản Admin mới
+ */
+export async function createAdminAccount(data: { name: string; email: string; password: string; phone?: string }) {
+  try {
+    const userRecord = await adminAuth.createUser({
+      email: data.email,
+      password: data.password,
+      displayName: data.name
+    });
+
+    await adminAuth.setCustomUserClaims(userRecord.uid, { role: "admin" });
+
+    await adminDb.collection("system_admins").doc(userRecord.uid).set({
+      name: data.name,
+      email: data.email,
+      phone: data.phone || "",
+      role: "admin",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
+
+    revalidatePath("/dashboard/admin/accounts");
+    return { success: true, uid: userRecord.uid };
+  } catch (error: any) {
+    console.error("Error creating admin account:", error);
+    return { success: false, error: error.message };
+  }
+}

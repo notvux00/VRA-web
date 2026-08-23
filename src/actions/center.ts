@@ -23,12 +23,16 @@ export async function getCenterStats(centerId: string) {
       .count()
       .get();
     
-    // 3. Active Sessions (Placeholder until sessions are fully implemented)
-    const sessionsSnap = await adminDb.collection("sessions")
+    // 3. Total Sessions (Buổi học đã hoàn thành)
+    // Dùng get() và reduce để tính tổng an toàn thay vì AggregateField có thể bị lỗi tuỳ version SDK
+    const childrenSnapForSum = await adminDb.collection("child_profiles")
       .where("centerId", "==", centerId)
-      .where("status", "==", "in-progress")
-      .count()
       .get();
+    
+    let totalSessions = 0;
+    childrenSnapForSum.forEach(doc => {
+      totalSessions += (doc.data().sessionCount || 0);
+    });
 
     // 4. Total Parents
     const parentsSnap = await adminDb.collection("parents")
@@ -42,7 +46,7 @@ export async function getCenterStats(centerId: string) {
         totalExpert: expertSnap.data().count,
         totalChildren: childrenSnap.data().count,
         totalParents: parentsSnap.data().count,
-        activeSessions: sessionsSnap.data().count,
+        totalSessions: totalSessions,
       }
     };
   } catch (error: any) {

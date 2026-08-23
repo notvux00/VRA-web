@@ -5,7 +5,7 @@ interface CenterOverviewStatsProps {
     totalExpert: number;
     totalChildren: number;
     totalParents: number;
-    activeSessions: number;
+    totalSessions?: number;
   } | null;
 }
 
@@ -33,8 +33,8 @@ export default function CenterOverviewStats({ stats }: CenterOverviewStatsProps)
       bg: "bg-emerald-100 dark:bg-emerald-400/10" 
     },
     { 
-      label: "Đang trị liệu", 
-      value: stats?.activeSessions || 0, 
+      label: "Tổng buổi học", 
+      value: stats?.totalSessions || 0, 
       icon: PlayCircle, 
       color: "text-amber-600 dark:text-amber-400", 
       bg: "bg-amber-100 dark:bg-amber-400/10" 
