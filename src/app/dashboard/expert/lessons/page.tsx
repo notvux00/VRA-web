@@ -46,7 +46,7 @@ export default async function ExpertLessonsPage({ searchParams }: PageProps) {
 
   return (
     <LessonsList
-      initialLessons={lessons}
+      initialLessons={lessons as any}
       child={child}
       pin={pin}
       isVRConnected={isVRConnected}

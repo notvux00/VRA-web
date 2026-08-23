@@ -3,32 +3,11 @@
 import { cookies } from "next/headers";
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { getChildAlertStats as getRadarData } from "./analytics";
+import { ChildProfile, Session, QuestLog } from "@/types";
 
 const SESSION_COOKIE_NAME = "session";
 
-export interface ChildProfile {
-  id: string;
-  display_name: string;
-  parentUid: string;
-  centerId: string;
-  age?: number;
-  [key: string]: any;
-}
 
-export interface SessionData {
-  id: string;
-  child_profile_id: string;
-  lesson_id: string;
-  completion_status: string;
-  score: number;
-  duration: number;
-  start_time: string;
-  finish_time: string;
-  notes?: string;
-  quest_logs?: any[];
-  auto_alerts?: any[];
-  [key: string]: any;
-}
 
 export interface Achievement {
   id: string;
@@ -116,12 +95,12 @@ export async function getChildSessions(childId: string) {
       .limit(10)
       .get();
 
-    const sessions: SessionData[] = sessionsSnapshot.docs.map((doc) => ({
+    const sessions: Session[] = sessionsSnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
       start_time: doc.data().start_time?.toDate?.()?.toISOString() || doc.data().startTime || doc.data().start_time || new Date().toISOString(),
       finish_time: doc.data().finish_time?.toDate?.()?.toISOString() || doc.data().endTime || doc.data().finish_time || new Date().toISOString(),
-    } as SessionData));
+    } as Session));
 
     return { success: true, sessions };
   } catch (error: any) {
@@ -144,7 +123,7 @@ async function fetchSessionsForChild(childId: string) {
     return data.child_profile_id === targetId || data.child_id === targetId || data.childId === targetId;
   });
 
-  return matches.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
+  return matches.map(doc => ({ id: doc.id, ...doc.data() })) as Session[];
 }
 
 export async function getChildStats(childId: string) {
@@ -166,13 +145,13 @@ export async function getChildStats(childId: string) {
     const sessions = await fetchSessionsForChild(childId);
     
     const totalSessions = sessions.length;
-    const totalDurationSeconds = sessions.reduce((acc, s: any) => acc + (s.duration || 0), 0);
+    const totalDurationSeconds = sessions.reduce((acc, s: Session) => acc + (s.duration || 0), 0);
     const totalDurationMinutes = totalDurationSeconds / 60;
     const avgScore = totalSessions > 0 
-      ? sessions.reduce((acc, s: any) => acc + (s.score || 0), 0) / totalSessions 
+      ? sessions.reduce((acc, s: Session) => acc + (s.score || 0), 0) / totalSessions 
       : 0;
 
-    const maxDuration = sessions.length > 0 ? Math.max(...sessions.map((s: any) => s.duration || 0)) : 0;
+    const maxDuration = sessions.length > 0 ? Math.max(...sessions.map((s: Session) => s.duration || 0)) : 0;
 
     const formatDate = (date: Date) => {
       return date.getFullYear() + "-" + 
@@ -181,8 +160,8 @@ export async function getChildStats(childId: string) {
     };
 
     const sessionDates = sessions
-      .map((s: any) => {
-        const rawDate = s.start_time || s.startTime;
+      .map((s: Session) => {
+        const rawDate = s.start_time || (s as any).startTime;
         if (!rawDate) return null;
         
         const d = (typeof rawDate === 'object' && rawDate.toDate) 
@@ -431,12 +410,12 @@ export async function getChildDashboardAnalytics(childId: string) {
     let totalResponseTime = 0;
     let totalScore = 0;
 
-    sessions.forEach((s: any) => {
+    sessions.forEach((s: Session) => {
       const logs = s.quest_logs || [];
       totalQuests += logs.length;
       totalScore += (s.score || 0);
       
-      logs.forEach((log: any) => {
+      logs.forEach((log: QuestLog) => {
         if (log.completion_status === "success") successfulQuests++;
         if ((log.hints_physical || 0) + (log.hints_verbal || 0) + (log.hints_visual || 0) === 0) {
           zeroHintQuests++;
@@ -455,27 +434,27 @@ export async function getChildDashboardAnalytics(childId: string) {
     const totalRecent = recentSessions.length || 1;
     const totalPenalties = { chudoong: 0, tutin: 0, taptrung: 0, ondinh: 0, binhtinh: 0 };
 
-    recentSessions.forEach((s: any) => {
+    recentSessions.forEach((s: Session) => {
       const alerts = s.auto_alerts || [];
       
       // 1. CHỦ ĐỘNG (idle - Low: -30đ mỗi 5s, max -100đ)
-      const idleDur = alerts.filter((a: any) => a.type === 'idle').reduce((acc: number, a: any) => acc + (a.duration_sec || 0), 0);
+      const idleDur = alerts.filter((a: Record<string, any>) => a.type === 'idle').reduce((acc: number, a: Record<string, any>) => acc + (a.duration_sec || 0), 0);
       totalPenalties.chudoong += Math.min(100, Math.floor(idleDur / 5) * 30);
 
       // 2. TỰ TIN (hesitation - Low: -60đ/lần, max -100đ)
-      const hesitationCount = alerts.filter((a: any) => a.type === 'hesitation').length;
+      const hesitationCount = alerts.filter((a: Record<string, any>) => a.type === 'hesitation').length;
       totalPenalties.tutin += Math.min(100, hesitationCount * 60);
 
       // 3. TẬP TRUNG (distraction - Medium: -50đ mỗi 5s, max -100đ)
-      const distractionDur = alerts.filter((a: any) => a.type === 'distraction').reduce((acc: number, a: any) => acc + (a.duration_sec || 0), 0);
+      const distractionDur = alerts.filter((a: Record<string, any>) => a.type === 'distraction').reduce((acc: number, a: Record<string, any>) => acc + (a.duration_sec || 0), 0);
       totalPenalties.taptrung += Math.min(100, Math.floor(distractionDur / 5) * 50);
 
       // 4. ỔN ĐỊNH (stimming_proxy - Medium: -80đ/lần, max -100đ)
-      const stimmingCount = alerts.filter((a: any) => a.type === 'stimming_proxy').length;
+      const stimmingCount = alerts.filter((a: Record<string, any>) => a.type === 'stimming_proxy').length;
       totalPenalties.ondinh += Math.min(100, stimmingCount * 80);
 
       // 5. BÌNH TĨNH (freeze/meltdown - High: -150đ/lần, max -100đ)
-      const stressCount = alerts.filter((a: any) => 
+      const stressCount = alerts.filter((a: Record<string, any>) => 
         a.type === 'freeze' || a.type === 'meltdown_proxy' || a.group === 'stress_overwhelm'
       ).length;
       totalPenalties.binhtinh += Math.min(100, stressCount * 150);
@@ -490,12 +469,12 @@ export async function getChildDashboardAnalytics(childId: string) {
     ];
 
     // 2. Trend Data (Last 10 sessions)
-    const trendData = sessions.slice(0, 10).reverse().map((s: any) => {
+    const trendData = sessions.slice(0, 10).reverse().map((s: Session) => {
       let dateStr = "";
-      if (s.start_time?.toDate) {
-        dateStr = s.start_time.toDate().toLocaleDateString("vi-VN", { day: 'numeric', month: 'short' });
+      if ((s.start_time as any)?.toDate) {
+        dateStr = (s.start_time as any).toDate().toLocaleDateString("vi-VN", { day: 'numeric', month: 'short' });
       } else {
-        const rawDate = s.start_time || s.startTime;
+        const rawDate = s.start_time || (s as any).startTime;
         if (typeof rawDate === 'string') {
           const [y, m, d] = rawDate.split('T')[0].split('-');
           dateStr = `${d} thg ${m}`;
@@ -530,20 +509,20 @@ export async function getChildHeatmapData(childId: string) {
     fullYearAgo.setDate(fullYearAgo.getDate() - 370);
     const fullYearAgoStr = fullYearAgo.toISOString();
 
-    sessions.forEach((data: any) => {
+    sessions.forEach((data: Session) => {
       // Filter by time in memory for safety
-      const startTime = data.start_time || data.startTime;
+      const startTime = data.start_time || (data as any).startTime;
       if (typeof startTime === 'string' && startTime < fullYearAgoStr) return;
-      if (data.start_time?.toDate && data.start_time.toDate() < fullYearAgo) return;
+      if ((data.start_time as any)?.toDate && (data.start_time as any).toDate() < fullYearAgo) return;
 
       let dateStr: string | null = null;
-      if (data.start_time?.toDate) {
-        const d = data.start_time.toDate();
+      if ((data.start_time as any)?.toDate) {
+        const d = (data.start_time as any).toDate();
         dateStr = d.getFullYear() + "-" + 
                   String(d.getMonth() + 1).padStart(2, '0') + "-" + 
                   String(d.getDate()).padStart(2, '0');
       } else {
-        const rawDate = data.start_time || data.startTime;
+        const rawDate = data.start_time || (data as any).startTime;
         if (typeof rawDate === 'string') {
           dateStr = rawDate.split('T')[0];
         }

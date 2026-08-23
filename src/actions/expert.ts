@@ -3,6 +3,7 @@
 import { adminDb, adminAuth } from "@/lib/firebase/admin";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { ChildProfile, ChildGoal } from "@/types";
 
 const SESSION_COOKIE_NAME = "session";
 
@@ -33,7 +34,7 @@ export async function getAssignedChildren() {
     const children = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
-    }));
+    } as ChildProfile));
     
     return { success: true, children };
   } catch (error: any) {
@@ -45,7 +46,7 @@ export async function getAssignedChildren() {
 /**
  * Update goals for a child
  */
-export async function updateChildGoals(childId: string, goals: any[]) {
+export async function updateChildGoals(childId: string, goals: ChildGoal[]) {
   const session = await getSession();
   if (!session) return { success: false, error: "Unauthorized" };
 
@@ -136,7 +137,7 @@ export async function getAssignedChildDetail(childId: string) {
     
     return { 
       success: true, 
-      child: { id: doc.id, ...data } 
+      child: { id: doc.id, ...data } as ChildProfile
     };
   } catch (error: any) {
     console.error("Error fetching assigned child detail:", error);
@@ -147,7 +148,7 @@ export async function getAssignedChildDetail(childId: string) {
 /**
  * Update the Alert Profile for a child
  */
-export async function updateAlertProfile(childId: string, alertProfile: any) {
+export async function updateAlertProfile(childId: string, alertProfile: Record<string, any>) {
   const session = await getSession();
   if (!session) return { success: false, error: "Unauthorized" };
 
@@ -188,8 +189,8 @@ export async function finalizeSession(childId: string, sessionId: string, data: 
   score: number,
   status: string,
   evaluation: string,
-  alerts: any[],
-  behaviorLogs: any[]
+  alerts: Record<string, any>[],
+  behaviorLogs: Record<string, any>[]
 }) {
   const session = await getSession();
   if (!session) return { success: false, error: "Unauthorized" };
@@ -349,7 +350,7 @@ export async function syncAndGetChildPhrases(childId: string, lessonDocId: strin
         const lessonData = lessonDoc.data();
         const quests = lessonData?.quests || [];
         const questList: Array<{ quest_name: string; phrases: string[] }> = [];
-        quests.forEach((q: any) => {
+        quests.forEach((q: Record<string, any>) => {
           const questName = q.title || q.name || q.id || "";
           questList.push({
             quest_name: questName,
@@ -378,7 +379,7 @@ export async function syncAndGetChildPhrases(childId: string, lessonDocId: strin
  */
 export async function importChildSettings(
   childId: string, 
-  settings: { quick_phrases?: Record<string, any>; default_lesson_params?: any }
+  settings: { quick_phrases?: Record<string, any>; default_lesson_params?: Record<string, any> }
 ) {
   const session = await getSession();
   if (!session) return { success: false, error: "Unauthorized" };
@@ -395,7 +396,7 @@ export async function importChildSettings(
       return { success: false, error: "Unauthorized: You are not assigned to this child" };
     }
 
-    const updates: any = {
+    const updates: Record<string, any> = {
       updatedAt: new Date().toISOString()
     };
     if (settings.quick_phrases) {

@@ -2,13 +2,45 @@
 
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { cookies } from "next/headers";
+import { unstable_cache } from "next/cache";
 import type {
   AILessonRecommendation,
   AIRecommendationCache,
   GenerateAIRecommendationsResult,
   RecommendationPriority,
+  ChildProfile,
+  Session,
 } from "@/types";
 
+const getCachedLessonLibrary = unstable_cache(
+  async () => {
+    const lessonsSnap = await adminDb.collection("lessons").get();
+    return lessonsSnap.docs.map((d) => {
+      const l = d.data();
+      return {
+        id: d.id,
+        lesson_id: l.lesson_id ?? d.id,
+        lesson_name: l.lesson_name ?? "",
+        level_name: l.level_name ?? "",
+        type: l.type ?? "",
+        description: l.description ?? "",
+        scenario: l.scenario ?? "",
+        min_age: l.min_age ?? 0,
+        duration_min: l.duration_min ?? 0,
+        thumbnail_url: l.thumbnail_url ?? null,
+        scene_name: l.scene_name ?? "",
+        target_skills: l.target_skills ?? [],
+        difficulty_level: l.difficulty_level ?? "",
+        prerequisites: l.prerequisites ?? [],
+      };
+    });
+  },
+  ["ai-all-lessons"],
+  {
+    revalidate: 86400, // 24 hours
+    tags: ["lessons"],
+  }
+);
 // ─── Constants ────────────────────────────────────────────────────────────────
 const SESSION_COOKIE_NAME = "session";
 const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
@@ -142,27 +174,9 @@ export async function generateAIRecommendations(
     const basedOnSessionIds = sessions.map((s) => s.id);
     const insufficientData = sessions.length < MAX_SESSIONS;
 
-    // 3. Lấy danh mục bài học và lọc theo độ tuổi
-    const lessonsSnap = await adminDb.collection("lessons").get();
+    // 3. Lấy danh mục bài học (đã được cache ngầm 24h) và lọc theo độ tuổi
+    const allLessons = await getCachedLessonLibrary();
     const childAge: number = childData.age ?? 0;
-    const allLessons = lessonsSnap.docs.map((d) => {
-      const l = d.data();
-      return {
-        id: d.id,
-        lesson_id: l.lesson_id ?? d.id,
-        lesson_name: l.lesson_name ?? "",
-        level_name: l.level_name ?? "",
-        type: l.type ?? "",
-        description: l.description ?? "",
-        min_age: l.min_age ?? 0,
-        duration_min: l.duration_min ?? 0,
-        thumbnail_url: l.thumbnail_url ?? null,
-        scene_name: l.scene_name ?? "",
-        target_skills: l.target_skills ?? [],
-        difficulty_level: l.difficulty_level ?? "",
-        prerequisites: l.prerequisites ?? [],
-      };
-    });
     // Lọc bài học phù hợp tuổi để giảm kích thước payload
     const eligibleLessons = allLessons.filter((l) => l.min_age <= childAge);
     const lessonIds = new Set(eligibleLessons.map((l) => l.id));
@@ -355,6 +369,7 @@ Quy tắc bắt buộc:
 - Điều hướng độ khó (Scaffolding): Dựa vào điểm số (score) của các phiên học gần nhất, nếu trẻ hoàn thành xuất sắc (>80%) các bài ở mức độ 'Dễ', hãy thử thách bằng bài học mức 'Trung bình' hoặc 'Khó' có cùng target_skills. Nếu trẻ chật vật (điểm thấp, dùng nhiều hints), hãy giữ nguyên hoặc lùi lại bài học 'Dễ'.
 - Nhận diện lỗ hổng kỹ năng: Sử dụng target_skills của các bài học điểm thấp trong lịch sử để biết trẻ đang yếu kỹ năng gì, từ đó đề xuất bài học bù đắp.
 - Đặc biệt chú ý đến trường 'goals' trong hồ sơ trẻ. Nếu trẻ có mục tiêu cụ thể (ví dụ: 'Cải thiện giao tiếp', 'Tăng điểm tập trung'), hãy ƯU TIÊN HÀNG ĐẦU các bài học giúp trẻ đạt được mục tiêu đó.
+- Kết hợp đọc cả trường 'description' (thông điệp, bối cảnh tổng quan) và trường 'scenario' (kịch bản thật sự diễn ra bên trong VR - các bước, sự kiện). Việc kết hợp cả 2 sẽ giúp bạn hiểu toàn diện nội dung bài học. Lấy 'scenario' làm trọng tâm để đối chiếu với hồ sơ thể chất/cảm giác của trẻ (ví dụ: bài có tiếng động tĩnh không hợp trẻ nhạy cảm âm thanh). Nguồn dự phòng: Nếu 'scenario' rỗng, chỉ dùng 'description'.
 - Mọi lý do phân tích phải dựa trên bằng chứng từ dữ liệu hồ sơ, lịch sử phiên học và mục tiêu hiện tại.
 - Nếu dữ liệu không đủ để phân tích, vẫn đề xuất nhưng đặt insufficientData = true.
 - Trả về JSON hợp lệ, không có ký tự markdown, không có văn bản ngoài khối JSON.

@@ -24,7 +24,14 @@ export interface LessonData {
   min_age: number;
   duration_min: number;
   quests?: QuestMetadata[];
+  /**
+   * Mô tả kịch bản thật diễn ra trong VR (các bước, sự kiện, điều kiện hoàn thành).
+   * Admin điền thủ công trên Firestore Console.
+   * Được đưa vào prompt AI gợi ý để tăng độ chính xác.
+   */
+  scenario?: string;
 }
+
 
 /**
  * Fetch toàn bộ bài học từ Firestore collection "lessons".
@@ -51,6 +58,7 @@ export async function getLessons(): Promise<{ success: boolean; lessons?: Lesson
         min_age: d.min_age ?? 3,
         duration_min: d.duration_min ?? 15,
         quests: d.quests || [],
+        scenario: d.scenario || "",
       };
     });
     // Sắp xếp trong memory (tránh yêu cầu Composite Index trên Firestore)
@@ -88,7 +96,8 @@ export async function getLessonDetail(lessonId: string): Promise<{ success: bool
       thumbnail_url: d?.thumbnail_url || "",
       min_age: d?.min_age ?? 3,
       duration_min: d?.duration_min ?? 15,
-      quests: d?.quests || []
+      quests: d?.quests || [],
+      scenario: d?.scenario || "",
     };
 
     return { success: true, lesson };

@@ -2,6 +2,7 @@
 
 import { adminAuth, adminDb, admin } from "@/lib/firebase/admin";
 import { revalidatePath } from "next/cache";
+import { Expert, ChildProfile, Parent, Session } from "@/types";
 // import { getCollectionName } from "@/lib/utils/roles"; // Unused
 
 
@@ -62,7 +63,7 @@ export async function getCenterExperts(centerId: string) {
     const experts = snapshot.docs.map(doc => ({
       uid: doc.id,
       ...doc.data()
-    }));
+    } as Expert));
     
     return { success: true, experts };
   } catch (error: any) {
@@ -130,7 +131,7 @@ export async function getCenterChildren(centerId: string) {
     const children = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
-    }));
+    } as ChildProfile));
     
     return { success: true, children };
   } catch (error: any) {
@@ -305,7 +306,7 @@ export async function getChildDetail(childId: string) {
   try {
     const doc = await adminDb.collection("child_profiles").doc(childId).get();
     if (!doc.exists) return { success: false, error: "Child not found" };
-    return { success: true, child: { id: doc.id, ...doc.data() } };
+    return { success: true, child: { id: doc.id, ...doc.data() } as ChildProfile };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -324,11 +325,11 @@ export async function getExpertDetail(uid: string) {
       .where("expertUid", "==", uid)
       .get();
     
-    const assignedChildren = childrenSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const assignedChildren = childrenSnap.docs.map(d => ({ id: d.id, ...d.data() } as ChildProfile));
 
     return { 
       success: true, 
-      expert: { uid: doc.id, ...doc.data() },
+      expert: { uid: doc.id, ...doc.data() } as Expert,
       assignedChildren
     };
   } catch (error: any) {
@@ -350,7 +351,7 @@ export async function getCenterParents(centerId: string) {
     const parents = snapshot.docs.map(doc => ({
       uid: doc.id,
       ...doc.data()
-    }));
+    } as Parent));
     
     return { success: true, parents };
   } catch (error: any) {
@@ -436,7 +437,7 @@ export async function getCenterSessions(centerId: string, limit: number = 10) {
     const sessions = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
-    }));
+    } as Session));
     
     return { success: true, sessions };
   } catch (error: any) {

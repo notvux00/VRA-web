@@ -39,7 +39,7 @@ export async function getConversationPartners() {
       if (childrenSnapshot.empty) return { success: true, partners: [] };
 
       // Map children to their experts
-      const partnersList: any[] = [];
+      const partnersList: Record<string, any>[] = [];
       const expertIds = Array.from(new Set(childrenSnapshot.docs.map(doc => doc.data().expertUid).filter(Boolean)));
       
       if (expertIds.length === 0) return { success: true, partners: [] };
@@ -83,7 +83,7 @@ export async function getConversationPartners() {
       if (childrenSnapshot.empty) return { success: true, partners: [] };
 
       // Map children to their parents
-      const partnersList: any[] = [];
+      const partnersList: Record<string, any>[] = [];
       const parentIds = Array.from(new Set(childrenSnapshot.docs.map(doc => doc.data().parentUid).filter(Boolean)));
       
       if (parentIds.length === 0) return { success: true, partners: [] };

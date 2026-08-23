@@ -101,10 +101,10 @@ export async function getSessionDetail(sessionId: string): Promise<{ success: bo
       }
     }
 
-    const st = (sessionData as any).start_time?.toDate?.() || new Date(sessionData.start_time);
-    const ft = (sessionData as any).finish_time?.toDate?.() || new Date(sessionData.finish_time);
+    const st = (sessionData as Record<string, any>).start_time?.toDate?.() || new Date(sessionData.start_time);
+    const ft = (sessionData as Record<string, any>).finish_time?.toDate?.() || new Date(sessionData.finish_time);
     
-    let duration = sessionData.duration as any;
+    let duration: any = sessionData.duration;
     if (typeof duration === 'string' && duration.includes(':')) {
       const [m, s] = duration.split(':').map(Number);
       duration = m * 60 + s;
