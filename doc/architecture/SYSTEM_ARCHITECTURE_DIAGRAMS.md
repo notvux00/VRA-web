@@ -167,7 +167,7 @@ sequenceDiagram
     alt verbal_hint
         VR->>Child: NPC phát tiếng: "Nam ơi, hãy vặn vòi nước nào!"
     else visual_cue
-        VR->>Child: Hiện mũi tên / highlight vật thể cần tương tác trong VR
+        VR->>Child: Làm nổi bật viền sáng vật thể cần tương tác trong VR
     end
     
     Note over Expert, Web: PHẦN 3: ĐÁNH DẤU HÀNH VI LÂM SÀNG

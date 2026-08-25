@@ -50,7 +50,7 @@ Dựa trên nguyên tắc không để mất dữ liệu và tránh trùng lặp
 │                                │ [ 🎮 BẢNG CAN THIỆP ]   │
 │                                │ 🟢 Hạ độ khó (Easy)    │
 │        VIDEO POV STREAM        │ 🔊 Phát âm vỗ tay      │
-│      (Góc nhìn từ Kính VR)     │ 👁️ Bật mũi tên gợi ý   │
+│      (Góc nhìn từ Kính VR)     │ 👁️ Bật viền sáng gợi ý │
 │                                │ ⏸️ Tạm dừng Scene       │
 │                                │                        │
 │                                │ ────────────────────── │
