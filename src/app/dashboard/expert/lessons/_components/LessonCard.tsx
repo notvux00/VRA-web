@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 import { PlayCircle, Clock, Star, Users } from "lucide-react";
 
 interface LessonCardProps {
@@ -11,6 +12,7 @@ interface LessonCardProps {
   imageUrl: string;
   description: string;
   onStart: (id: string, title: string) => void;
+  priority?: boolean;
 }
 
 export default function LessonCard({
@@ -22,7 +24,8 @@ export default function LessonCard({
   difficulty,
   imageUrl,
   description,
-  onStart
+  onStart,
+  priority = false
 }: LessonCardProps) {
   
   const getDifficultyColor = (diff: string) => {
@@ -38,10 +41,13 @@ export default function LessonCard({
     <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 group flex flex-col">
       {/* Thumbnail Area */}
       <div className="relative h-48 w-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
-        <img 
+        <Image 
           src={imageUrl} 
           alt={title} 
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          fill
+          sizes="(max-width: 768px) 100vw, 300px"
+          priority={priority}
+          className="object-cover group-hover:scale-105 transition-transform duration-500"
         />
         <div className="absolute top-3 left-3 flex gap-2">
           <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-white/90 dark:bg-black/80 text-zinc-800 dark:text-zinc-200 backdrop-blur-sm border border-black/5 dark:border-white/10 shadow-sm">

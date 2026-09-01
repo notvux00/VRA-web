@@ -49,9 +49,9 @@ export async function getCenterStats(centerId: string) {
         totalSessions: totalSessions,
       }
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching center stats:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -70,9 +70,9 @@ export async function getCenterExperts(centerId: string) {
     } as Expert));
     
     return { success: true, experts };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching center experts:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -116,9 +116,9 @@ export async function createExpert(centerId: string, data: { name: string, email
 
     revalidatePath("/dashboard/center");
     return { success: true, uid };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error creating Expert:", error);
-    return { success: false, error: error.message || "Failed to create Expert" };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) || "Failed to create Expert" };
   }
 }
 
@@ -138,9 +138,9 @@ export async function getCenterChildren(centerId: string) {
     } as ChildProfile));
     
     return { success: true, children };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching center children:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -226,9 +226,9 @@ export async function createChildProfile(
     revalidatePath("/dashboard/center");
     revalidatePath("/dashboard/center/children");
     return { success: true, childId, linkCode };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error creating child profile:", error);
-    return { success: false, error: error.message || "Failed to create child profile" };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) || "Failed to create child profile" };
   }
 }
 
@@ -243,9 +243,9 @@ export async function assignExpertToChild(childId: string, expertUid: string) {
 
     revalidatePath("/dashboard/center");
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error assigning Expert:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -261,9 +261,9 @@ export async function unassignExpertFromChild(childId: string, expertUid: string
     revalidatePath(`/dashboard/center/children/${childId}`);
     revalidatePath("/dashboard/center");
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error unassigning Expert:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -280,8 +280,8 @@ export async function toggleExpertStatus(uid: string, currentStatus: string) {
     revalidatePath("/dashboard/center");
     revalidatePath(`/dashboard/center/experts/${uid}`);
     return { success: true, status: nextStatus };
-  } catch (error: any) {
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -298,8 +298,8 @@ export async function toggleChildStatus(childId: string, currentStatus: string) 
     revalidatePath("/dashboard/center");
     revalidatePath(`/dashboard/center/children/${childId}`);
     return { success: true, status: nextStatus };
-  } catch (error: any) {
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -311,8 +311,8 @@ export async function getChildDetail(childId: string) {
     const doc = await adminDb.collection("child_profiles").doc(childId).get();
     if (!doc.exists) return { success: false, error: "Child not found" };
     return { success: true, child: { id: doc.id, ...doc.data() } as ChildProfile };
-  } catch (error: any) {
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -336,8 +336,8 @@ export async function getExpertDetail(uid: string) {
       expert: { uid: doc.id, ...doc.data() } as Expert,
       assignedChildren
     };
-  } catch (error: any) {
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -358,9 +358,9 @@ export async function getCenterParents(centerId: string) {
     } as Parent));
     
     return { success: true, parents };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching center parents:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -399,9 +399,9 @@ export async function createParent(centerId: string, data: { name: string, email
     revalidatePath("/dashboard/center");
     revalidatePath("/dashboard/center/parents");
     return { success: true, uid };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error creating Parent:", error);
-    return { success: false, error: error.message || "Failed to create Parent account" };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) || "Failed to create Parent account" };
   }
 }
 
@@ -421,9 +421,9 @@ export async function linkParentToChild(childId: string, parentUid: string) {
     revalidatePath("/dashboard/center/children");
     revalidatePath(`/dashboard/center/children/${childId}`);
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error linking Parent:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -444,8 +444,8 @@ export async function getCenterSessions(centerId: string, limit: number = 10) {
     } as Session));
     
     return { success: true, sessions };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching center sessions:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }

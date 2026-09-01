@@ -69,9 +69,9 @@ export async function getChildSessionHistory(childId: string): Promise<{ success
     });
 
     return { success: true, sessions };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching session history:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -125,8 +125,8 @@ export async function getSessionDetail(sessionId: string): Promise<{ success: bo
         finish_time: ft.toISOString(),
       }
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching session detail:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }

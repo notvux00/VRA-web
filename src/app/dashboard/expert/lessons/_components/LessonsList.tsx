@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { 
   PlayCircle, Clock, BookOpen, Layers, 
   Beaker, GraduationCap, MapPin, Sliders, X,
@@ -228,7 +229,7 @@ export default function LessonsList({ initialLessons, child, pin, isVRConnected 
 
       {/* Grid Danh sách bài học - Square Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {grouped.map((group) => {
+        {grouped.map((group, groupIdx) => {
           const typeInfo = TYPE_LABELS[group.type] || TYPE_LABELS.practical;
           const thumbnail = group.levels[0]?.thumbnail_url || null;
 
@@ -240,10 +241,13 @@ export default function LessonsList({ initialLessons, child, pin, isVRConnected 
               {/* Thumbnail */}
               <div className="h-44 relative overflow-hidden bg-zinc-100 dark:bg-zinc-800 flex flex-col justify-center items-center">
                 {thumbnail ? (
-                  <img
+                  <Image
                     src={thumbnail}
                     alt={group.lessonName}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                    fill
+                    sizes="(max-width: 768px) 100vw, 300px"
+                    priority={groupIdx < 4}
+                    className="object-cover group-hover:scale-110 transition-transform duration-700"
                   />
                 ) : (
                   <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-zinc-500 to-transparent" />

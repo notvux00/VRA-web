@@ -59,9 +59,9 @@ export default function ExpertRoster({ experts, onRefresh }: ExpertRosterProps) 
       const { auth } = await import("@/lib/firebase/client");
       await sendPasswordResetEmail(auth, email);
       alert(`Đã gửi email khôi phục mật khẩu thành công đến ${email}!`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
-      alert("Lỗi khi gửi email: " + error.message);
+      alert("Lỗi khi gửi email: " + (error instanceof Error ? error.message : String(error)));
     }
   };
 

@@ -165,7 +165,7 @@ export default function LessonParametersEditor({ childId, childName, initialPara
       } else {
         setImportError(res.error || "Không thể lưu cài đặt nhập vào.");
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       setImportError("Lỗi kết nối mạng khi áp dụng cài đặt.");
     } finally {
       setImporting(false);

@@ -39,9 +39,9 @@ export default function AdminAccountsPage() {
       const { auth } = await import("@/lib/firebase/client");
       await sendPasswordResetEmail(auth, email);
       setMessage({ text: `Đã gửi email khôi phục tới ${email}`, type: "success" });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
-      setMessage({ text: "Lỗi gửi email: " + error.message, type: "error" });
+      setMessage({ text: "Lỗi gửi email: " + (error instanceof Error ? error.message : String(error)), type: "error" });
     }
   };
 

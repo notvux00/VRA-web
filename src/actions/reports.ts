@@ -147,9 +147,9 @@ export async function getCenterReportsData(centerId: string) {
       }
     };
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching report data:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 

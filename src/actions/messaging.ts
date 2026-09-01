@@ -120,9 +120,9 @@ export async function getConversationPartners() {
     }
 
     return { success: false, error: "Access denied" };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching message partners:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -148,9 +148,9 @@ export async function sendMessage(receiverId: string, content: string, childId: 
     revalidatePath("/dashboard/parent/messages");
     revalidatePath("/dashboard/expert/messages");
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error sending message:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -172,9 +172,9 @@ export async function getMessages(partnerId: string, childId: string) {
     }));
 
     return { success: true, messages };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching messages via RoomId:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -203,8 +203,8 @@ export async function markMessagesAsRead(partnerId: string, childId: string) {
     revalidatePath("/dashboard/expert/messages");
     
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error marking messages as read:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }

@@ -149,9 +149,9 @@ export async function updateUserRole(uid: string, role: string) {
     
     await adminAuth.setCustomUserClaims(uid, { role });
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error updating user role:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -160,9 +160,9 @@ export async function assignRoleByEmail(email: string, role: string) {
     const userRecord = await adminAuth.getUserByEmail(email);
     await adminAuth.setCustomUserClaims(userRecord.uid, { role });
     return { success: true, message: `Successfully assigned ${role} role to ${email}` };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error assigning role:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -226,9 +226,9 @@ export async function createCenter(centerData: {
     });
 
     return { success: true, centerId };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error creating center:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -278,9 +278,9 @@ export async function addCenterManager(centerId: string, managerData: { name: st
     }
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error adding center manager:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -292,9 +292,9 @@ export async function getCenters() {
       ...doc.data()
     }));
     return { success: true, centers };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching centers:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -321,9 +321,9 @@ export async function getCenterDetails(centerId: string) {
     );
 
     return { success: true, center: centerData, managers };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching center details:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -360,9 +360,9 @@ export async function getUserProfile(uid: string) {
     }
 
     return { success: true, profile };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching user profile:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -373,9 +373,9 @@ export async function updateCenterStatus(centerId: string, status: "Active" | "I
       updatedAt: new Date().toISOString()
     });
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error updating center status:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -394,9 +394,9 @@ export async function deleteCenter(centerId: string) {
     // In a real system, you'd handle orphaned users.
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error deleting center:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -419,7 +419,7 @@ export async function getGlobalStats() {
         totalSessions: sessionsSnap.data().count
       }
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching global stats:", error);
     // Fallback to zeros if collections don't exist yet
     return {
@@ -470,9 +470,9 @@ export async function syncAllCenterStats() {
     
     revalidatePath("/dashboard/admin");
     return { success: true, results };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error syncing center stats:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -487,9 +487,9 @@ export async function getAdminAccounts() {
       ...doc.data()
     }));
     return { success: true, admins };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching admin accounts:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -504,9 +504,9 @@ export async function getCenterManagers() {
       ...doc.data()
     }));
     return { success: true, managers };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching center managers:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -520,9 +520,9 @@ export async function resetUserPassword(uid: string, newPassword: string) {
     }
     await adminAuth.updateUser(uid, { password: newPassword });
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error resetting password:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -550,8 +550,8 @@ export async function createAdminAccount(data: { name: string; email: string; pa
 
     revalidatePath("/dashboard/admin/accounts");
     return { success: true, uid: userRecord.uid };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error creating admin account:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }

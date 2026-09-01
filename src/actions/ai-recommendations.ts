@@ -109,9 +109,9 @@ export async function getCachedAIRecommendations(
       insufficientData: cache.insufficientData,
       isDemo: cache.isDemo,
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("[getCachedAIRecommendations] error:", err);
-    return { success: false, error: err.message };
+    return { success: false, error: (err instanceof Error ? err.message : String(err)) };
   }
 }
 
@@ -292,9 +292,9 @@ export async function generateAIRecommendations(
 
     await saveCache(finalCache);
     return { ...toResult(finalCache), source: "gemini" };
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("[generateAIRecommendations] error:", err);
-    return { success: false, error: err.message ?? "Đã có lỗi xảy ra" };
+    return { success: false, error: (err instanceof Error ? err.message : String(err)) ?? "Đã có lỗi xảy ra" };
   }
 }
 

@@ -6,7 +6,7 @@ export async function GET() {
     const s = await adminDb.collection("sessions").limit(5).get();
     const data = s.docs.map(d => d.data());
     return NextResponse.json(data);
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    return NextResponse.json({ error: (err instanceof Error ? err.message : String(err)) }, { status: 500 });
   }
 }

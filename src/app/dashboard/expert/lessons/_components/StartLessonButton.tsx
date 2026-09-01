@@ -72,10 +72,10 @@ export default function StartLessonButton({
         q.set("lesson", lessonDocId);
         router.push(`/dashboard/expert/session/${sessionId}?${q.toString()}`);
       }, 1200);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("StartLesson Error:", error);
       setStatus("error");
-      setErrorMsg(error.message || "Không thể gửi lệnh tới Kính VR.");
+      setErrorMsg((error instanceof Error ? error.message : String(error)) || "Không thể gửi lệnh tới Kính VR.");
     }
   };
 

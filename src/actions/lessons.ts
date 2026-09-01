@@ -65,9 +65,9 @@ export async function getLessons(): Promise<{ success: boolean; lessons?: Lesson
     lessons.sort((a, b) => a.lesson_index - b.lesson_index || a.level_index - b.level_index);
 
     return { success: true, lessons };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching lessons:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -101,9 +101,9 @@ export async function getLessonDetail(lessonId: string): Promise<{ success: bool
     };
 
     return { success: true, lesson };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching lesson detail:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 

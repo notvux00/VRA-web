@@ -182,7 +182,7 @@ function LiveSessionContent() {
       } else {
         showToast("Lỗi gửi Gợi ý Lời nói qua LiveKit.");
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error("Failed to send VERBAL_HINT:", e);
       showToast("Lỗi: Không thể gửi lệnh Gợi ý Lời nói.");
     }
@@ -203,9 +203,9 @@ function LiveSessionContent() {
       } else {
         showToast("Lỗi gửi câu thoại tới LiveKit.");
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error("Failed to send SPEAK_SCRIPT:", e);
-      showToast(`Lỗi: ${e.message || "Không thể gửi lệnh thoại NPC."}`);
+      showToast(`Lỗi: ${(e instanceof Error ? e.message : String(e)) || "Không thể gửi lệnh thoại NPC."}`);
     } finally {
       setSendingNpc(false);
     }
@@ -218,8 +218,8 @@ function LiveSessionContent() {
       console.log("[LiveSessionPage] Sending trigger_visual_hint to RTDB...");
       await pushRemoteCommand(validSessionId, "trigger_visual_hint");
       showToast("Gửi lệnh Gợi ý Hình ảnh thành công!");
-    } catch (e: any) {
-      console.error("Failed to send trigger_visual_hint command:", e.message);
+    } catch (e: unknown) {
+      console.error("Failed to send trigger_visual_hint command:", (e instanceof Error ? e.message : String(e)));
       showToast("Lỗi: Không thể gửi lệnh Gợi ý Hình ảnh.");
     }
   };
@@ -230,8 +230,8 @@ function LiveSessionContent() {
       console.log("[LiveSessionPage] Sending skip_quest to RTDB...");
       await pushRemoteCommand(validSessionId, "skip_quest");
       showToast("Gửi lệnh Skip Quest thành công!");
-    } catch (e: any) {
-      console.error("Failed to send skip_quest command:", e.message);
+    } catch (e: unknown) {
+      console.error("Failed to send skip_quest command:", (e instanceof Error ? e.message : String(e)));
       showToast("Lỗi: Không thể gửi lệnh Skip Quest.");
     }
   };
@@ -242,8 +242,8 @@ function LiveSessionContent() {
       console.log(`[LiveSessionPage] Sending set_volume (${volume}) to RTDB...`);
       await pushRemoteCommand(validSessionId, "set_volume", volume);
       showToast("Đã gửi yêu cầu đổi âm lượng!");
-    } catch (e: any) {
-      console.error("Failed to send set_volume command:", e.message);
+    } catch (e: unknown) {
+      console.error("Failed to send set_volume command:", (e instanceof Error ? e.message : String(e)));
       showToast("Lỗi: Không thể đổi âm lượng.");
     }
   };

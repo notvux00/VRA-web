@@ -37,9 +37,9 @@ export async function getAssignedChildren() {
     } as ChildProfile));
     
     return { success: true, children };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching assigned children:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -71,8 +71,8 @@ export async function updateChildGoals(childId: string, goals: ChildGoal[]) {
     revalidatePath(`/dashboard/parent/children/${childId}`);
     
     return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -111,9 +111,9 @@ export async function getExpertStats() {
         activeSessions: activeSessionsSnap.data().count,
       }
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching expert stats:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -139,9 +139,9 @@ export async function getAssignedChildDetail(childId: string) {
       success: true, 
       child: { id: doc.id, ...data } as ChildProfile
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching assigned child detail:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -174,9 +174,9 @@ export async function updateAlertProfile(childId: string, alertProfile: Record<s
     
     revalidatePath(`/dashboard/expert/stats?childId=${childId}`);
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error updating alert profile:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -235,9 +235,9 @@ export async function finalizeSession(childId: string, sessionId: string, data: 
     revalidatePath("/dashboard/expert");
     
     return { success: true, sessionId };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error finalizing session:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -288,9 +288,9 @@ export async function updateDefaultLessonParams(childId: string, lessonParams: {
 
     revalidatePath(`/dashboard/expert/stats?childId=${childId}`);
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error updating default lesson params:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -320,9 +320,9 @@ export async function updateChildQuickPhrases(childId: string, quickPhrases: Rec
     });
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error updating child quick phrases:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -368,9 +368,9 @@ export async function syncAndGetChildPhrases(childId: string, lessonDocId: strin
     }
 
     return { success: true, phrases: quickPhrases[lessonDocId] || {} };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error syncing child quick phrases:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -409,9 +409,9 @@ export async function importChildSettings(
     await childRef.update(updates);
     revalidatePath(`/dashboard/expert/stats?childId=${childId}`);
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error importing child settings:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 

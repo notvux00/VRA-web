@@ -66,9 +66,9 @@ export async function getParentChildren() {
     }
 
     return { success: true, children, centerPhone };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching parent children:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -103,9 +103,9 @@ export async function getChildSessions(childId: string) {
     } as Session));
 
     return { success: true, sessions };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching child sessions:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -298,9 +298,9 @@ export async function getChildStats(childId: string) {
         achievements: achievementsList,
       } as ParentDashboardStats
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error calculating child stats:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -353,9 +353,9 @@ export async function getChildLatestNote(childId: string) {
       note: noteData.note || "Đã ghi nhận hành vi tập trung tốt.",
       date: "Gần đây"
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching latest note:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -389,9 +389,9 @@ export async function getChildProfileDetail(childId: string) {
       child: { id: childDoc.id, ...childData },
       expert: expertData
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching child profile detail:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -488,9 +488,9 @@ export async function getChildDashboardAnalytics(childId: string) {
     });
 
     return { success: true, radarData, trendData };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error calculating dashboard analytics:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -536,8 +536,8 @@ export async function getChildHeatmapData(childId: string) {
     return { success: true, heatmapData };
     
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error calculating heatmap data:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
