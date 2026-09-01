@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useIsMounted } from "@/hooks/useIsMounted";
 import { 
   AreaChart, 
   Area, 
@@ -23,11 +24,7 @@ interface ChildProgressChartProps {
 }
 
 export default function ChildProgressChart({ sessions }: ChildProgressChartProps) {
-  const [mounted, setMounted] = React.useState(false);
-  
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useIsMounted();
 
   // Process sessions for chart (reverse to show chronological order)
   const data = [...sessions].reverse().map(s => ({

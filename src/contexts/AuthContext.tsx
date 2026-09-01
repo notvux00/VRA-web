@@ -39,10 +39,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (cached) {
         try {
           const parsed = JSON.parse(cached);
-          if (parsed.role) setRole(parsed.role);
-          if (parsed.centerId) setCenterId(parsed.centerId);
-          if (parsed.centerName) setCenterName(parsed.centerName);
-          if (parsed.userName) setUserName(parsed.userName);
+          Promise.resolve().then(() => {
+            if (parsed.role) setRole(parsed.role);
+            if (parsed.centerId) setCenterId(parsed.centerId);
+            if (parsed.centerName) setCenterName(parsed.centerName);
+            if (parsed.userName) setUserName(parsed.userName);
+          });
         } catch {}
       }
     }

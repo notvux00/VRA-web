@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import * as React from "react";
+import { useIsMounted } from "@/hooks/useIsMounted";
 import { 
   BarChart, 
   Bar, 
@@ -18,11 +19,7 @@ interface ChildIndependenceChartProps {
 }
 
 export default function ChildIndependenceChart({ sessions }: ChildIndependenceChartProps) {
-  const [mounted, setMounted] = React.useState(false);
-
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useIsMounted();
 
   // Process data: Total hints of each type per session
   const data = [...sessions].reverse().slice(-7).map(s => {

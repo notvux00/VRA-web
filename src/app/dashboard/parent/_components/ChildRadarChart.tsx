@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useIsMounted } from "@/hooks/useIsMounted";
 import { 
   Radar, 
   RadarChart, 
@@ -17,12 +18,8 @@ interface ChildRadarChartProps {
 }
 
 export default function ChildRadarChart({ radarData }: ChildRadarChartProps) {
-  const [mounted, setMounted] = React.useState(false);
+  const mounted = useIsMounted();
   const [showInfo, setShowInfo] = React.useState(false);
-
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
 
   if (!mounted) {
     return <div className="h-[400px] w-full bg-zinc-50 dark:bg-zinc-800/10 rounded-3xl animate-pulse" />;

@@ -22,15 +22,15 @@ export default function AdminAccountsPage() {
   const [creating, setCreating] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     const adminRes = await getAdminAccounts();
     if (adminRes.success) setAdmins(adminRes.admins || []);
     setLoading(false);
   };
 
   useEffect(() => {
-    fetchData();
+    Promise.resolve().then(() => fetchData(false));
   }, []);
 
   const handleSendResetEmail = async (email: string) => {

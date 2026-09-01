@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useIsMounted } from "@/hooks/useIsMounted";
 import { 
   BarChart, 
   Bar, 
@@ -17,11 +18,7 @@ interface ChildIntensityChartProps {
 }
 
 export default function ChildIntensityChart({ sessions }: ChildIntensityChartProps) {
-  const [mounted, setMounted] = React.useState(false);
-
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useIsMounted();
 
   const barData = [...sessions].reverse().slice(-7).map(s => {
     const totalSeconds = Math.round(s.duration || 0);

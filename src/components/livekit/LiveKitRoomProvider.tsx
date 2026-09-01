@@ -26,13 +26,15 @@ export function LiveKitRoomProvider({
 
   useEffect(() => {
     if (!roomName) {
-      setLoading(false);
+      Promise.resolve().then(() => setLoading(false));
       return;
     }
 
     let isMounted = true;
-    setLoading(true);
-    setError(null);
+    Promise.resolve().then(() => {
+      setLoading(true);
+      setError(null);
+    });
 
     async function fetchToken() {
       try {

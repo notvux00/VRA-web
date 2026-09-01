@@ -20,18 +20,21 @@ const LOADING_STEPS = [
 export default function GenerateButton({ childId, hasCache, onResult }: Props) {
   const [isPending, startTransition] = useTransition();
   const [stepIndex, setStepIndex] = useState(0);
+  const [prevIsPending, setPrevIsPending] = useState(isPending);
+
+  if (isPending !== prevIsPending) {
+    setPrevIsPending(isPending);
+    setStepIndex(0);
+  }
 
   useEffect(() => {
     if (isPending) {
-      setStepIndex(0);
       const timer1 = setTimeout(() => setStepIndex(1), 800);
       const timer2 = setTimeout(() => setStepIndex(2), 1800);
       return () => {
         clearTimeout(timer1);
         clearTimeout(timer2);
       };
-    } else {
-      setStepIndex(0);
     }
   }, [isPending]);
 
