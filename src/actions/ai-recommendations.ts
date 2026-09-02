@@ -161,12 +161,12 @@ export async function generateAIRecommendations(
           notes: s.notes ?? "",
           start_time: s.start_time ?? "",
           finish_time: s.finish_time ?? "",
-        };
+        } as unknown as Session;
       })
       .sort((a, b) => {
         // Mới nhất lên đầu
-        const ta = a.finish_time ? new Date(a.finish_time).getTime() : 0;
-        const tb = b.finish_time ? new Date(b.finish_time).getTime() : 0;
+        const ta = a.finish_time ? new Date(a.finish_time as string).getTime() : 0;
+        const tb = b.finish_time ? new Date(b.finish_time as string).getTime() : 0;
         return tb - ta;
       })
       .slice(0, MAX_SESSIONS);
@@ -193,18 +193,18 @@ export async function generateAIRecommendations(
       diagnosis_notes: childData.diagnosis_notes,
       sessionCount: childData.sessionCount,
       goals: childData.goals || [],
-    };
+    } as unknown as ChildProfile;
 
     // Chuẩn bị sessions cho AI: Xóa lesson_id để triệt tiêu khả năng AI nhắc đến ID trong câu văn
     const lessonMapAll = new Map(allLessons.map((l) => [l.id, l]));
-    const anonymizedSessions = sessions.map((s) => {
+    const anonymizedSessions = (sessions.map((s) => {
       const lessonInfo = lessonMapAll.get(s.lesson_id);
       const { lesson_id, ...rest } = s; // Xóa lesson_id
       return {
         ...rest,
         lesson_name: s.lesson_name || lessonInfo?.lesson_name || "Bài học VR",
       };
-    });
+    })) as unknown as Session[];
 
     // 5. Nếu thiếu API key → Demo Mode
     const apiKey = process.env.GEMINI_API_KEY;
@@ -345,9 +345,9 @@ function toResult(cache: AIRecommendationCache): GenerateAIRecommendationsResult
 // ─── Gemini Caller ────────────────────────────────────────────────────────────
 async function callGemini(
   apiKey: string,
-  child: Record<string, any>,
-  sessions: Record<string, any>[],
-  lessons: Record<string, any>[],
+  child: ChildProfile,
+  sessions: Session[],
+  lessons: Record<string, unknown>[],
   childId: string,
   expertUid: string,
   basedOnSessionIds: string[],
@@ -439,30 +439,30 @@ Trả về JSON theo schema sau, KHÔNG kèm markdown:
 function buildDemoRecommendations(
   childId: string,
   expertUid: string,
-  lessons: Record<string, any>[],
-  sessions: Record<string, any>[],
+  lessons: Record<string, unknown>[],
+  sessions: Session[],
   basedOnSessionIds: string[],
   insufficientData: boolean
 ): AIRecommendationCache {
   // Lấy các bài học trẻ chưa học gần đây để ưu tiên gợi ý
   const recentLessonIds = new Set(sessions.map((s) => s.lesson_id));
-  const unplayed = lessons.filter((l) => !recentLessonIds.has(l.lesson_id));
-  const played = lessons.filter((l) => recentLessonIds.has(l.lesson_id));
+  const unplayed = lessons.filter((l) => !recentLessonIds.has(l.lesson_id as string));
+  const played = lessons.filter((l) => recentLessonIds.has(l.lesson_id as string));
   const pool = [...unplayed, ...played].slice(0, 5);
 
   const priorities: RecommendationPriority[] = ["high", "medium", "low"];
 
   const recommendations: AILessonRecommendation[] = pool.map((l, i) => ({
-    lessonId: l.id,
-    lessonTitle: l.lesson_name,
-    levelName: l.level_name,
-    type: l.type,
-    thumbnailUrl: l.thumbnail_url ?? null,
-    sceneName: l.scene_name ?? "",
-    difficultyLevel: l.difficulty_level ?? "Dễ",
-    targetSkill: l.type === "practical" ? "Kỹ năng thực hành và hoàn thành nhiệm vụ" : "Kỹ năng nhận thức và giao tiếp xã hội",
-    priority: priorities[Math.min(i, 2)],
-    confidence: parseFloat((0.85 - i * 0.08).toFixed(2)),
+    lessonId: (l.id as string) || "",
+    lessonTitle: (l.lesson_name as string) || "",
+    levelName: (l.level_name as string) || "",
+    type: (l.type as string) || "interaction",
+    thumbnailUrl: (l.thumbnail_url as string) || null,
+    sceneName: (l.scene_name as string) || "",
+    difficultyLevel: String(l.difficulty_level || "1"),
+    targetSkill: (l.target_skill as string) || "Giao tiếp cơ bản",
+    priority: priorities[i % 3],
+    confidence: Number((0.85 - i * 0.05).toFixed(2)),
     reason: sessions.length > 0
       ? `Dựa trên ${sessions.length} buổi học gần nhất, đây là bài học phù hợp để tiếp tục luyện tập. (⚙️ Chế độ Demo)`
       : `Trẻ chưa có lịch sử học. Đây là bài học phù hợp với hồ sơ ban đầu. (⚙️ Chế độ Demo)`,

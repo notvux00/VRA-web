@@ -21,7 +21,7 @@ interface Alert {
 interface SessionSummaryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (summary: any) => void;
+  onSave: (summary: unknown) => void;
   sessionTime: number;
   alerts: Alert[];
   logsCount: number;

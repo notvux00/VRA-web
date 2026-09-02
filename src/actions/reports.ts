@@ -15,7 +15,7 @@ export async function getCenterReportsData(centerId: string) {
 
     const childIds = childrenSnap.docs.map(doc => doc.id);
 
-    const sessions: any[] = [];
+    const sessions: Session[] = [];
     for (let i = 0; i < childIds.length; i += 10) {
       const chunk = childIds.slice(i, i + 10);
       const sessionSnap = await adminDb.collection("sessions")
@@ -23,7 +23,7 @@ export async function getCenterReportsData(centerId: string) {
         .get();
       
       sessionSnap.forEach(doc => {
-        sessions.push({ id: doc.id, ...doc.data() });
+        sessions.push({ id: doc.id, ...doc.data() } as unknown as Session);
       });
     }
 
@@ -49,7 +49,7 @@ export async function getCenterReportsData(centerId: string) {
     sessions.forEach(session => {
       // 1. Frequency
       if (session.start_time) {
-        const sessionDate = new Date(session.start_time);
+        const sessionDate = new Date(session.start_time as string);
         const diffTime = today.getTime() - sessionDate.getTime();
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); 
         
@@ -71,13 +71,14 @@ export async function getCenterReportsData(centerId: string) {
       stats.uses += 1;
       
       // Better completion logic (fallback to score > 0 if status is weird)
-      const statusStr = String(session.completion_status || session.status || "").toLowerCase();
+      const statusStr = String(session.completion_status || "").toLowerCase();
       const isCompleted = 
         statusStr.includes("complet") || 
         statusStr.includes("success") || 
         statusStr.includes("pass") || 
         statusStr.includes("hoàn thành") || 
         (session.score && session.score > 0);
+      const oldStatus = (session as any).status;
         
       if (isCompleted) {
         stats.completions += 1;
@@ -121,7 +122,7 @@ export async function getCenterReportsData(centerId: string) {
     
     let completedSessions = 0;
     sessions.forEach(session => {
-      const statusStr = String(session.completion_status || session.status || "").toLowerCase();
+      const statusStr = String(session.completion_status || (session as any).status || "").toLowerCase();
       const isCompleted = 
         statusStr.includes("complet") || 
         statusStr.includes("success") || 

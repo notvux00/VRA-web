@@ -3,7 +3,7 @@
 import { adminDb, adminAuth } from "@/lib/firebase/admin";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { ChildProfile, ChildGoal } from "@/types";
+import { ChildProfile, ChildGoal, AlertProfile, AutoAlert, BehaviorLog } from "@/types";
 
 const SESSION_COOKIE_NAME = "session";
 
@@ -148,7 +148,7 @@ export async function getAssignedChildDetail(childId: string) {
 /**
  * Update the Alert Profile for a child
  */
-export async function updateAlertProfile(childId: string, alertProfile: Record<string, any>) {
+export async function updateAlertProfile(childId: string, alertProfile: AlertProfile) {
   const session = await getSession();
   if (!session) return { success: false, error: "Unauthorized" };
 
@@ -189,8 +189,8 @@ export async function finalizeSession(childId: string, sessionId: string, data: 
   score: number,
   status: string,
   evaluation: string,
-  alerts: Record<string, any>[],
-  behaviorLogs: Record<string, any>[]
+  alerts: AutoAlert[],
+  behaviorLogs: BehaviorLog[]
 }) {
   const session = await getSession();
   if (!session) return { success: false, error: "Unauthorized" };
@@ -298,7 +298,7 @@ export async function updateDefaultLessonParams(childId: string, lessonParams: {
  * Update the custom quick phrases for a child (Story 3.9)
  * Saves to childRef: { quick_phrases: Record<string, Record<string, string[]>> }
  */
-export async function updateChildQuickPhrases(childId: string, quickPhrases: Record<string, any>) {
+export async function updateChildQuickPhrases(childId: string, quickPhrases: Record<string, unknown>) {
   const session = await getSession();
   if (!session) return { success: false, error: "Unauthorized" };
 
@@ -350,11 +350,11 @@ export async function syncAndGetChildPhrases(childId: string, lessonDocId: strin
         const lessonData = lessonDoc.data();
         const quests = lessonData?.quests || [];
         const questList: Array<{ quest_name: string; phrases: string[] }> = [];
-        quests.forEach((q: Record<string, any>) => {
-          const questName = q.title || q.name || q.id || "";
+        quests.forEach((q: Record<string, unknown>) => {
+          const questName = (q.title ?? q.name ?? q.id ?? "") as string;
           questList.push({
             quest_name: questName,
-            phrases: q.default_phrases || []
+            phrases: (q.default_phrases as string[]) || []
           });
         });
         
@@ -379,7 +379,7 @@ export async function syncAndGetChildPhrases(childId: string, lessonDocId: strin
  */
 export async function importChildSettings(
   childId: string, 
-  settings: { quick_phrases?: Record<string, any>; default_lesson_params?: Record<string, any> }
+  settings: { quick_phrases?: Record<string, unknown>; default_lesson_params?: Record<string, unknown> }
 ) {
   const session = await getSession();
   if (!session) return { success: false, error: "Unauthorized" };
@@ -396,7 +396,7 @@ export async function importChildSettings(
       return { success: false, error: "Unauthorized: You are not assigned to this child" };
     }
 
-    const updates: Record<string, any> = {
+    const updates: Record<string, unknown> = {
       updatedAt: new Date().toISOString()
     };
     if (settings.quick_phrases) {

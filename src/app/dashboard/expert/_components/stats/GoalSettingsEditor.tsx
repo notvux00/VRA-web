@@ -41,7 +41,7 @@ export default function GoalSettingsEditor({ childId, initialGoals = [] }: GoalS
     setGoals(goals.filter(g => g.id !== id));
   };
 
-  const handleChange = (id: string, field: keyof ChildGoal, value: any) => {
+  const handleChange = (id: string, field: keyof ChildGoal, value: unknown) => {
     setGoals(goals.map(g => g.id === id ? { ...g, [field]: value } : g));
   };
 
@@ -185,7 +185,7 @@ export default function GoalSettingsEditor({ childId, initialGoals = [] }: GoalS
 
           {!isEditing && goals.length === 0 && (
             <div className="col-span-full p-8 text-center bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-200 dark:border-zinc-700">
-              {/* eslint-disable-next-line react/no-unescaped-entities */}
+              { }
               <p className="text-zinc-500 dark:text-zinc-400">Chưa có mục tiêu nào được thiết lập. Hãy bấm &quot;Chỉnh sửa&quot; để bắt đầu.</p>
             </div>
           )}

@@ -9,6 +9,7 @@ import {
 export const dynamic = "force-dynamic";
 import Link from "next/link";
 import React from "react";
+import { ChildGoal } from "@/types";
 import LessonParametersEditor from "../_components/stats/LessonParametersEditor";
 import GoalSettingsEditor from "../_components/stats/GoalSettingsEditor";
 import AlertProfileEditor from "@/components/shared/AlertProfileEditor";
@@ -32,10 +33,10 @@ interface Child {
   condition?: string;
   diagnosis_notes?: string;
   anxiety_triggers?: string[];
-  alert_profile?: any;
-  default_lesson_params?: any;
-  quick_phrases?: any;
-  goals?: any[];
+  alert_profile?: Record<string, unknown>;
+  default_lesson_params?: Record<string, unknown>;
+  quick_phrases?: Record<string, unknown>;
+  goals?: ChildGoal[];
 }
 
 export default async function ExpertStatsPage({ searchParams }: PageProps) {
@@ -174,7 +175,7 @@ export default async function ExpertStatsPage({ searchParams }: PageProps) {
   );
 }
 
-function MetricItem({ icon: Icon, label, value }: { icon: any, label: string, value: string }) {
+function MetricItem({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value: string }) {
   return (
     <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10 hover:bg-white/20 transition-colors">
       <div className="p-2 bg-white/10 rounded-xl w-fit mb-3">

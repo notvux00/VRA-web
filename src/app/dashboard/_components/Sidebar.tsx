@@ -8,7 +8,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 interface NavigationItem {
   name: string;
   href: string;
-  icon: any;
+  icon: React.ElementType;
 }
 
 interface SidebarProps {

@@ -1,7 +1,7 @@
 "use server";
 
 import { adminDb } from "@/lib/firebase/admin";
-import { Session } from "@/types";
+import { Session, AutoAlert } from "@/types";
 
 // Utility to fetch sessions across multiple field names
 async function fetchSessionsForChild(childId: string) {
@@ -33,23 +33,23 @@ export async function getChildAlertStats(childId: string) {
       const alerts = s.auto_alerts || [];
       
       // 1. CHỦ ĐỘNG (idle - Low: -30đ mỗi 5s, max -100đ)
-      const idleDuration = alerts.filter((a: Record<string, any>) => a.type === 'idle').reduce((acc: number, a: Record<string, any>) => acc + (a.duration_sec || 0), 0);
+      const idleDuration = (alerts as AutoAlert[]).filter((a) => a.type === 'idle').reduce((acc: number, a) => acc + (a.duration_sec || 0), 0);
       totalPenalties.chudoong += Math.min(100, Math.floor(idleDuration / 5) * 30);
 
       // 2. TỰ TIN (hesitation - Low: -60đ/lần, max -100đ)
-      const hesitationCount = alerts.filter((a: Record<string, any>) => a.type === 'hesitation').length;
+      const hesitationCount = (alerts as AutoAlert[]).filter((a) => a.type === 'hesitation').length;
       totalPenalties.tutin += Math.min(100, hesitationCount * 60);
 
       // 3. TẬP TRUNG (distraction - Medium: -50đ mỗi 5s, max -100đ)
-      const distractionDuration = alerts.filter((a: Record<string, any>) => a.type === 'distraction').reduce((acc: number, a: Record<string, any>) => acc + (a.duration_sec || 0), 0);
+      const distractionDuration = (alerts as AutoAlert[]).filter((a) => a.type === 'distraction').reduce((acc: number, a) => acc + (a.duration_sec || 0), 0);
       totalPenalties.taptrung += Math.min(100, Math.floor(distractionDuration / 5) * 50);
 
       // 4. ỔN ĐỊNH (stimming_proxy - Medium: -80đ/lần, max -100đ)
-      const stimmingCount = alerts.filter((a: Record<string, any>) => a.type === 'stimming_proxy').length;
+      const stimmingCount = (alerts as AutoAlert[]).filter((a) => a.type === 'stimming_proxy').length;
       totalPenalties.ondinh += Math.min(100, stimmingCount * 80);
 
       // 5. BÌNH TĨNH (freeze/meltdown - High: -150đ/lần, max -100đ -> thực tế là vế trái sẽ bị cap ở 100)
-      const stressCount = alerts.filter((a: Record<string, any>) => 
+      const stressCount = (alerts as AutoAlert[]).filter((a) =>
         a.type === 'freeze' || a.type === 'meltdown_proxy' || a.group === 'stress_overwhelm'
       ).length;
       totalPenalties.binhtinh += Math.min(100, stressCount * 150);

@@ -4,8 +4,10 @@ import React, { useState, useEffect } from "react";
 import { getAdminAccounts, resetUserPassword } from "@/actions/auth";
 import { Loader2, Users, Key, Search } from "lucide-react";
 
+interface AdminUser { uid: string; name?: string; email: string; role: string; [key: string]: unknown; }
+
 export default function AdminAccountsPage() {
-  const [admins, setAdmins] = useState<any[]>([]);
+  const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -25,7 +27,7 @@ export default function AdminAccountsPage() {
   const fetchData = async (showLoading = true) => {
     if (showLoading) setLoading(true);
     const adminRes = await getAdminAccounts();
-    if (adminRes.success) setAdmins(adminRes.admins || []);
+    if (adminRes.success) setAdmins((adminRes.admins || []) as unknown as AdminUser[]);
     setLoading(false);
   };
 

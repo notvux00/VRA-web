@@ -12,17 +12,19 @@ import UserMenu from "./UserMenu";
 interface HeaderProps {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
-  user: any;
+  user: { email?: string; name?: string; uid?: string; [key: string]: unknown };
   role: string;
   roleName: string;
   userName?: string;
 }
 
+interface CenterSearchResult { id: string; name?: string; address?: string; [key: string]: unknown; }
+
 export default function Header({ setSidebarOpen, user, role, roleName, userName }: HeaderProps) {
   const { theme, setTheme } = useTheme();
   const mounted = useIsMounted();
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<CenterSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 

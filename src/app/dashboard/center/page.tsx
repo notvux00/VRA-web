@@ -14,7 +14,7 @@ import { getCenterStats, getCenterExperts, getCenterChildren, getCenterParents }
 
 export default function CenterDashboard() {
   const { centerName, centerId } = useAuth();
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<any | null>(null);
   const [experts, setExperts] = useState<any[]>([]);
   const [children, setChildren] = useState<any[]>([]);
   const [parents, setParents] = useState<any[]>([]);

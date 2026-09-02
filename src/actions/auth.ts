@@ -52,7 +52,7 @@ export async function createSession(idToken: string) {
       const targetCol = getCollectionName(role);
       
       // Sync email
-      const updates: Record<string, any> = {};
+      const updates: Record<string, unknown> = {};
       if (!userDoc.data()?.email || userDoc.data()?.email !== email) updates.email = email || "";
       
       if (Object.keys(updates).length > 0) {

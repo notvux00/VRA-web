@@ -3,7 +3,7 @@
 import { cookies } from "next/headers";
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { getChildAlertStats as getRadarData } from "./analytics";
-import { ChildProfile, Session, QuestLog } from "@/types";
+import { ChildProfile, Session, QuestLog, AutoAlert, FirestoreTimestamp } from "@/types";
 
 const SESSION_COOKIE_NAME = "session";
 
@@ -161,12 +161,12 @@ export async function getChildStats(childId: string) {
 
     const sessionDates = sessions
       .map((s: Session) => {
-        const rawDate = s.start_time || (s as any).startTime;
+        const rawDate = s.start_time || (s as Session & { startTime?: string }).startTime;
         if (!rawDate) return null;
         
-        const d = (typeof rawDate === 'object' && rawDate.toDate) 
-          ? rawDate.toDate() 
-          : new Date(rawDate);
+        const d = (typeof rawDate === 'object' && (rawDate as { toDate?: () => Date }).toDate) 
+          ? (rawDate as { toDate: () => Date }).toDate() 
+          : new Date(rawDate as string);
           
         return formatDate(d);
       })
@@ -438,23 +438,23 @@ export async function getChildDashboardAnalytics(childId: string) {
       const alerts = s.auto_alerts || [];
       
       // 1. CHỦ ĐỘNG (idle - Low: -30đ mỗi 5s, max -100đ)
-      const idleDur = alerts.filter((a: Record<string, any>) => a.type === 'idle').reduce((acc: number, a: Record<string, any>) => acc + (a.duration_sec || 0), 0);
+      const idleDur = (alerts as AutoAlert[]).filter((a) => a.type === 'idle').reduce((acc: number, a) => acc + (a.duration_sec || 0), 0);
       totalPenalties.chudoong += Math.min(100, Math.floor(idleDur / 5) * 30);
 
       // 2. TỰ TIN (hesitation - Low: -60đ/lần, max -100đ)
-      const hesitationCount = alerts.filter((a: Record<string, any>) => a.type === 'hesitation').length;
+      const hesitationCount = (alerts as AutoAlert[]).filter((a) => a.type === 'hesitation').length;
       totalPenalties.tutin += Math.min(100, hesitationCount * 60);
 
       // 3. TẬP TRUNG (distraction - Medium: -50đ mỗi 5s, max -100đ)
-      const distractionDur = alerts.filter((a: Record<string, any>) => a.type === 'distraction').reduce((acc: number, a: Record<string, any>) => acc + (a.duration_sec || 0), 0);
+      const distractionDur = (alerts as AutoAlert[]).filter((a) => a.type === 'distraction').reduce((acc: number, a) => acc + (a.duration_sec || 0), 0);
       totalPenalties.taptrung += Math.min(100, Math.floor(distractionDur / 5) * 50);
 
       // 4. ỔN ĐỊNH (stimming_proxy - Medium: -80đ/lần, max -100đ)
-      const stimmingCount = alerts.filter((a: Record<string, any>) => a.type === 'stimming_proxy').length;
+      const stimmingCount = (alerts as AutoAlert[]).filter((a) => a.type === 'stimming_proxy').length;
       totalPenalties.ondinh += Math.min(100, stimmingCount * 80);
 
       // 5. BÌNH TĨNH (freeze/meltdown - High: -150đ/lần, max -100đ)
-      const stressCount = alerts.filter((a: Record<string, any>) => 
+      const stressCount = (alerts as AutoAlert[]).filter((a) =>
         a.type === 'freeze' || a.type === 'meltdown_proxy' || a.group === 'stress_overwhelm'
       ).length;
       totalPenalties.binhtinh += Math.min(100, stressCount * 150);
@@ -471,10 +471,10 @@ export async function getChildDashboardAnalytics(childId: string) {
     // 2. Trend Data (Last 10 sessions)
     const trendData = sessions.slice(0, 10).reverse().map((s: Session) => {
       let dateStr = "";
-      if ((s.start_time as any)?.toDate) {
-        dateStr = (s.start_time as any).toDate().toLocaleDateString("vi-VN", { day: 'numeric', month: 'short' });
+      if ((s.start_time as FirestoreTimestamp | undefined) && typeof s.start_time !== 'string' && (s.start_time as { toDate(): Date }).toDate) {
+        dateStr = (s.start_time as { toDate(): Date }).toDate().toLocaleDateString("vi-VN", { day: 'numeric', month: 'short' });
       } else {
-        const rawDate = s.start_time || (s as any).startTime;
+        const rawDate = s.start_time || (s as Session & { startTime?: string }).startTime;
         if (typeof rawDate === 'string') {
           const [y, m, d] = rawDate.split('T')[0].split('-');
           dateStr = `${d} thg ${m}`;
@@ -511,18 +511,18 @@ export async function getChildHeatmapData(childId: string) {
 
     sessions.forEach((data: Session) => {
       // Filter by time in memory for safety
-      const startTime = data.start_time || (data as any).startTime;
+      const startTime = data.start_time || (data as Session & { startTime?: string }).startTime;
       if (typeof startTime === 'string' && startTime < fullYearAgoStr) return;
-      if ((data.start_time as any)?.toDate && (data.start_time as any).toDate() < fullYearAgo) return;
+      if (typeof data.start_time !== 'string' && (data.start_time as { toDate(): Date } | undefined)?.toDate && (data.start_time as { toDate(): Date }).toDate() < fullYearAgo) return;
 
       let dateStr: string | null = null;
-      if ((data.start_time as any)?.toDate) {
-        const d = (data.start_time as any).toDate();
+      if (typeof data.start_time !== 'string' && (data.start_time as { toDate(): Date } | undefined)?.toDate) {
+        const d = (data.start_time as { toDate(): Date }).toDate();
         dateStr = d.getFullYear() + "-" + 
                   String(d.getMonth() + 1).padStart(2, '0') + "-" + 
                   String(d.getDate()).padStart(2, '0');
       } else {
-        const rawDate = data.start_time || (data as any).startTime;
+        const rawDate = data.start_time || (data as Session & { startTime?: string }).startTime;
         if (typeof rawDate === 'string') {
           dateStr = rawDate.split('T')[0];
         }

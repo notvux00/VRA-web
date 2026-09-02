@@ -6,7 +6,7 @@ import { LogOut, Settings, ChevronDown, User as UserIcon } from "lucide-react";
 import { removeSession } from "@/actions/auth";
 
 interface UserMenuProps {
-  user: any;
+  user: { email?: string; [key: string]: unknown } | null | undefined;
   userName?: string;
   roleName: string;
 }

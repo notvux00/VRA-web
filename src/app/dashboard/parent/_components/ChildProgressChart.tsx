@@ -16,7 +16,7 @@ interface Session {
   id: string;
   score: number;
   start_time: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface ChildProgressChartProps {

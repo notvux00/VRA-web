@@ -2,7 +2,7 @@
 
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { cookies } from "next/headers";
-import { Session } from "@/types";
+import { Session, FirestoreTimestamp } from "@/types";
 
 const SESSION_COOKIE_NAME = "session";
 
@@ -101,15 +101,18 @@ export async function getSessionDetail(sessionId: string): Promise<{ success: bo
       }
     }
 
-    const st = (sessionData as Record<string, any>).start_time?.toDate?.() || new Date(sessionData.start_time);
-    const ft = (sessionData as Record<string, any>).finish_time?.toDate?.() || new Date(sessionData.finish_time);
+    const rawSt = sessionData.start_time;
+    const rawFt = sessionData.finish_time;
+    const st = (rawSt && typeof rawSt === 'object') ? (rawSt as { toDate: () => Date }).toDate() : new Date(rawSt as string);
+    const ft = (rawFt && typeof rawFt === 'object') ? (rawFt as { toDate: () => Date }).toDate() : new Date(rawFt as string);
     
-    let duration: any = sessionData.duration;
-    if (typeof duration === 'string' && duration.includes(':')) {
-      const [m, s] = duration.split(':').map(Number);
+    let duration: number = 0;
+    const rawDuration = sessionData.duration as string | number | undefined;
+    if (typeof rawDuration === 'string' && rawDuration.includes(':')) {
+      const [m, s] = rawDuration.split(':').map(Number);
       duration = m * 60 + s;
     } else {
-      duration = Number(duration) || 0;
+      duration = Number(rawDuration) || 0;
     }
     
     if (!duration && st && ft) {

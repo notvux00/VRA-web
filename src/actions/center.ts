@@ -167,7 +167,7 @@ export async function createChildProfile(
     const linkCode = Math.random().toString(36).substring(2, 8).toUpperCase();
     // 2. Fetch all lessons to get their default phrases for child profile initialization
     const lessonsSnap = await adminDb.collection("lessons").get();
-    const defaultPhrasesMap: Record<string, any> = {
+    const defaultPhrasesMap: Record<string, unknown> = {
       general: [
         "Con làm tốt lắm!",
         "Tuyệt vời!",
@@ -178,7 +178,7 @@ export async function createChildProfile(
       const lessonData = doc.data();
       if (lessonData?.quests) {
         const questList: Array<{ quest_name: string; phrases: string[] }> = [];
-        lessonData.quests.forEach((q: any) => {
+        lessonData.quests.forEach((q: { title?: string; name?: string; id?: string; default_phrases?: string[] }) => {
           const questName = q.title || q.name || q.id || "";
           questList.push({
             quest_name: questName,

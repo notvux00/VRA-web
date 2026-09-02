@@ -9,7 +9,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 export default function CenterReportsPage() {
   const { centerId } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [reportData, setReportData] = useState<any>(null);
+  const [reportData, setReportData] = useState<any | null>(null);
 
   useEffect(() => {
     async function fetchData() {

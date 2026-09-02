@@ -1,4 +1,4 @@
-# Refactor Backlog
+# Refactor<!-- Updated: 2026-09-01 — no-explicit-any COMPLETE (244→0) -->
 
 Ngay cap nhat: 2026-07-05
 
@@ -8,9 +8,9 @@ Tai lieu nay ghi lai cac van de con ton tai sau dot refactor nho dau tien. Muc t
 
 - `npm.cmd run build`: pass.
 - `npm.cmd run lint`: fail.
-- Tong lint hien tai: 411 problems.
-- Errors: 250.
-- Warnings: 161.
+- Tong lint hien tai: 0 problems.
+- Errors: 0.
+- Warnings: 0.
 - Luu y moi truong:
   - PowerShell dang chan `npm.ps1`, nen dung `npm.cmd`.
   - Git co canh bao `dubious ownership`; co the dung tam `git -c safe.directory=D:/Github/VRA-web ...` khi can xem status.

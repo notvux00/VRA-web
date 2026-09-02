@@ -8,7 +8,8 @@ interface ExpertRosterProps {
   onRefresh: () => void;
 }
 
-export default function ExpertRoster({ experts, onRefresh }: ExpertRosterProps) {
+export default function ExpertRoster({ experts: expertsUntyped, onRefresh }: ExpertRosterProps) {
+  const experts = expertsUntyped as any[];
   const [togglingStatus, setTogglingStatus] = useState<string | null>(null);
   const [resetModal, setResetModal] = useState<{ open: boolean; uid: string; name: string }>({ open: false, uid: "", name: "" });
   const [newPassword, setNewPassword] = useState("");

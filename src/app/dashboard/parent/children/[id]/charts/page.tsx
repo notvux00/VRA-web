@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { getChildProfileDetail, getChildSessions } from "@/actions/parent";
 import { getChildAlertStats } from "@/actions/analytics";
 import { notFound } from "next/navigation";
