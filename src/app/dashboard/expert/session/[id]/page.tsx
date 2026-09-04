@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLiveTelemetry } from "../../_hooks/useLiveTelemetry";
 import SessionSummaryModal from "../_components/SessionSummaryModal";
 import { getAssignedChildDetail, finalizeSession, syncAndGetChildPhrases } from "@/actions/expert";
+import { getChildPhraseSetsV2 } from "@/actions/voice-phrases";
 import { getLessonDetail } from "@/actions/lessons";
 import POVMonitor from "../_components/POVMonitor";
 import { endLessonOnDevice, subscribeToVrHandshake, pushRemoteCommand } from "@/lib/firebase/rtdb";
@@ -89,11 +90,14 @@ function LiveSessionContent() {
       try {
         const lessonDocId = searchParams.get("lesson");
         if (lessonDocId) {
-          await syncAndGetChildPhrases(childId as string, lessonDocId);
-
           const lessonRes = await getLessonDetail(lessonDocId);
           if (lessonRes.success) {
             setLessonDetail(lessonRes.lesson);
+            if ((lessonRes.lesson as any)?.voice_schema_version === 2) {
+              await getChildPhraseSetsV2(childId as string, lessonDocId);
+            } else {
+              await syncAndGetChildPhrases(childId as string, lessonDocId);
+            }
           }
         }
 

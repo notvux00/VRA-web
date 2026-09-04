@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import StartLessonButton from "./StartLessonButton";
 import { updateChildQuickPhrases } from "@/actions/expert";
+import { saveChildLessonPhraseSetV2 } from "@/actions/voice-phrases";
 
 interface QuestMetadata {
   id?: string;
@@ -33,6 +34,7 @@ interface LessonData {
   min_age: number;
   duration_min: number;
   quests?: QuestMetadata[];
+  voice_schema_version?: number;
 }
 
 interface LessonsListProps {
@@ -158,6 +160,25 @@ export default function LessonsList({ initialLessons, child, pin, isVRConnected 
     setSaveStatus(prev => ({ ...prev, [levelId]: "idle" }));
     try {
       const levelPhrases = phrasesState[levelId] || getLevelPhrases(initialLessons.find(l => l.id === levelId)!);
+      const level = initialLessons.find(l => l.id === levelId)!;
+      if (level.voice_schema_version === 2) {
+        const questAdditions = (level.quests || []).map((quest) => {
+          const key = quest.id || quest.title;
+          const defaults = new Set((quest.default_phrases || []).map((phrase) => phrase.trim().toLocaleLowerCase()));
+          const values = ((levelPhrases as any)[key] || []) as string[];
+          return { binding_id: key, phrases: values.filter((phrase) => !defaults.has(phrase.trim().toLocaleLowerCase())) };
+        }).filter((entry) => entry.binding_id);
+        const result = await saveChildLessonPhraseSetV2({
+          childId: (child as any).id,
+          lessonId: levelId,
+          expectedRevision: 0,
+          questAdditions,
+          lessonQuests: (level.quests || []).map((quest) => ({ binding_id: quest.id || quest.title, title: quest.title, goal: quest.description || quest.title, default_phrases: quest.default_phrases || [] })),
+        });
+        if (!result.success) throw new Error(result.error);
+        setSaveStatus(prev => ({ ...prev, [levelId]: "success" }));
+        return;
+      }
       const updatedPhrases = { ...phrasesState, [levelId]: levelPhrases };
       
       const res = await updateChildQuickPhrases((child as Record<string, any>).id, updatedPhrases);
@@ -373,12 +394,14 @@ export default function LessonsList({ initialLessons, child, pin, isVRConnected 
               {/* Danh sách nhiệm vụ (Quests) */}
               <div className="space-y-6">
                 {(() => {
+                  const levelPhrases = getLevelPhrases(customizeLevel);
                   const savedPhrases = (child as any).quick_phrases?.[customizeLevel.id] || {};
                   const quests = customizeLevel.quests || [];
                   
                   return quests.map((q, idx) => {
                     const questKey = q.id || q.title || `quest_${idx}`;
                     const list = (levelPhrases as any)[questKey] || [];
+                    const defaultKeys = new Set((q.default_phrases || []).map((phrase: string) => phrase.trim().toLocaleLowerCase()));
 
                     return (
                       <div 
@@ -412,16 +435,17 @@ export default function LessonsList({ initialLessons, child, pin, isVRConnected 
                                 type="text"
                                 value={phrase}
                                 onChange={(e) => updatePhraseText(customizeLevel.id, questKey, idx, e.target.value)}
+                                disabled={customizeLevel.voice_schema_version === 2 && defaultKeys.has(phrase.trim().toLocaleLowerCase())}
                                 placeholder="Nhập nội dung thoại bằng tiếng Việt..."
                                 className="flex-1 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-850 rounded-xl px-3 py-2 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-blue-500 transition-colors"
                               />
-                              <button
+                              {!(customizeLevel.voice_schema_version === 2 && defaultKeys.has(phrase.trim().toLocaleLowerCase())) && <button
                                 onClick={() => deletePhrase(customizeLevel.id, questKey, idx)}
                                 className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-500/5 rounded-lg transition-all"
                                 title="Xóa mẫu câu"
                               >
                                 <Trash2 size={14} />
-                              </button>
+                              </button>}
                             </div>
                           ))}
 
