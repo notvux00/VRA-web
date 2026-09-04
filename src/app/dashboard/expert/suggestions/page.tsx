@@ -13,7 +13,7 @@ interface Child {
   id: string;
   display_name?: string;
   name?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export default async function ExpertSuggestionsPage({ searchParams }: PageProps) {

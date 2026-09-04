@@ -1,6 +1,7 @@
 "use server";
 
 import { adminDb } from "@/lib/firebase/admin";
+import { Session, AutoAlert } from "@/types";
 
 // Utility to fetch sessions across multiple field names
 async function fetchSessionsForChild(childId: string) {
@@ -12,7 +13,7 @@ async function fetchSessionsForChild(childId: string) {
     return data.child_profile_id === targetId || data.child_id === targetId || data.childId === targetId;
   });
 
-  return matches.map(doc => ({ id: doc.id, ...doc.data() } as any));
+  return matches.map(doc => ({ id: doc.id, ...doc.data() } as Session));
 }
 
 /**
@@ -28,27 +29,27 @@ export async function getChildAlertStats(childId: string) {
     const totalRecent = recentSessions.length || 1;
     const totalPenalties = { chudoong: 0, tutin: 0, taptrung: 0, ondinh: 0, binhtinh: 0 };
 
-    recentSessions.forEach((s: any) => {
+    recentSessions.forEach((s: Session) => {
       const alerts = s.auto_alerts || [];
       
       // 1. CHỦ ĐỘNG (idle - Low: -30đ mỗi 5s, max -100đ)
-      const idleDuration = alerts.filter((a: any) => a.type === 'idle').reduce((acc: number, a: any) => acc + (a.duration_sec || 0), 0);
+      const idleDuration = (alerts as AutoAlert[]).filter((a) => a.type === 'idle').reduce((acc: number, a) => acc + (a.duration_sec || 0), 0);
       totalPenalties.chudoong += Math.min(100, Math.floor(idleDuration / 5) * 30);
 
       // 2. TỰ TIN (hesitation - Low: -60đ/lần, max -100đ)
-      const hesitationCount = alerts.filter((a: any) => a.type === 'hesitation').length;
+      const hesitationCount = (alerts as AutoAlert[]).filter((a) => a.type === 'hesitation').length;
       totalPenalties.tutin += Math.min(100, hesitationCount * 60);
 
       // 3. TẬP TRUNG (distraction - Medium: -50đ mỗi 5s, max -100đ)
-      const distractionDuration = alerts.filter((a: any) => a.type === 'distraction').reduce((acc: number, a: any) => acc + (a.duration_sec || 0), 0);
+      const distractionDuration = (alerts as AutoAlert[]).filter((a) => a.type === 'distraction').reduce((acc: number, a) => acc + (a.duration_sec || 0), 0);
       totalPenalties.taptrung += Math.min(100, Math.floor(distractionDuration / 5) * 50);
 
       // 4. ỔN ĐỊNH (stimming_proxy - Medium: -80đ/lần, max -100đ)
-      const stimmingCount = alerts.filter((a: any) => a.type === 'stimming_proxy').length;
+      const stimmingCount = (alerts as AutoAlert[]).filter((a) => a.type === 'stimming_proxy').length;
       totalPenalties.ondinh += Math.min(100, stimmingCount * 80);
 
       // 5. BÌNH TĨNH (freeze/meltdown - High: -150đ/lần, max -100đ -> thực tế là vế trái sẽ bị cap ở 100)
-      const stressCount = alerts.filter((a: any) => 
+      const stressCount = (alerts as AutoAlert[]).filter((a) =>
         a.type === 'freeze' || a.type === 'meltdown_proxy' || a.group === 'stress_overwhelm'
       ).length;
       totalPenalties.binhtinh += Math.min(100, stressCount * 150);
@@ -63,8 +64,8 @@ export async function getChildAlertStats(childId: string) {
     ];
 
     return { success: true, radarData };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching child alert stats:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }

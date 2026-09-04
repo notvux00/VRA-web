@@ -21,11 +21,31 @@ interface ChatInterfaceProps {
   role: "parent" | "expert";
 }
 
+interface ChatPartner {
+  id: string;
+  name: string;
+  role: string;
+  childId?: string;
+  childName?: string;
+  avatarUrl?: string;
+  [key: string]: unknown;
+}
+
+interface ChatMessage {
+  id: string;
+  senderId: string;
+  content: string;
+  timestamp?: number;
+  read?: boolean;
+  roomId?: string;
+  [key: string]: unknown;
+}
+
 export default function ChatInterface({ role }: ChatInterfaceProps) {
   const { user, loading: authLoading } = useAuth();
-  const [partners, setPartners] = useState<any[]>([]);
-  const [selectedPartner, setSelectedPartner] = useState<any>(null);
-  const [messages, setMessages] = useState<any[]>([]);
+  const [partners, setPartners] = useState<ChatPartner[]>([]);
+  const [selectedPartner, setSelectedPartner] = useState<ChatPartner | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -37,9 +57,9 @@ export default function ChatInterface({ role }: ChatInterfaceProps) {
     async function fetchPartners() {
       const res = await getConversationPartners();
       if (res.success && res.partners) {
-        setPartners(res.partners);
+        setPartners(res.partners as unknown as ChatPartner[]);
         if (res.partners.length > 0) {
-          setSelectedPartner(res.partners[0]);
+          setSelectedPartner(res.partners[0] as unknown as ChatPartner);
         }
       }
       setLoading(false);
@@ -91,13 +111,13 @@ export default function ChatInterface({ role }: ChatInterfaceProps) {
       const msgs = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      })) as any[];
+      })) as ChatMessage[];
       setMessages(msgs);
 
       // 4. Mark as read if there are unread messages from partner in THIS room
       const hasUnread = msgs.some(m => m.senderId === selectedPartner.id && m.read === false);
       if (hasUnread) {
-        markMessagesAsRead(selectedPartner.id, selectedPartner.childId);
+        markMessagesAsRead(selectedPartner.id, selectedPartner.childId as string);
       }
     }, (error) => {
       console.error("Firestore Listen Error:", error);
@@ -121,7 +141,7 @@ export default function ChatInterface({ role }: ChatInterfaceProps) {
     setNewMessage(""); 
     
     // Pass childId to ensure it goes to the correct room
-    const res = await sendMessage(selectedPartner.id, content, selectedPartner.childId);
+    const res = await sendMessage(selectedPartner.id, content, selectedPartner.childId as string);
     if (!res.success) {
       console.error("Failed to send message:", res.error);
     }
@@ -279,7 +299,7 @@ export default function ChatInterface({ role }: ChatInterfaceProps) {
                           {msg.content}
                         </div>
                         <p className={`text-[9px] font-bold uppercase tracking-widest text-zinc-400 ${isMe ? "text-right" : "text-left"}`}>
-                          {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {new Date(msg.timestamp as number).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
                     </div>

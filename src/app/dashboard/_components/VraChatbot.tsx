@@ -15,19 +15,19 @@ export default function VraChatbot({ childId }: VraChatbotProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
-  // Speech Recognition
-  const SpeechRecognition = typeof window !== 'undefined' ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition : null;
+
+  // Speech Recognition - webkit prefixed in some browsers
+  const SpeechRecognitionAPI = typeof window !== 'undefined' ? ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition) : null;
   const recognition = useRef<any>(null);
 
   useEffect(() => {
-    if (SpeechRecognition) {
-      recognition.current = new SpeechRecognition();
+    if (SpeechRecognitionAPI) {
+      recognition.current = new SpeechRecognitionAPI();
       recognition.current.continuous = false;
       recognition.current.interimResults = false;
       recognition.current.lang = 'vi-VN';
 
-      recognition.current.onresult = (event: any) => {
+      recognition.current.onresult = (event: Event & { results: { [index: number]: { [index: number]: { transcript: string } } } }) => {
         const transcript = event.results[0][0].transcript;
         setInput(transcript);
         setIsListening(false);
@@ -63,7 +63,7 @@ export default function VraChatbot({ childId }: VraChatbotProps) {
           { role: "model", text: "Xin chào! Bạn đang ở trang chung. Xin vui lòng chọn vào một hồ sơ trẻ cụ thể để tôi có thể phân tích dữ liệu cho bạn nhé!" }
         ]);
       } else {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+         
         setMessages([
           { role: "model", text: "Xin chào! Tôi là VRA Chatbot. Bạn muốn tôi phân tích dữ liệu hay giải đáp điều gì về tiến độ của bé hôm nay?" }
         ]);

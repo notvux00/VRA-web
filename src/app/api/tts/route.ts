@@ -65,8 +65,8 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ url: signedUrl });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Lỗi trong API tts:", error);
-    return NextResponse.json({ error: error.message || "Lỗi máy chủ nội bộ" }, { status: 500 });
+    return NextResponse.json({ error: (error instanceof Error ? error.message : String(error)) || "Lỗi máy chủ nội bộ" }, { status: 500 });
   }
 }

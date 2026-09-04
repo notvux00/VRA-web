@@ -26,13 +26,15 @@ export function LiveKitRoomProvider({
 
   useEffect(() => {
     if (!roomName) {
-      setLoading(false);
+      Promise.resolve().then(() => setLoading(false));
       return;
     }
 
     let isMounted = true;
-    setLoading(true);
-    setError(null);
+    Promise.resolve().then(() => {
+      setLoading(true);
+      setError(null);
+    });
 
     async function fetchToken() {
       try {
@@ -50,10 +52,10 @@ export function LiveKitRoomProvider({
           setServerUrl(data.wsUrl);
           setLoading(false);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("[LiveKitRoomProvider] Token error:", err);
         if (isMounted) {
-          setError(err.message || "Lỗi kết nối máy chủ LiveKit");
+          setError((err instanceof Error ? err.message : String(err)) || "Lỗi kết nối máy chủ LiveKit");
           setLoading(false);
         }
       }

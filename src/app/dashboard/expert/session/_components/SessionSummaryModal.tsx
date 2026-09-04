@@ -21,7 +21,7 @@ interface Alert {
 interface SessionSummaryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (summary: any) => void;
+  onSave: (summary: unknown) => void;
   sessionTime: number;
   alerts: Alert[];
   logsCount: number;
@@ -37,13 +37,16 @@ export default function SessionSummaryModal({
   const [status, setStatus] = useState<"success" | "failed">("success");
   const [saving, setSaving] = useState(false);
   const [editableAlerts, setEditableAlerts] = useState<Alert[]>([]);
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  const [prevAlerts, setPrevAlerts] = useState(alerts);
 
-  // Initialize editable alerts when modal opens
-  React.useEffect(() => {
+  if (isOpen !== prevIsOpen || alerts !== prevAlerts) {
+    setPrevIsOpen(isOpen);
+    setPrevAlerts(alerts);
     if (isOpen) {
       setEditableAlerts(alerts.map(a => ({ ...a, note: a.note || "" })));
     }
-  }, [isOpen, alerts]);
+  }
 
   if (!isOpen) return null;
 

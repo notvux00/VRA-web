@@ -10,9 +10,17 @@ export default function SettingsPage() {
   const { user } = useAuth();
   
   // Profile state
-  const [name, setName] = useState("");
+  const [name, setName] = useState(user?.displayName || "");
+  const [prevUser, setPrevUser] = useState(user);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [profileMessage, setProfileMessage] = useState({ type: "", text: "" });
+
+  if (user !== prevUser) {
+    setPrevUser(user);
+    if (user?.displayName) {
+      setName(user.displayName);
+    }
+  }
 
   // Password state
   const [currentPassword, setCurrentPassword] = useState("");
@@ -20,12 +28,6 @@ export default function SettingsPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState({ type: "", text: "" });
-
-  useEffect(() => {
-    if (user?.displayName) {
-      setName(user.displayName);
-    }
-  }, [user]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();

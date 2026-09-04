@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useIsMounted } from "@/hooks/useIsMounted";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { Menu, Search, Sun, Moon, Bell, Loader2, Building } from "lucide-react";
@@ -11,27 +12,27 @@ import UserMenu from "./UserMenu";
 interface HeaderProps {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
-  user: any;
+  user: { email?: string; name?: string; uid?: string; [key: string]: unknown };
   role: string;
   roleName: string;
   userName?: string;
 }
 
+interface CenterSearchResult { id: string; name?: string; address?: string; [key: string]: unknown; }
+
 export default function Header({ setSidebarOpen, user, role, roleName, userName }: HeaderProps) {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<CenterSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => setMounted(true), []);
 
   // Search logic for Admin only
   useEffect(() => {
     const isAdmin = role === "admin";
     if (!isAdmin || searchQuery.trim().length < 2) {
-      setSearchResults([]);
+      Promise.resolve().then(() => setSearchResults([]));
       return;
     }
 

@@ -1,5 +1,37 @@
 export type UserRole = "admin" | "center" | "expert" | "parent";
 
+// ─── Firestore Interop ────────────────────────────────────────────────────────
+/** Firestore Timestamp hoặc ISO string – cả hai đều có thể xuất hiện tuỳ môi trường */
+export type FirestoreTimestamp = { toDate(): Date } | string;
+
+// ─── Alert & Behavior ────────────────────────────────────────────────────────
+export type AlertType =
+  | "idle"
+  | "hesitation"
+  | "distraction"
+  | "stimming_proxy"
+  | "freeze"
+  | "meltdown_proxy";
+
+export type AlertGroup = "stress_overwhelm" | string;
+
+export interface AutoAlert {
+  type: AlertType;
+  group?: AlertGroup;
+  duration_sec?: number;
+  timestamp?: FirestoreTimestamp;
+  [key: string]: unknown;
+}
+
+export interface BehaviorLog {
+  type: string;
+  timestamp?: FirestoreTimestamp;
+  [key: string]: unknown;
+}
+
+// ─── Alert Profile (stored in Firestore, shape flexible) ─────────────────────
+export type AlertProfile = Record<string, unknown>;
+
 export interface UserProfile {
   uid: string;
   email: string;
@@ -102,8 +134,8 @@ export interface Session {
   completion_status: string;
   device_id?: string;
   duration: number;
-  finish_time: string;
-  start_time: string;
+  finish_time: string | FirestoreTimestamp;
+  start_time: string | FirestoreTimestamp;
   hosted_by: string;
   lesson_id: string;
   lesson_name: string;
@@ -117,8 +149,8 @@ export interface Session {
   createdAt?: string;
   updatedAt?: string;
   // Clinical data
-  auto_alerts?: any[];
-  behavior_logs?: any[];
+  auto_alerts?: AutoAlert[];
+  behavior_logs?: BehaviorLog[];
   evaluation?: string;
   notes?: string;
 }

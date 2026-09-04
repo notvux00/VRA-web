@@ -39,10 +39,10 @@ export default function VRPairingOverlay({ onConnect, onSkip, childId, childName
         router.push(`/dashboard/expert?${current.toString()}`);
         onConnect?.();
       }, 1500);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Pairing Error:", error);
       setStatus("error");
-      setErrorMsg(error.message || "Lỗi khi kết nối với server Kính VR.");
+      setErrorMsg((error instanceof Error ? error.message : String(error)) || "Lỗi khi kết nối với server Kính VR.");
     }
   };
 

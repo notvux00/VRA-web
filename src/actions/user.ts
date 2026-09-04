@@ -21,9 +21,9 @@ export async function updateUserProfile(uid: string, data: { name: string }) {
 
     revalidatePath("/dashboard/settings");
     return { success: true, message: "Cập nhật hồ sơ thành công" };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error updating user profile:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -35,8 +35,8 @@ export async function updateUserPassword(uid: string, newPassword: string) {
     });
 
     return { success: true, message: "Đổi mật khẩu thành công" };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error updating password:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }

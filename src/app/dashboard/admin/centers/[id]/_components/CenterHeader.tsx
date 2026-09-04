@@ -20,12 +20,7 @@ interface CenterHeaderProps {
 export default function CenterHeader({ center, updatingStatus, onToggleStatus, onAddManager }: CenterHeaderProps) {
   return (
     <div className="space-y-4">
-      <Link
-        href="/dashboard/admin/centers"
-        className="flex items-center gap-2 text-zinc-500 hover:text-blue-600 transition-colors text-xs font-bold uppercase tracking-widest inline-flex"
-      >
-        ← Quay lại danh sách
-      </Link>
+
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-8 rounded-3xl shadow-sm relative overflow-hidden">
         <div className="flex gap-6 items-center">
@@ -71,13 +66,6 @@ export default function CenterHeader({ center, updatingStatus, onToggleStatus, o
           >
             {updatingStatus ? <Loader2 size={14} className="animate-spin" /> : <Power size={14} />}
             {center.status === "Active" ? "Ngừng hoạt động" : "Kích hoạt"}
-          </button>
-          <button
-            onClick={onAddManager}
-            className="flex-1 md:flex-none bg-zinc-900 dark:bg-white dark:text-black text-white px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition-all hover:scale-105 active:scale-95 shadow-lg shadow-zinc-500/10"
-          >
-            <UserPlus size={16} />
-            Thêm Quản lý
           </button>
         </div>
       </div>

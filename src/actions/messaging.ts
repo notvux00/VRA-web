@@ -39,7 +39,7 @@ export async function getConversationPartners() {
       if (childrenSnapshot.empty) return { success: true, partners: [] };
 
       // Map children to their experts
-      const partnersList: any[] = [];
+      const partnersList: Record<string, unknown>[] = [];
       const expertIds = Array.from(new Set(childrenSnapshot.docs.map(doc => doc.data().expertUid).filter(Boolean)));
       
       if (expertIds.length === 0) return { success: true, partners: [] };
@@ -83,7 +83,7 @@ export async function getConversationPartners() {
       if (childrenSnapshot.empty) return { success: true, partners: [] };
 
       // Map children to their parents
-      const partnersList: any[] = [];
+      const partnersList: Record<string, unknown>[] = [];
       const parentIds = Array.from(new Set(childrenSnapshot.docs.map(doc => doc.data().parentUid).filter(Boolean)));
       
       if (parentIds.length === 0) return { success: true, partners: [] };
@@ -120,9 +120,9 @@ export async function getConversationPartners() {
     }
 
     return { success: false, error: "Access denied" };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching message partners:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -148,9 +148,9 @@ export async function sendMessage(receiverId: string, content: string, childId: 
     revalidatePath("/dashboard/parent/messages");
     revalidatePath("/dashboard/expert/messages");
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error sending message:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -172,9 +172,9 @@ export async function getMessages(partnerId: string, childId: string) {
     }));
 
     return { success: true, messages };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching messages via RoomId:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -203,8 +203,8 @@ export async function markMessagesAsRead(partnerId: string, childId: string) {
     revalidatePath("/dashboard/expert/messages");
     
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error marking messages as read:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }

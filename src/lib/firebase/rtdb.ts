@@ -152,7 +152,7 @@ export function subscribeToVrHandshake(
  */
 export function subscribeToTelemetry(
   sessionId: string,
-  onNewSnapshot: (timestamp: string, snapshot: any) => void
+  onNewSnapshot: (timestamp: string, snapshot: unknown) => void
 ): () => void {
   const telemetryRef = ref(rtdb, `behavior_snapshots/${sessionId}`);
   
@@ -230,7 +230,7 @@ export async function cleanupWebRTCSignaling(sessionId: string): Promise<void> {
 export async function pushRemoteCommand(
   sessionId: string,
   commandType: string,
-  param: any = null
+  param: unknown = null
 ): Promise<void> {
   if (!sessionId) {
     console.error("pushRemoteCommand: sessionId is empty");

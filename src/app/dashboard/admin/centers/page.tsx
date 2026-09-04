@@ -5,11 +5,12 @@ import { Building, Search, Plus, Loader2 } from "lucide-react";
 import { getCenters, createCenter, updateCenterStatus, deleteCenter } from "@/actions/auth";
 import CenterCard from "./_components/CenterCard";
 import CreateCenterModal from "../_components/CreateCenterModal";
+import { Center } from "@/types";
 
 const EMPTY_CENTER = { name: "", managerName: "", email: "", password: "", address: "", phone: "", centerEmail: "" };
 
 export default function ManageCentersPage() {
-  const [centers, setCenters] = useState<any[]>([]);
+  const [centers, setCenters] = useState<Center[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newCenter, setNewCenter] = useState(EMPTY_CENTER);
@@ -20,14 +21,14 @@ export default function ManageCentersPage() {
   const fetchCenters = async () => {
     setLoading(true);
     const result = await getCenters();
-    if (result.success) setCenters(result.centers || []);
+    if (result.success) setCenters((result.centers || []) as unknown as Center[]);
     setLoading(false);
   };
 
   useEffect(() => { 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchCenters(); 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   const handleCreateCenter = async (e: React.FormEvent) => {

@@ -1,0 +1,200 @@
+﻿src/actions/ai-recommendations.ts(216,9): error TS2345: Argument of type '{ id: string; lesson_id: any; lesson_name: any; level_name: any; type: any; score: any; completion_status: any; duration: any; quest_logs: any; auto_alerts: any; behavior_logs: any; evaluation: any; notes: any; start_time: any; finish_time: any; }[]' is not assignable to parameter of type 'Session[]'.
+  Type '{ id: string; lesson_id: any; lesson_name: any; level_name: any; type: any; score: any; completion_status: any; duration: any; quest_logs: any; auto_alerts: any; behavior_logs: any; evaluation: any; notes: any; start_time: any; finish_time: any; }' is missing the following properties from type 'Session': child_profile_id, hosted_by, session_id
+src/actions/ai-recommendations.ts(227,7): error TS2345: Argument of type '{ age: any; gender: any; condition: any; sound_sensitivity: any; attention_span_min: any; anxiety_triggers: any; diagnosis_notes: any; sessionCount: any; goals: any; }' is not assignable to parameter of type 'ChildProfile'.
+  Type '{ age: any; gender: any; condition: any; sound_sensitivity: any; attention_span_min: any; anxiety_triggers: any; diagnosis_notes: any; sessionCount: any; goals: any; }' is missing the following properties from type 'ChildProfile': id, name, centerId, status, and 2 more.
+src/actions/ai-recommendations.ts(449,63): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
+src/actions/ai-recommendations.ts(450,60): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
+src/actions/ai-recommendations.ts(455,9): error TS2322: Type '{ lessonId: unknown; lessonTitle: unknown; levelName: unknown; type: unknown; thumbnailUrl: {} | null; sceneName: {}; difficultyLevel: {}; targetSkill: string; priority: RecommendationPriority; confidence: number; reason: string; expectedBenefit: string; specialistNotes: string; }[]' is not assignable to type 'AILessonRecommendation[]'.
+  Type '{ lessonId: unknown; lessonTitle: unknown; levelName: unknown; type: unknown; thumbnailUrl: {} | null; sceneName: {}; difficultyLevel: {}; targetSkill: string; priority: RecommendationPriority; confidence: number; reason: string; expectedBenefit: string; specialistNotes: string; }' is not assignable to type 'AILessonRecommendation'.
+    Types of property 'lessonId' are incompatible.
+      Type 'unknown' is not assignable to type 'string'.
+src/actions/center.ts(182,29): error TS18046: 'q' is of type 'unknown'.
+src/actions/center.ts(182,40): error TS18046: 'q' is of type 'unknown'.
+src/actions/center.ts(182,50): error TS18046: 'q' is of type 'unknown'.
+src/actions/center.ts(185,22): error TS18046: 'q' is of type 'unknown'.
+src/actions/expert.ts(357,13): error TS2740: Type '{}' is missing the following properties from type 'string[]': length, pop, push, concat, and 35 more.
+src/actions/history.ts(104,17): error TS2352: Conversion of type 'Session' to type 'Record<string, unknown>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Index signature for type 'string' is missing in type 'Session'.
+src/actions/history.ts(104,69): error TS2339: Property 'toDate' does not exist on type '{}'.
+src/actions/history.ts(105,17): error TS2352: Conversion of type 'Session' to type 'Record<string, unknown>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Index signature for type 'string' is missing in type 'Session'.
+src/actions/history.ts(105,70): error TS2339: Property 'toDate' does not exist on type '{}'.
+src/actions/history.ts(123,9): error TS2322: Type 'unknown' is not assignable to type 'number'.
+src/actions/parent.ts(167,59): error TS2339: Property 'toDate' does not exist on type 'never'.
+src/actions/parent.ts(168,21): error TS2339: Property 'toDate' does not exist on type 'never'.
+src/actions/reports.ts(52,38): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type '{}' is not assignable to parameter of type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type '{}' is not assignable to parameter of type 'string | number'.
+src/actions/reports.ts(66,28): error TS2345: Argument of type '{}' is not assignable to parameter of type 'string'.
+src/actions/reports.ts(67,25): error TS2345: Argument of type '{}' is not assignable to parameter of type 'string'.
+src/actions/reports.ts(70,37): error TS2345: Argument of type '{}' is not assignable to parameter of type 'string'.
+src/actions/reports.ts(80,27): error TS2365: Operator '>' cannot be applied to types '{}' and 'number'.
+src/actions/reports.ts(86,7): error TS2365: Operator '+=' cannot be applied to types 'number' and '{}'.
+src/actions/reports.ts(89,7): error TS2365: Operator '+=' cannot be applied to types 'number' and '{}'.
+src/actions/reports.ts(130,27): error TS2365: Operator '>' cannot be applied to types '{}' and 'number'.
+src/app/api/livekit-token/route.ts(1,29): error TS2307: Cannot find module 'livekit-server-sdk' or its corresponding type declarations.
+src/app/api/livekit-token/route.ts(47,23): error TS2339: Property 'message' does not exist on type '{}'.
+src/app/dashboard/_components/ChatInterface.tsx(100,28): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
+src/app/dashboard/_components/ChatInterface.tsx(124,35): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
+src/app/dashboard/_components/ChatInterface.tsx(180,22): error TS18046: 'partner.name' is of type 'unknown'.
+src/app/dashboard/_components/ChatInterface.tsx(183,103): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/app/dashboard/_components/ChatInterface.tsx(189,29): error TS2322: Type '{}' is not assignable to type 'ReactNode'.
+src/app/dashboard/_components/ChatInterface.tsx(217,20): error TS18046: 'selectedPartner.name' is of type 'unknown'.
+src/app/dashboard/_components/ChatInterface.tsx(221,124): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/app/dashboard/_components/ChatInterface.tsx(229,240): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/app/dashboard/_components/ChatInterface.tsx(264,88): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/app/dashboard/_components/ChatInterface.tsx(272,26): error TS2322: Type '{}' is not assignable to type 'Key | null | undefined'.
+src/app/dashboard/_components/ChatInterface.tsx(279,27): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/app/dashboard/_components/ChatInterface.tsx(282,37): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'string | number'.
+src/app/dashboard/_components/Header.tsx(115,27): error TS2322: Type 'unknown' is not assignable to type 'Key | null | undefined'.
+src/app/dashboard/_components/Header.tsx(124,103): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/app/dashboard/_components/Header.tsx(125,81): error TS2322: Type '{}' is not assignable to type 'ReactNode'.
+src/app/dashboard/_components/Sidebar.tsx(132,20): error TS2604: JSX element type 'item.icon' does not have any construct or call signatures.
+src/app/dashboard/_components/Sidebar.tsx(132,20): error TS2786: 'item.icon' cannot be used as a JSX component.
+  Its type 'unknown' is not a valid JSX element type.
+src/app/dashboard/_components/UserMenu.tsx(53,94): error TS2339: Property 'email' does not exist on type '{}'.
+src/app/dashboard/_components/VraChatbot.tsx(20,42): error TS2552: Cannot find name 'SpeechRecognition'. Did you mean 'SpeechRecognitionCtor'?
+src/app/dashboard/_components/VraChatbot.tsx(25,30): error TS2552: Cannot find name 'SpeechRecognition'. Did you mean 'SpeechRecognitionCtor'?
+src/app/dashboard/admin/accounts/page.tsx(91,20): error TS2339: Property 'toLowerCase' does not exist on type '{}'.
+src/app/dashboard/admin/accounts/page.tsx(92,21): error TS2339: Property 'toLowerCase' does not exist on type '{}'.
+src/app/dashboard/admin/accounts/page.tsx(141,20): error TS2322: Type 'unknown' is not assignable to type 'Key | null | undefined'.
+src/app/dashboard/admin/accounts/page.tsx(143,74): error TS2322: Type '{}' is not assignable to type 'ReactNode'.
+src/app/dashboard/admin/accounts/page.tsx(144,56): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/app/dashboard/admin/accounts/page.tsx(148,52): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'SetStateAction<string | null>'.
+src/app/dashboard/admin/accounts/page.tsx(160,55): error TS2322: Type 'unknown' is not assignable to type 'string'.
+src/app/dashboard/admin/accounts/page.tsx(160,71): error TS2322: Type 'unknown' is not assignable to type 'string'.
+src/app/dashboard/admin/accounts/page.tsx(170,48): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
+src/app/dashboard/admin/centers/[id]/page.tsx(30,17): error TS2345: Argument of type '{ id: string; } | undefined' is not assignable to parameter of type 'SetStateAction<Record<string, unknown> | null>'.
+  Type 'undefined' is not assignable to type 'SetStateAction<Record<string, unknown> | null>'.
+src/app/dashboard/admin/centers/[id]/page.tsx(99,9): error TS2739: Type 'Record<string, unknown>' is missing the following properties from type 'Center': id, name, email, status
+src/app/dashboard/admin/centers/[id]/page.tsx(106,27): error TS2741: Property 'email' is missing in type 'Record<string, unknown>' but required in type 'Center'.
+src/app/dashboard/admin/centers/[id]/page.tsx(108,24): error TS2322: Type 'Record<string, unknown>[]' is not assignable to type 'Manager[]'.
+  Type 'Record<string, unknown>' is missing the following properties from type 'Manager': uid, name, email
+src/app/dashboard/admin/centers/page.tsx(64,5): error TS18046: 'center.name' is of type 'unknown'.
+src/app/dashboard/admin/centers/page.tsx(65,5): error TS18046: 'center.email' is of type 'unknown'.
+src/app/dashboard/admin/centers/page.tsx(66,22): error TS2339: Property 'toLowerCase' does not exist on type '{}'.
+src/app/dashboard/admin/centers/page.tsx(128,25): error TS2322: Type 'unknown' is not assignable to type 'Key | null | undefined'.
+src/app/dashboard/admin/centers/page.tsx(128,41): error TS2739: Type 'Record<string, unknown>' is missing the following properties from type 'Center': id, name, email, status
+src/app/dashboard/admin/page.tsx(85,21): error TS2322: Type 'Record<string, unknown>[]' is not assignable to type 'Center[]'.
+  Type 'Record<string, unknown>' is missing the following properties from type 'Center': id, name, email, status
+src/app/dashboard/center/_components/ChildList.tsx(89,20): error TS2322: Type 'unknown' is not assignable to type 'Key | null | undefined'.
+src/app/dashboard/center/_components/ChildList.tsx(100,130): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/app/dashboard/center/_components/ChildList.tsx(107,163): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/app/dashboard/center/_components/ChildList.tsx(108,230): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/app/dashboard/center/_components/ChildList.tsx(122,59): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
+src/app/dashboard/center/_components/ChildList.tsx(148,29): error TS2322: Type '{}' is not assignable to type 'ReactNode'.
+src/app/dashboard/center/_components/ChildList.tsx(164,39): error TS2322: Type 'unknown' is not assignable to type 'Key | null | undefined'.
+src/app/dashboard/center/_components/ChildList.tsx(164,51): error TS2322: Type 'unknown' is not assignable to type 'string | number | readonly string[] | undefined'.
+src/app/dashboard/center/_components/ChildList.tsx(164,65): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/app/dashboard/center/_components/ChildList.tsx(168,57): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
+src/app/dashboard/center/_components/ChildList.tsx(178,57): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'SetStateAction<string | null>'.
+src/app/dashboard/center/_components/ChildList.tsx(198,27): error TS2322: Type '{}' is not assignable to type 'ReactNode'.
+src/app/dashboard/center/_components/ChildList.tsx(213,39): error TS2322: Type 'unknown' is not assignable to type 'Key | null | undefined'.
+src/app/dashboard/center/_components/ChildList.tsx(213,51): error TS2322: Type 'unknown' is not assignable to type 'string | number | readonly string[] | undefined'.
+src/app/dashboard/center/_components/ChildList.tsx(213,65): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/app/dashboard/center/_components/ChildList.tsx(217,61): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
+src/app/dashboard/center/_components/ChildList.tsx(227,61): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'SetStateAction<string | null>'.
+src/app/dashboard/center/_components/ExpertRoster.tsx(69,25): error TS2339: Property 'toLowerCase' does not exist on type '{}'.
+src/app/dashboard/center/_components/ExpertRoster.tsx(70,26): error TS2339: Property 'toLowerCase' does not exist on type '{}'.
+src/app/dashboard/center/_components/ExpertRoster.tsx(100,15): error TS2322: Type 'unknown' is not assignable to type 'Key | null | undefined'.
+src/app/dashboard/center/_components/ExpertRoster.tsx(112,144): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/app/dashboard/center/_components/ExpertRoster.tsx(119,21): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/app/dashboard/center/_components/ExpertRoster.tsx(127,54): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'SetStateAction<string | null>'.
+src/app/dashboard/center/_components/ExpertRoster.tsx(139,57): error TS2322: Type 'unknown' is not assignable to type 'string'.
+src/app/dashboard/center/_components/ExpertRoster.tsx(139,74): error TS2322: Type 'unknown' is not assignable to type 'string'.
+src/app/dashboard/center/_components/ExpertRoster.tsx(148,50): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
+src/app/dashboard/center/_components/ExpertRoster.tsx(164,55): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
+src/app/dashboard/center/_components/ParentList.tsx(93,20): error TS2322: Type 'unknown' is not assignable to type 'Key | null | undefined'.
+src/app/dashboard/center/_components/ParentList.tsx(100,97): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/app/dashboard/center/_components/ParentList.tsx(103,47): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/app/dashboard/center/_components/ParentList.tsx(106,28): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/app/dashboard/center/_components/ParentList.tsx(114,57): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'SetStateAction<string | null>'.
+src/app/dashboard/center/_components/ParentList.tsx(126,59): error TS2322: Type 'unknown' is not assignable to type 'string'.
+src/app/dashboard/center/_components/ParentList.tsx(126,76): error TS2322: Type 'unknown' is not assignable to type 'string'.
+src/app/dashboard/center/_components/ParentList.tsx(135,52): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
+src/app/dashboard/center/_components/ParentList.tsx(163,30): error TS2322: Type 'unknown' is not assignable to type 'Key | null | undefined'.
+src/app/dashboard/center/_components/ParentList.tsx(165,27): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/app/dashboard/center/_components/ParentList.tsx(181,37): error TS2322: Type 'unknown' is not assignable to type 'Key | null | undefined'.
+src/app/dashboard/center/_components/ParentList.tsx(181,48): error TS2322: Type 'unknown' is not assignable to type 'string | number | readonly string[] | undefined'.
+src/app/dashboard/center/_components/ParentList.tsx(181,61): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/app/dashboard/center/_components/ParentList.tsx(181,71): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/app/dashboard/center/_components/ParentList.tsx(185,53): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
+src/app/dashboard/center/_components/ParentList.tsx(200,53): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'SetStateAction<string | null>'.
+src/app/dashboard/center/children/[id]/page.tsx(30,18): error TS2345: Argument of type 'ChildProfile' is not assignable to parameter of type 'SetStateAction<Record<string, unknown> | null>'.
+  Type 'ChildProfile' is not assignable to type 'Record<string, unknown>'.
+    Index signature for type 'string' is missing in type 'ChildProfile'.
+src/app/dashboard/center/children/[id]/page.tsx(31,27): error TS2352: Conversion of type 'ChildProfile' to type 'Record<string, unknown>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Index signature for type 'string' is missing in type 'ChildProfile'.
+src/app/dashboard/center/children/[id]/page.tsx(32,45): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
+src/app/dashboard/center/children/[id]/page.tsx(33,38): error TS2345: Argument of type 'Expert[]' is not assignable to parameter of type 'SetStateAction<Record<string, unknown>[]>'.
+  Type 'Expert[]' is not assignable to type 'Record<string, unknown>[]'.
+    Type 'Expert' is not assignable to type 'Record<string, unknown>'.
+      Index signature for type 'string' is missing in type 'Expert'.
+src/app/dashboard/center/children/[id]/page.tsx(92,92): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/app/dashboard/center/children/[id]/page.tsx(92,93): error TS18047: 'child' is possibly 'null'.
+src/app/dashboard/center/children/[id]/page.tsx(94,53): error TS18047: 'child' is possibly 'null'.
+src/app/dashboard/center/children/[id]/page.tsx(114,74): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/app/dashboard/center/children/[id]/page.tsx(114,75): error TS18047: 'child' is possibly 'null'.
+src/app/dashboard/center/children/[id]/page.tsx(114,93): error TS18047: 'child' is possibly 'null'.
+src/app/dashboard/center/children/[id]/page.tsx(123,74): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/app/dashboard/center/children/[id]/page.tsx(123,75): error TS18047: 'child' is possibly 'null'.
+src/app/dashboard/center/children/[id]/page.tsx(141,20): error TS18047: 'child' is possibly 'null'.
+src/app/dashboard/center/children/[id]/page.tsx(146,16): error TS18047: 'child' is possibly 'null'.
+src/app/dashboard/center/children/[id]/page.tsx(147,60): error TS18047: 'child' is possibly 'null'.
+src/app/dashboard/center/children/[id]/page.tsx(149,24): error TS2322: Type '{}' is not assignable to type 'Key | null | undefined'.
+src/app/dashboard/center/children/[id]/page.tsx(149,29): error TS18047: 'child' is possibly 'null'.
+src/app/dashboard/center/children/[id]/page.tsx(152,40): error TS2339: Property 'charAt' does not exist on type '{}'.
+src/app/dashboard/center/children/[id]/page.tsx(155,101): error TS2322: Type '{}' is not assignable to type 'ReactNode'.
+src/app/dashboard/center/children/[id]/page.tsx(156,78): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/app/dashboard/center/children/[id]/page.tsx(160,53): error TS18047: 'child' is possibly 'null'.
+src/app/dashboard/center/children/[id]/page.tsx(160,53): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
+src/app/dashboard/center/children/[id]/page.tsx(161,49): error TS18047: 'child' is possibly 'null'.
+src/app/dashboard/center/children/[id]/page.tsx(164,40): error TS18047: 'child' is possibly 'null'.
+src/app/dashboard/center/children/page.tsx(28,41): error TS2345: Argument of type 'ChildProfile[]' is not assignable to parameter of type 'SetStateAction<Record<string, unknown>[]>'.
+  Type 'ChildProfile[]' is not assignable to type 'Record<string, unknown>[]'.
+    Type 'ChildProfile' is not assignable to type 'Record<string, unknown>'.
+      Index signature for type 'string' is missing in type 'ChildProfile'.
+src/app/dashboard/center/children/page.tsx(29,41): error TS2345: Argument of type 'Expert[]' is not assignable to parameter of type 'SetStateAction<Record<string, unknown>[]>'.
+  Type 'Expert[]' is not assignable to type 'Record<string, unknown>[]'.
+    Type 'Expert' is not assignable to type 'Record<string, unknown>'.
+      Index signature for type 'string' is missing in type 'Expert'.
+src/app/dashboard/center/children/page.tsx(30,41): error TS2345: Argument of type 'Parent[]' is not assignable to parameter of type 'SetStateAction<Record<string, unknown>[]>'.
+  Type 'Parent[]' is not assignable to type 'Record<string, unknown>[]'.
+    Type 'Parent' is not assignable to type 'Record<string, unknown>'.
+      Index signature for type 'string' is missing in type 'Parent'.
+src/app/dashboard/center/children/page.tsx(45,5): error TS18046: 'c.name' is of type 'unknown'.
+src/app/dashboard/center/children/page.tsx(46,5): error TS18046: 'c.linkCode' is of type 'unknown'.
+src/app/dashboard/center/experts/[id]/page.tsx(26,39): error TS2322: Type 'ChildProfile[]' is not assignable to type 'Record<string, unknown>[]'.
+  Type 'ChildProfile' is not assignable to type 'Record<string, unknown>'.
+    Index signature for type 'string' is missing in type 'ChildProfile'.
+src/app/dashboard/center/experts/[id]/page.tsx(47,70): error TS2339: Property 'status' does not exist on type '{}'.
+src/app/dashboard/center/experts/[id]/page.tsx(87,95): error TS18046: 'expert' is of type 'unknown'.
+src/app/dashboard/center/experts/[id]/page.tsx(89,17): error TS18046: 'expert' is of type 'unknown'.
+src/app/dashboard/center/experts/[id]/page.tsx(89,48): error TS18046: 'expert' is of type 'unknown'.
+src/app/dashboard/center/experts/[id]/page.tsx(97,13): error TS18046: 'expert' is of type 'unknown'.
+src/app/dashboard/center/experts/[id]/page.tsx(102,79): error TS18046: 'expert' is of type 'unknown'.
+src/app/dashboard/center/experts/[id]/page.tsx(118,92): error TS18046: 'expert' is of type 'unknown'.
+src/app/dashboard/center/experts/[id]/page.tsx(127,75): error TS18046: 'expert' is of type 'unknown'.
+src/app/dashboard/center/experts/[id]/page.tsx(150,26): error TS2322: Type 'unknown' is not assignable to type 'Key | null | undefined'.
+src/app/dashboard/center/experts/[id]/page.tsx(153,30): error TS18046: 'child.name' is of type 'unknown'.
+src/app/dashboard/center/experts/[id]/page.tsx(156,138): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/app/dashboard/center/experts/[id]/page.tsx(157,82): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/app/dashboard/center/experts/[id]/page.tsx(157,106): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/app/dashboard/center/experts/page.tsx(22,35): error TS2345: Argument of type 'Expert[]' is not assignable to parameter of type 'SetStateAction<Record<string, unknown>[]>'.
+  Type 'Expert[]' is not assignable to type 'Record<string, unknown>[]'.
+    Type 'Expert' is not assignable to type 'Record<string, unknown>'.
+      Index signature for type 'string' is missing in type 'Expert'.
+src/app/dashboard/center/page.tsx(38,38): error TS2345: Argument of type '{ totalExpert: number; totalChildren: number; totalParents: number; totalSessions: number; } | undefined' is not assignable to parameter of type 'SetStateAction<Record<string, unknown> | null>'.
+  Type 'undefined' is not assignable to type 'SetStateAction<Record<string, unknown> | null>'.
+src/app/dashboard/center/page.tsx(39,41): error TS2345: Argument of type 'Expert[]' is not assignable to parameter of type 'SetStateAction<Record<string, unknown>[]>'.
+  Type 'Expert[]' is not assignable to type 'Record<string, unknown>[]'.
+    Type 'Expert' is not assignable to type 'Record<string, unknown>'.
+      Index signature for type 'string' is missing in type 'Expert'.
+src/app/dashboard/center/page.tsx(40,44): error TS2345: Argument of type 'ChildProfile[]' is not assignable to parameter of type 'SetStateAction<Record<string, unknown>[]>'.
+  Type 'ChildProfile[]' is not assignable to type 'Record<string, unknown>[]'.

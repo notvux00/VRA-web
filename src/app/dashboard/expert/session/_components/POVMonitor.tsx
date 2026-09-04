@@ -4,7 +4,7 @@ import React from "react";
 import { LiveKitPOVViewer } from "@/components/livekit/LiveKitPOVViewer";
 
 interface POVMonitorProps {
-  telemetry?: any;
+  telemetry?: unknown;
   childName?: string;
   stream?: MediaStream | null;
   connectionState?: string;

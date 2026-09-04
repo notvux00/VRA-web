@@ -2,13 +2,45 @@
 
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { cookies } from "next/headers";
+import { unstable_cache } from "next/cache";
 import type {
   AILessonRecommendation,
   AIRecommendationCache,
   GenerateAIRecommendationsResult,
   RecommendationPriority,
+  ChildProfile,
+  Session,
 } from "@/types";
 
+const getCachedLessonLibrary = unstable_cache(
+  async () => {
+    const lessonsSnap = await adminDb.collection("lessons").get();
+    return lessonsSnap.docs.map((d) => {
+      const l = d.data();
+      return {
+        id: d.id,
+        lesson_id: l.lesson_id ?? d.id,
+        lesson_name: l.lesson_name ?? "",
+        level_name: l.level_name ?? "",
+        type: l.type ?? "",
+        description: l.description ?? "",
+        scenario: l.scenario ?? "",
+        min_age: l.min_age ?? 0,
+        duration_min: l.duration_min ?? 0,
+        thumbnail_url: l.thumbnail_url ?? null,
+        scene_name: l.scene_name ?? "",
+        target_skills: l.target_skills ?? [],
+        difficulty_level: l.difficulty_level ?? "",
+        prerequisites: l.prerequisites ?? [],
+      };
+    });
+  },
+  ["ai-all-lessons"],
+  {
+    revalidate: 86400, // 24 hours
+    tags: ["lessons"],
+  }
+);
 // ─── Constants ────────────────────────────────────────────────────────────────
 const SESSION_COOKIE_NAME = "session";
 const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
@@ -77,9 +109,9 @@ export async function getCachedAIRecommendations(
       insufficientData: cache.insufficientData,
       isDemo: cache.isDemo,
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("[getCachedAIRecommendations] error:", err);
-    return { success: false, error: err.message };
+    return { success: false, error: (err instanceof Error ? err.message : String(err)) };
   }
 }
 
@@ -129,12 +161,12 @@ export async function generateAIRecommendations(
           notes: s.notes ?? "",
           start_time: s.start_time ?? "",
           finish_time: s.finish_time ?? "",
-        };
+        } as unknown as Session;
       })
       .sort((a, b) => {
         // Mới nhất lên đầu
-        const ta = a.finish_time ? new Date(a.finish_time).getTime() : 0;
-        const tb = b.finish_time ? new Date(b.finish_time).getTime() : 0;
+        const ta = a.finish_time ? new Date(a.finish_time as string).getTime() : 0;
+        const tb = b.finish_time ? new Date(b.finish_time as string).getTime() : 0;
         return tb - ta;
       })
       .slice(0, MAX_SESSIONS);
@@ -142,27 +174,9 @@ export async function generateAIRecommendations(
     const basedOnSessionIds = sessions.map((s) => s.id);
     const insufficientData = sessions.length < MAX_SESSIONS;
 
-    // 3. Lấy danh mục bài học và lọc theo độ tuổi
-    const lessonsSnap = await adminDb.collection("lessons").get();
+    // 3. Lấy danh mục bài học (đã được cache ngầm 24h) và lọc theo độ tuổi
+    const allLessons = await getCachedLessonLibrary();
     const childAge: number = childData.age ?? 0;
-    const allLessons = lessonsSnap.docs.map((d) => {
-      const l = d.data();
-      return {
-        id: d.id,
-        lesson_id: l.lesson_id ?? d.id,
-        lesson_name: l.lesson_name ?? "",
-        level_name: l.level_name ?? "",
-        type: l.type ?? "",
-        description: l.description ?? "",
-        min_age: l.min_age ?? 0,
-        duration_min: l.duration_min ?? 0,
-        thumbnail_url: l.thumbnail_url ?? null,
-        scene_name: l.scene_name ?? "",
-        target_skills: l.target_skills ?? [],
-        difficulty_level: l.difficulty_level ?? "",
-        prerequisites: l.prerequisites ?? [],
-      };
-    });
     // Lọc bài học phù hợp tuổi để giảm kích thước payload
     const eligibleLessons = allLessons.filter((l) => l.min_age <= childAge);
     const lessonIds = new Set(eligibleLessons.map((l) => l.id));
@@ -179,18 +193,18 @@ export async function generateAIRecommendations(
       diagnosis_notes: childData.diagnosis_notes,
       sessionCount: childData.sessionCount,
       goals: childData.goals || [],
-    };
+    } as unknown as ChildProfile;
 
     // Chuẩn bị sessions cho AI: Xóa lesson_id để triệt tiêu khả năng AI nhắc đến ID trong câu văn
     const lessonMapAll = new Map(allLessons.map((l) => [l.id, l]));
-    const anonymizedSessions = sessions.map((s) => {
+    const anonymizedSessions = (sessions.map((s) => {
       const lessonInfo = lessonMapAll.get(s.lesson_id);
       const { lesson_id, ...rest } = s; // Xóa lesson_id
       return {
         ...rest,
         lesson_name: s.lesson_name || lessonInfo?.lesson_name || "Bài học VR",
       };
-    });
+    })) as unknown as Session[];
 
     // 5. Nếu thiếu API key → Demo Mode
     const apiKey = process.env.GEMINI_API_KEY;
@@ -278,9 +292,9 @@ export async function generateAIRecommendations(
 
     await saveCache(finalCache);
     return { ...toResult(finalCache), source: "gemini" };
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("[generateAIRecommendations] error:", err);
-    return { success: false, error: err.message ?? "Đã có lỗi xảy ra" };
+    return { success: false, error: (err instanceof Error ? err.message : String(err)) ?? "Đã có lỗi xảy ra" };
   }
 }
 
@@ -331,9 +345,9 @@ function toResult(cache: AIRecommendationCache): GenerateAIRecommendationsResult
 // ─── Gemini Caller ────────────────────────────────────────────────────────────
 async function callGemini(
   apiKey: string,
-  child: Record<string, any>,
-  sessions: Record<string, any>[],
-  lessons: Record<string, any>[],
+  child: ChildProfile,
+  sessions: Session[],
+  lessons: Record<string, unknown>[],
   childId: string,
   expertUid: string,
   basedOnSessionIds: string[],
@@ -355,6 +369,7 @@ Quy tắc bắt buộc:
 - Điều hướng độ khó (Scaffolding): Dựa vào điểm số (score) của các phiên học gần nhất, nếu trẻ hoàn thành xuất sắc (>80%) các bài ở mức độ 'Dễ', hãy thử thách bằng bài học mức 'Trung bình' hoặc 'Khó' có cùng target_skills. Nếu trẻ chật vật (điểm thấp, dùng nhiều hints), hãy giữ nguyên hoặc lùi lại bài học 'Dễ'.
 - Nhận diện lỗ hổng kỹ năng: Sử dụng target_skills của các bài học điểm thấp trong lịch sử để biết trẻ đang yếu kỹ năng gì, từ đó đề xuất bài học bù đắp.
 - Đặc biệt chú ý đến trường 'goals' trong hồ sơ trẻ. Nếu trẻ có mục tiêu cụ thể (ví dụ: 'Cải thiện giao tiếp', 'Tăng điểm tập trung'), hãy ƯU TIÊN HÀNG ĐẦU các bài học giúp trẻ đạt được mục tiêu đó.
+- Kết hợp đọc cả trường 'description' (thông điệp, bối cảnh tổng quan) và trường 'scenario' (kịch bản thật sự diễn ra bên trong VR - các bước, sự kiện). Việc kết hợp cả 2 sẽ giúp bạn hiểu toàn diện nội dung bài học. Lấy 'scenario' làm trọng tâm để đối chiếu với hồ sơ thể chất/cảm giác của trẻ (ví dụ: bài có tiếng động tĩnh không hợp trẻ nhạy cảm âm thanh). Nguồn dự phòng: Nếu 'scenario' rỗng, chỉ dùng 'description'.
 - Mọi lý do phân tích phải dựa trên bằng chứng từ dữ liệu hồ sơ, lịch sử phiên học và mục tiêu hiện tại.
 - Nếu dữ liệu không đủ để phân tích, vẫn đề xuất nhưng đặt insufficientData = true.
 - Trả về JSON hợp lệ, không có ký tự markdown, không có văn bản ngoài khối JSON.
@@ -424,30 +439,30 @@ Trả về JSON theo schema sau, KHÔNG kèm markdown:
 function buildDemoRecommendations(
   childId: string,
   expertUid: string,
-  lessons: Record<string, any>[],
-  sessions: Record<string, any>[],
+  lessons: Record<string, unknown>[],
+  sessions: Session[],
   basedOnSessionIds: string[],
   insufficientData: boolean
 ): AIRecommendationCache {
   // Lấy các bài học trẻ chưa học gần đây để ưu tiên gợi ý
   const recentLessonIds = new Set(sessions.map((s) => s.lesson_id));
-  const unplayed = lessons.filter((l) => !recentLessonIds.has(l.lesson_id));
-  const played = lessons.filter((l) => recentLessonIds.has(l.lesson_id));
+  const unplayed = lessons.filter((l) => !recentLessonIds.has(l.lesson_id as string));
+  const played = lessons.filter((l) => recentLessonIds.has(l.lesson_id as string));
   const pool = [...unplayed, ...played].slice(0, 5);
 
   const priorities: RecommendationPriority[] = ["high", "medium", "low"];
 
   const recommendations: AILessonRecommendation[] = pool.map((l, i) => ({
-    lessonId: l.id,
-    lessonTitle: l.lesson_name,
-    levelName: l.level_name,
-    type: l.type,
-    thumbnailUrl: l.thumbnail_url ?? null,
-    sceneName: l.scene_name ?? "",
-    difficultyLevel: l.difficulty_level ?? "Dễ",
-    targetSkill: l.type === "practical" ? "Kỹ năng thực hành và hoàn thành nhiệm vụ" : "Kỹ năng nhận thức và giao tiếp xã hội",
-    priority: priorities[Math.min(i, 2)],
-    confidence: parseFloat((0.85 - i * 0.08).toFixed(2)),
+    lessonId: (l.id as string) || "",
+    lessonTitle: (l.lesson_name as string) || "",
+    levelName: (l.level_name as string) || "",
+    type: (l.type as string) || "interaction",
+    thumbnailUrl: (l.thumbnail_url as string) || null,
+    sceneName: (l.scene_name as string) || "",
+    difficultyLevel: String(l.difficulty_level || "1"),
+    targetSkill: (l.target_skill as string) || "Giao tiếp cơ bản",
+    priority: priorities[i % 3],
+    confidence: Number((0.85 - i * 0.05).toFixed(2)),
     reason: sessions.length > 0
       ? `Dựa trên ${sessions.length} buổi học gần nhất, đây là bài học phù hợp để tiếp tục luyện tập. (⚙️ Chế độ Demo)`
       : `Trẻ chưa có lịch sử học. Đây là bài học phù hợp với hồ sơ ban đầu. (⚙️ Chế độ Demo)`,

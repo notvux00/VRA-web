@@ -54,10 +54,10 @@ export default function VRPairingForm({ childId }: VRPairingFormProps) {
         current.delete("session"); // Xoá session cũ (nếu có)
         router.push(`/dashboard/expert/connection?${current.toString()}`);
       }, 1500);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("VRPairingForm error:", err);
       setStatus("error");
-      setErrorMsg(err.message || "Lỗi kết nối. Vui lòng thử lại.");
+      setErrorMsg((err instanceof Error ? err.message : String(err)) || "Lỗi kết nối. Vui lòng thử lại.");
     }
   };
 

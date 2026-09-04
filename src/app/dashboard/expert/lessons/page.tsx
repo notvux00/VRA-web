@@ -11,7 +11,7 @@ interface Child {
   id: string;
   display_name?: string;
   name?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export default async function ExpertLessonsPage({ searchParams }: PageProps) {
@@ -46,7 +46,7 @@ export default async function ExpertLessonsPage({ searchParams }: PageProps) {
 
   return (
     <LessonsList
-      initialLessons={lessons}
+      initialLessons={lessons as any[]}
       child={child}
       pin={pin}
       isVRConnected={isVRConnected}

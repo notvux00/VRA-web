@@ -13,7 +13,7 @@ import { getChildDetail, getCenterExperts, unassignExpertFromChild } from "@/act
 export default function ChildDetailPage() {
   const { id } = useParams();
   const router = useRouter();
-  const [child, setChild] = useState<any>(null);
+  const [child, setChild] = useState<any | null>(null);
   const [experts, setExperts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -29,7 +29,7 @@ export default function ChildDetailPage() {
       if (childRes.success && childRes.child) {
         setChild(childRes.child);
         const childData = childRes.child as any;
-        const sRes = await getCenterExperts(childData.centerId);
+        const sRes = await getCenterExperts(childData.centerId as string);
         if (sRes.success) setExperts(sRes.experts || []);
       } else {
         setError(childRes.error || "Không tìm thấy thông tin trẻ");

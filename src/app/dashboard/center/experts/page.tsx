@@ -57,9 +57,7 @@ export default function CenterExpertPage() {
           <Loader2 className="animate-spin text-blue-600" size={32} />
         </div>
       ) : (
-        <div className="max-w-4xl">
-          <ExpertRoster experts={experts} onRefresh={fetchData} />
-        </div>
+        <ExpertRoster experts={experts} onRefresh={fetchData} />
       )}
 
       <AddExpertModal 

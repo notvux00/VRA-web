@@ -3,6 +3,7 @@
 import { adminDb, adminAuth } from "@/lib/firebase/admin";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { ChildProfile, ChildGoal, AlertProfile, AutoAlert, BehaviorLog } from "@/types";
 
 const SESSION_COOKIE_NAME = "session";
 
@@ -33,19 +34,19 @@ export async function getAssignedChildren() {
     const children = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
-    }));
+    } as ChildProfile));
     
     return { success: true, children };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching assigned children:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
 /**
  * Update goals for a child
  */
-export async function updateChildGoals(childId: string, goals: any[]) {
+export async function updateChildGoals(childId: string, goals: ChildGoal[]) {
   const session = await getSession();
   if (!session) return { success: false, error: "Unauthorized" };
 
@@ -70,8 +71,8 @@ export async function updateChildGoals(childId: string, goals: any[]) {
     revalidatePath(`/dashboard/parent/children/${childId}`);
     
     return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -110,9 +111,9 @@ export async function getExpertStats() {
         activeSessions: activeSessionsSnap.data().count,
       }
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching expert stats:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -136,18 +137,18 @@ export async function getAssignedChildDetail(childId: string) {
     
     return { 
       success: true, 
-      child: { id: doc.id, ...data } 
+      child: { id: doc.id, ...data } as ChildProfile
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching assigned child detail:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
 /**
  * Update the Alert Profile for a child
  */
-export async function updateAlertProfile(childId: string, alertProfile: any) {
+export async function updateAlertProfile(childId: string, alertProfile: AlertProfile) {
   const session = await getSession();
   if (!session) return { success: false, error: "Unauthorized" };
 
@@ -173,9 +174,9 @@ export async function updateAlertProfile(childId: string, alertProfile: any) {
     
     revalidatePath(`/dashboard/expert/stats?childId=${childId}`);
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error updating alert profile:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -188,8 +189,8 @@ export async function finalizeSession(childId: string, sessionId: string, data: 
   score: number,
   status: string,
   evaluation: string,
-  alerts: any[],
-  behaviorLogs: any[]
+  alerts: AutoAlert[],
+  behaviorLogs: BehaviorLog[]
 }) {
   const session = await getSession();
   if (!session) return { success: false, error: "Unauthorized" };
@@ -234,9 +235,9 @@ export async function finalizeSession(childId: string, sessionId: string, data: 
     revalidatePath("/dashboard/expert");
     
     return { success: true, sessionId };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error finalizing session:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -287,9 +288,9 @@ export async function updateDefaultLessonParams(childId: string, lessonParams: {
 
     revalidatePath(`/dashboard/expert/stats?childId=${childId}`);
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error updating default lesson params:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -297,7 +298,7 @@ export async function updateDefaultLessonParams(childId: string, lessonParams: {
  * Update the custom quick phrases for a child (Story 3.9)
  * Saves to childRef: { quick_phrases: Record<string, Record<string, string[]>> }
  */
-export async function updateChildQuickPhrases(childId: string, quickPhrases: Record<string, any>) {
+export async function updateChildQuickPhrases(childId: string, quickPhrases: Record<string, unknown>) {
   const session = await getSession();
   if (!session) return { success: false, error: "Unauthorized" };
 
@@ -319,9 +320,9 @@ export async function updateChildQuickPhrases(childId: string, quickPhrases: Rec
     });
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error updating child quick phrases:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -349,11 +350,11 @@ export async function syncAndGetChildPhrases(childId: string, lessonDocId: strin
         const lessonData = lessonDoc.data();
         const quests = lessonData?.quests || [];
         const questList: Array<{ quest_name: string; phrases: string[] }> = [];
-        quests.forEach((q: any) => {
-          const questName = q.title || q.name || q.id || "";
+        quests.forEach((q: Record<string, unknown>) => {
+          const questName = (q.title ?? q.name ?? q.id ?? "") as string;
           questList.push({
             quest_name: questName,
-            phrases: q.default_phrases || []
+            phrases: (q.default_phrases as string[]) || []
           });
         });
         
@@ -367,9 +368,9 @@ export async function syncAndGetChildPhrases(childId: string, lessonDocId: strin
     }
 
     return { success: true, phrases: quickPhrases[lessonDocId] || {} };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error syncing child quick phrases:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -378,7 +379,7 @@ export async function syncAndGetChildPhrases(childId: string, lessonDocId: strin
  */
 export async function importChildSettings(
   childId: string, 
-  settings: { quick_phrases?: Record<string, any>; default_lesson_params?: any }
+  settings: { quick_phrases?: Record<string, unknown>; default_lesson_params?: Record<string, unknown> }
 ) {
   const session = await getSession();
   if (!session) return { success: false, error: "Unauthorized" };
@@ -395,7 +396,7 @@ export async function importChildSettings(
       return { success: false, error: "Unauthorized: You are not assigned to this child" };
     }
 
-    const updates: any = {
+    const updates: Record<string, unknown> = {
       updatedAt: new Date().toISOString()
     };
     if (settings.quick_phrases) {
@@ -408,9 +409,9 @@ export async function importChildSettings(
     await childRef.update(updates);
     revalidatePath(`/dashboard/expert/stats?childId=${childId}`);
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error importing child settings:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 

@@ -6,11 +6,12 @@ import { getCenters, createCenter, getGlobalStats, updateCenterStatus, deleteCen
 import StatCards from "./_components/StatCards";
 import CentersTable from "./_components/CentersTable";
 import CreateCenterModal from "./_components/CreateCenterModal";
+import { Center } from "@/types";
 
 const EMPTY_CENTER = { name: "", managerName: "", email: "", password: "", address: "", phone: "", centerEmail: "" };
 
 export default function AdminDashboard() {
-  const [centers, setCenters] = useState<any[]>([]);
+  const [centers, setCenters] = useState<Center[]>([]);
   const [stats, setStats] = useState({ totalCenters: 0, totalLessons: 0, totalSessions: 0 });
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -21,7 +22,7 @@ export default function AdminDashboard() {
   const fetchData = async () => {
     setLoading(true);
     const [centersRes, statsRes] = await Promise.all([getCenters(), getGlobalStats()]);
-    if (centersRes.success) setCenters(centersRes.centers || []);
+    if (centersRes.success) setCenters((centersRes.centers || []) as any[]);
     if (statsRes.success) setStats(statsRes.stats);
     setLoading(false);
   };
@@ -29,7 +30,7 @@ export default function AdminDashboard() {
   useEffect(() => { 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData(); 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   const handleOnboard = async (e: React.FormEvent) => {

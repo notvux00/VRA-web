@@ -30,9 +30,9 @@ export async function getSchedules(childId: string): Promise<{ success: boolean;
     })) as Schedule[];
 
     return { success: true, schedules };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching schedules:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -47,9 +47,9 @@ export async function createSchedule(data: Omit<Schedule, "id" | "createdAt" | "
     revalidatePath("/dashboard/expert/schedule");
     
     return { success: true, id: docRef.id };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error creating schedule:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -63,9 +63,9 @@ export async function updateSchedule(id: string, data: Partial<Schedule>): Promi
     revalidatePath("/dashboard/expert/schedule");
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error updating schedule:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -76,8 +76,8 @@ export async function deleteSchedule(id: string): Promise<{ success: boolean; er
     revalidatePath("/dashboard/expert/schedule");
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error deleting schedule:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }

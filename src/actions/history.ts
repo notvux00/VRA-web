@@ -2,7 +2,7 @@
 
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { cookies } from "next/headers";
-import { Session } from "@/types";
+import { Session, FirestoreTimestamp } from "@/types";
 
 const SESSION_COOKIE_NAME = "session";
 
@@ -69,9 +69,9 @@ export async function getChildSessionHistory(childId: string): Promise<{ success
     });
 
     return { success: true, sessions };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching session history:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -101,15 +101,18 @@ export async function getSessionDetail(sessionId: string): Promise<{ success: bo
       }
     }
 
-    const st = (sessionData as any).start_time?.toDate?.() || new Date(sessionData.start_time);
-    const ft = (sessionData as any).finish_time?.toDate?.() || new Date(sessionData.finish_time);
+    const rawSt = sessionData.start_time;
+    const rawFt = sessionData.finish_time;
+    const st = (rawSt && typeof rawSt === 'object') ? (rawSt as { toDate: () => Date }).toDate() : new Date(rawSt as string);
+    const ft = (rawFt && typeof rawFt === 'object') ? (rawFt as { toDate: () => Date }).toDate() : new Date(rawFt as string);
     
-    let duration = sessionData.duration as any;
-    if (typeof duration === 'string' && duration.includes(':')) {
-      const [m, s] = duration.split(':').map(Number);
+    let duration: number = 0;
+    const rawDuration = sessionData.duration as string | number | undefined;
+    if (typeof rawDuration === 'string' && rawDuration.includes(':')) {
+      const [m, s] = rawDuration.split(':').map(Number);
       duration = m * 60 + s;
     } else {
-      duration = Number(duration) || 0;
+      duration = Number(rawDuration) || 0;
     }
     
     if (!duration && st && ft) {
@@ -125,8 +128,8 @@ export async function getSessionDetail(sessionId: string): Promise<{ success: bo
         finish_time: ft.toISOString(),
       }
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching session detail:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }

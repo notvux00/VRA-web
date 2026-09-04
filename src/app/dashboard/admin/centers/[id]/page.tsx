@@ -9,12 +9,15 @@ import CenterHeader from "./_components/CenterHeader";
 import CenterStatsPanel from "./_components/CenterStatsPanel";
 import ManagerList from "./_components/ManagerList";
 import AddManagerModal from "./_components/AddManagerModal";
+import { Center } from "@/types";
+
+interface Manager { uid: string; name: string; email: string; [key: string]: unknown; }
 
 export default function CenterDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const [center, setCenter] = useState<any>(null);
-  const [managers, setManagers] = useState<any[]>([]);
+  const [center, setCenter] = useState<Center | null>(null);
+  const [managers, setManagers] = useState<Manager[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newManager, setNewManager] = useState({ name: "", email: "", password: "" });
@@ -27,8 +30,8 @@ export default function CenterDetailPage({ params }: { params: Promise<{ id: str
     setLoading(true);
     const result = await getCenterDetails(id);
     if (result.success) {
-      setCenter(result.center);
-      setManagers(result.managers || []);
+      setCenter(result.center as unknown as Center);
+      setManagers((result.managers || []) as unknown as Manager[]);
     }
     setLoading(false);
   };

@@ -15,7 +15,7 @@ interface Child {
   display_name?: string;
   name?: string;
   sessionCount?: number;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export default async function ExpertDashboard({ searchParams }: PageProps) {

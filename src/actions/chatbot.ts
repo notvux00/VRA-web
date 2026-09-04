@@ -121,8 +121,8 @@ ${JSON.stringify(childContext, null, 2)}
 
     return { success: true, text: responseText };
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[Copilot Error]", error);
-    return { success: false, error: "Lỗi kết nối AI: " + error.message };
+    return { success: false, error: "Lỗi kết nối AI: " + (error instanceof Error ? error.message : String(error)) };
   }
 }

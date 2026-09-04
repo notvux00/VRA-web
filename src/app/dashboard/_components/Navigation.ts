@@ -37,6 +37,7 @@ export const expertNavigation = [
 
 export const adminNavigation = [
   { name: "Tổng quan", href: "/dashboard/admin", icon: ShieldCheck },
+  { name: "Quản lý Tài khoản", href: "/dashboard/admin/accounts", icon: Users },
   { name: "Trung tâm", href: "/dashboard/admin/centers", icon: Building },
 ];
 

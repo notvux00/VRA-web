@@ -33,8 +33,10 @@ export default async function ExpertChartsPage({ searchParams }: PageProps) {
   if (!result.success || !result.child) return notFound();
   
   const child = result.child as any;
-  const sessions = (sessionsResult as any).success ? ((sessionsResult as any).sessions || []) : [];
-  const radarData = (alertResult as any).success ? ((alertResult as any).radarData || []) : [];
+  type SessionsResult = { success: boolean; sessions?: Record<string, unknown>[] };
+  type AlertResult = { success: boolean; radarData?: Record<string, unknown>[] };
+  const sessions = (sessionsResult as SessionsResult).success ? ((sessionsResult as SessionsResult).sessions || []) : [];
+  const radarData = (alertResult as AlertResult).success ? ((alertResult as AlertResult).radarData || []) : [];
 
   return (
     <div className="p-4 sm:p-8 max-w-5xl mx-auto space-y-8 pb-20 animate-in fade-in duration-700">

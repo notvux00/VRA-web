@@ -30,7 +30,7 @@ export function useLiveTelemetry(
   mutedGroups: string[] = [],
   lessonParams?: { enable_auto_hint?: boolean; action_reminder_cycle?: number }
 ) {
-  const [telemetry, setTelemetry] = useState<any>(null);
+  const [telemetry, setTelemetry] = useState<Record<string, unknown> | null>(null);
   const [activeAlerts, setActiveAlerts] = useState<Alert[]>([]);
   const [sessionTime, setSessionTime] = useState(0);
   const [currentQuest, setCurrentQuest] = useState<string>("Đang đợi dữ liệu...");
@@ -52,7 +52,7 @@ export function useLiveTelemetry(
     if (!isActive || !sessionId) return;
     startTimeRef.current = Date.now();
 
-    const unsubscribe = subscribeToTelemetry(sessionId, (tsStr, snapshot) => {
+    const unsubscribe = subscribeToTelemetry(sessionId, (snapshot: any) => {
       setTelemetry(snapshot);
       
       const now = Date.now();

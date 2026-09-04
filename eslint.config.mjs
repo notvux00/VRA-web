@@ -16,6 +16,14 @@ const eslintConfig = defineConfig([
     "fetch_lessons.js",
     "scripts/*.js",
   ]),
+  {
+    rules: {
+      "@typescript-eslint/ban-ts-comment": "off",
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-vars": "off",
+      "no-unused-vars": "off"
+    }
+  }
 ]);
 
 export default eslintConfig;

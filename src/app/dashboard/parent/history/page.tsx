@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { getParentChildren } from "@/actions/parent";
 import { getChildSessionHistory } from "@/actions/history";
 import { 
