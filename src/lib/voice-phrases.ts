@@ -20,7 +20,7 @@ export function dedupePhrases(values: readonly unknown[]): string[] {
   for (const value of values) {
     const phrase = normalizePhrase(value);
     if (!phrase) continue;
-    const key = phrase.toLocaleLowerCase();
+    const key = phrase.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
     result.push(phrase);
@@ -55,7 +55,7 @@ export function validateAdditions(
     if (!Array.isArray(addition.phrases) || addition.phrases.length > MAX_ADDITIONS_PER_BINDING) {
       throw new Error(`addition_limit:${addition.binding_id}`);
     }
-    if (addition.phrases.some((phrase) => normalizePhrase(phrase) === null)) {
+    if (addition.phrases.some((phrase) => typeof phrase !== "string" || phrase.trim().length > MAX_PHRASE_LENGTH)) {
       throw new Error(`invalid_phrase:${addition.binding_id}`);
     }
   }
@@ -76,4 +76,26 @@ export function resolveEffectivePhrases(
       ...(additionsByBinding.get(quest.binding_id) || []),
     ]),
   }));
+}
+
+/** Validate and normalize user-owned values; empty input rows are discarded. */
+export function normalizeAdditions(values: readonly string[]): string[] {
+  if (!Array.isArray(values) || values.length > MAX_ADDITIONS_PER_BINDING) throw new Error("addition_limit");
+  if (values.some(value => typeof value !== "string" || value.trim().length > MAX_PHRASE_LENGTH)) throw new Error("invalid_phrase");
+  return dedupePhrases(values);
+}
+
+export function canonicalVoiceQuests(data: Record<string, unknown> | undefined): LessonVoiceQuestV2[] {
+  if (data?.voice_schema_version !== 2 || !Number.isSafeInteger(data.voice_revision) || (data.voice_revision as number) < 0 || !Array.isArray(data.quests)) throw new Error("invalid_voice_lesson");
+  const bindings = new Set<string>();
+  for (const quest of data.quests) {
+    if (!quest || typeof quest.binding_id !== "string" || !quest.binding_id.trim() || bindings.has(quest.binding_id)) throw new Error("duplicate_or_missing_binding");
+    bindings.add(quest.binding_id);
+  }
+  const quests = data.quests.filter(quest => Object.hasOwn(quest, "default_phrases")) as LessonVoiceQuestV2[];
+  validateAdditions(quests, []);
+  for (const quest of quests) {
+    if (typeof quest.goal !== "string" || !quest.goal.trim() || quest.default_phrases.some(value => typeof value !== "string" || value.trim().length > MAX_PHRASE_LENGTH)) throw new Error("invalid_lesson_quest");
+  }
+  return quests.map(({ binding_id, goal, title, default_phrases }) => ({ binding_id, goal, ...(title ? { title } : {}), default_phrases: dedupePhrases(default_phrases) }));
 }

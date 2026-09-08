@@ -43,6 +43,7 @@ function LiveSessionContent() {
   const router = useRouter();
 
   const [child, setChild] = useState<ChildProfile | null>(null);
+  const [generalPhrasesV2, setGeneralPhrasesV2] = useState<string[]>([]);
   const [lessonDetail, setLessonDetail] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -94,7 +95,9 @@ function LiveSessionContent() {
           if (lessonRes.success) {
             setLessonDetail(lessonRes.lesson);
             if ((lessonRes.lesson as any)?.voice_schema_version === 2) {
-              await getChildPhraseSetsV2(childId as string, lessonDocId);
+              const phrases = await getChildPhraseSetsV2(childId as string, lessonDocId);
+              if (!phrases.success) throw new Error(phrases.error);
+              setGeneralPhrasesV2(phrases.general.phrases);
             } else {
               await syncAndGetChildPhrases(childId as string, lessonDocId);
             }
@@ -410,7 +413,13 @@ function LiveSessionContent() {
               onTriggerVisualHint={handleTriggerVisualHint}
               onForceSkip={handleForceSkip}
             />
-            <NPCChatPanel
+            {lessonDetail?.voice_schema_version === 2 ? (
+              <section className="space-y-3 rounded-xl border p-4">
+                <h3 className="font-bold">Khích lệ chung</h3>
+                {generalPhrasesV2.map((phrase, index) => <button key={index} disabled={sendingNpc} onClick={() => handleSendNpcScript(phrase)} className="block rounded-lg border p-2">{phrase}</button>)}
+                {generalPhrasesV2.length === 0 && <p>Chưa có mẫu câu chung.</p>}
+              </section>
+            ) : <NPCChatPanel
               npcText={npcText}
               setNpcText={setNpcText}
               sendingNpc={sendingNpc}
@@ -419,7 +428,7 @@ function LiveSessionContent() {
               lessonDocId={searchParams.get("lesson") || ""}
               currentQuest={currentQuest}
               lessonQuests={lessonDetail?.quests || []}
-            />
+            />}
           </div>
         </div>
       </div>

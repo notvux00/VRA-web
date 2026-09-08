@@ -24,6 +24,7 @@ export interface LessonData {
   min_age: number;
   duration_min: number;
   quests?: QuestMetadata[];
+  voice_schema_version?: number;
   /**
    * Mô tả kịch bản thật diễn ra trong VR (các bước, sự kiện, điều kiện hoàn thành).
    * Admin điền thủ công trên Firestore Console.
@@ -58,6 +59,7 @@ export async function getLessons(): Promise<{ success: boolean; lessons?: Lesson
         min_age: d.min_age ?? 3,
         duration_min: d.duration_min ?? 15,
         quests: d.quests || [],
+        voice_schema_version: d.voice_schema_version ?? undefined,
         scenario: d.scenario || "",
       };
     });
@@ -97,6 +99,7 @@ export async function getLessonDetail(lessonId: string): Promise<{ success: bool
       min_age: d?.min_age ?? 3,
       duration_min: d?.duration_min ?? 15,
       quests: d?.quests || [],
+      voice_schema_version: d?.voice_schema_version ?? undefined,
       scenario: d?.scenario || "",
     };
 

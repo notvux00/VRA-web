@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import StartLessonButton from "./StartLessonButton";
 import { updateChildQuickPhrases } from "@/actions/expert";
-import { saveChildLessonPhraseSetV2 } from "@/actions/voice-phrases";
+import VoicePhraseEditorV2 from "./VoicePhraseEditorV2";
 
 interface QuestMetadata {
   id?: string;
@@ -160,25 +160,6 @@ export default function LessonsList({ initialLessons, child, pin, isVRConnected 
     setSaveStatus(prev => ({ ...prev, [levelId]: "idle" }));
     try {
       const levelPhrases = phrasesState[levelId] || getLevelPhrases(initialLessons.find(l => l.id === levelId)!);
-      const level = initialLessons.find(l => l.id === levelId)!;
-      if (level.voice_schema_version === 2) {
-        const questAdditions = (level.quests || []).map((quest) => {
-          const key = quest.id || quest.title;
-          const defaults = new Set((quest.default_phrases || []).map((phrase) => phrase.trim().toLocaleLowerCase()));
-          const values = ((levelPhrases as any)[key] || []) as string[];
-          return { binding_id: key, phrases: values.filter((phrase) => !defaults.has(phrase.trim().toLocaleLowerCase())) };
-        }).filter((entry) => entry.binding_id);
-        const result = await saveChildLessonPhraseSetV2({
-          childId: (child as any).id,
-          lessonId: levelId,
-          expectedRevision: 0,
-          questAdditions,
-          lessonQuests: (level.quests || []).map((quest) => ({ binding_id: quest.id || quest.title, title: quest.title, goal: quest.description || quest.title, default_phrases: quest.default_phrases || [] })),
-        });
-        if (!result.success) throw new Error(result.error);
-        setSaveStatus(prev => ({ ...prev, [levelId]: "success" }));
-        return;
-      }
       const updatedPhrases = { ...phrasesState, [levelId]: levelPhrases };
       
       const res = await updateChildQuickPhrases((child as Record<string, any>).id, updatedPhrases);
@@ -355,7 +336,10 @@ export default function LessonsList({ initialLessons, child, pin, isVRConnected 
       </div>
 
       {/* Modal Popup Cấu hình câu mẫu */}
-      {customizeLevel && (
+      {customizeLevel?.voice_schema_version === 2 && (
+        <VoicePhraseEditorV2 childId={(child as any).id} lessonId={customizeLevel.id} onClose={() => setCustomizeLevel(null)} />
+      )}
+      {customizeLevel && customizeLevel.voice_schema_version !== 2 && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-[2rem] shadow-2xl max-w-3xl w-full max-h-[85vh] flex flex-col overflow-hidden transform transition-all scale-100 duration-350 ease-out">
             {/* Header Modal */}

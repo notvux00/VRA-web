@@ -39,7 +39,6 @@ export interface SaveChildLessonPhraseSetV2 {
   lessonId: string;
   expectedRevision: number;
   questAdditions: QuestPhraseAdditionsV2[];
-  lessonQuests: LessonVoiceQuestV2[];
 }
 
 export interface SaveChildGeneralPhraseSetV2 {
