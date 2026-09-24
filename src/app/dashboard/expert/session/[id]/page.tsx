@@ -15,12 +15,73 @@ import { endLessonOnDevice, subscribeToVrHandshake, pushRemoteCommand } from "@/
 import { ChildProfile, AutoAlert, BehaviorLog } from "@/types";
 import { LiveKitRoomProvider } from "@/components/livekit/LiveKitRoomProvider";
 import { useLiveKitDataChannel, QuestStatusPayload } from "@/hooks/useLiveKitDataChannel";
+import { useLessonGraphRemoteV2 } from "@/hooks/useLessonGraphRemoteV2";
+import { resolveLessonRemoteUiModeV2 } from "@/lib/lesson-graph-remote-v2";
+import type { LessonCommandKindV2, LessonStateV2 } from "@/types/lesson-graph-v2";
+import type { LessonRemoteFeedbackV2 } from "@/lib/lesson-graph-remote-v2";
 
 import SessionHeader from "../../_components/live/SessionHeader";
 import RemoteControlPanel from "../../_components/live/RemoteControlPanel";
 import NPCChatPanel from "../../_components/live/NPCChatPanel";
 import AlertsFooter from "../../_components/live/AlertsFooter";
 
+function LessonGraphRemoteControlsV2({
+  state,
+  connected,
+  pending,
+  rejection,
+  onSend,
+}: {
+  state: LessonStateV2;
+  connected: boolean;
+  pending: boolean;
+  rejection: LessonRemoteFeedbackV2 | null;
+  onSend: (command: LessonCommandKindV2, bindingId?: string) => void;
+}) {
+  const [selectedHintBindingId, setSelectedHintBindingId] = useState("");
+  const hintBindings = state.bindings.filter((binding) => binding.can_verbal_hint || binding.can_visual_hint);
+  const selectedHintBinding = hintBindings.find((binding) => binding.binding_id === selectedHintBindingId) || hintBindings[0];
+  const canSend = connected && !pending;
+  const feedback = rejection === "UNCONFIRMED"
+    ? "No confirmation received. The graph state remains authoritative."
+    : rejection ? "Rejected: " + rejection
+    : pending ? "Waiting for the VR command result..."
+    : connected ? "Connected to VR." : "Disconnected. Reconnect to send commands.";
+
+  return (
+    <section aria-label="Lesson Graph V2 controls" className="space-y-3 rounded-xl border border-emerald-500/30 p-4">
+      <h3 className="font-bold text-emerald-300">Lesson Graph V2</h3>
+      <p className="text-sm">Current node: {state.node_type || "Node"} / {state.node_id} / #{state.node_index + 1}</p>
+      <p className="text-sm">Status: <span className="font-semibold">{state.status}</span></p>
+      <p className="text-xs text-zinc-500">Free-text NPC speech is unavailable in V2 mode; commands stay tied to the active lesson node.</p>
+      <div aria-live="polite" className="text-xs text-zinc-400">{feedback}</div>
+      {hintBindings.length > 1 && (
+        <label className="block space-y-1 text-sm">
+          <span>Hint target</span>
+          <select
+            aria-label="Hint target"
+            className="block w-full rounded border border-zinc-700 bg-zinc-900 p-2"
+            value={selectedHintBinding?.binding_id || ""}
+            onChange={(event) => setSelectedHintBindingId(event.target.value)}
+          >
+            {hintBindings.map((binding) => (
+              <option key={binding.binding_id} value={binding.binding_id}>
+                {binding.npc_binding_id || binding.binding_id}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      <div className="flex flex-wrap gap-2">
+        <button className="rounded border px-3 py-2 disabled:opacity-40" disabled={!canSend || state.status !== "running"} onClick={() => onSend("SKIP")}>Skip</button>
+        <button className="rounded border px-3 py-2 disabled:opacity-40" disabled={!canSend || state.status !== "running"} onClick={() => onSend("PAUSE")}>Pause</button>
+        <button className="rounded border px-3 py-2 disabled:opacity-40" disabled={!canSend || state.status !== "paused"} onClick={() => onSend("RESUME")}>Resume</button>
+        <button className="rounded border px-3 py-2 disabled:opacity-40" disabled={!canSend || state.status !== "running" || !selectedHintBinding?.can_verbal_hint} onClick={() => onSend("VERBAL_HINT", selectedHintBinding?.binding_id)}>Verbal hint</button>
+        <button className="rounded border px-3 py-2 disabled:opacity-40" disabled={!canSend || state.status !== "running" || !selectedHintBinding?.can_visual_hint} onClick={() => onSend("VISUAL_HINT", selectedHintBinding?.binding_id)}>Visual hint</button>
+      </div>
+    </section>
+  );
+}
 export default function LiveSessionPage() {
   const { id: sessionId } = useParams();
   const rawSessionId = (Array.isArray(sessionId) ? sessionId[0] : sessionId) || "";
@@ -166,6 +227,8 @@ function LiveSessionContent() {
   // 3. Telemetry Logic
   const [mutedGroups, setMutedGroups] = useState<string[]>([]);
   const validSessionId = (Array.isArray(sessionId) ? sessionId[0] : sessionId) || null;
+  const lessonGraphRemote = useLessonGraphRemoteV2(validSessionId);
+  const lessonRemoteMode = resolveLessonRemoteUiModeV2(lessonGraphRemote.identifiedV2, lessonGraphRemote.state, validSessionId);
   const { telemetry, activeAlerts, sessionTime, currentQuest } = useLiveTelemetry(
     isSessionActive && vrReady ? validSessionId : null,
     isSessionActive,
@@ -243,6 +306,15 @@ function LiveSessionContent() {
       console.error("Failed to send skip_quest command:", (e instanceof Error ? e.message : String(e)));
       showToast("Lỗi: Không thể gửi lệnh Skip Quest.");
     }
+  };
+
+  const handleSendLessonCommandV2 = async (command: LessonCommandKindV2, bindingId = "") => {
+    const result = await lessonGraphRemote.send(command, bindingId);
+    if (!result) {
+      showToast("Command unconfirmed or transport unavailable; no progress was assumed.");
+      return;
+    }
+    showToast(result.accepted ? "Command accepted by VR; waiting for authoritative state." : "Command rejected: " + result.reason);
   };
 
   const handleAdjustVolume = async (volume: number) => {
@@ -403,6 +475,8 @@ function LiveSessionContent() {
           className="bg-zinc-950 flex flex-col min-h-0 min-w-[25%] max-w-[65%] @container"
         >
           <div className="flex-1 grid grid-cols-1 @xl:grid-cols-2 gap-4 p-4 overflow-y-auto min-h-0">
+            {lessonRemoteMode === "legacy" ? (
+              <>
             <RemoteControlPanel
               volumeLevel={volumeLevel}
               onVolumeChange={(val: number) => {
@@ -429,6 +503,21 @@ function LiveSessionContent() {
               currentQuest={currentQuest}
               lessonQuests={lessonDetail?.quests || []}
             />}
+              </>
+            ) : lessonRemoteMode === "v2" && lessonGraphRemote.state ? (
+              <LessonGraphRemoteControlsV2
+                state={lessonGraphRemote.state}
+                connected={lessonGraphRemote.connected}
+                pending={lessonGraphRemote.pending}
+                rejection={lessonGraphRemote.rejection}
+                onSend={handleSendLessonCommandV2}
+              />
+            ) : (
+              <section aria-live="polite" className="space-y-2 rounded-xl border p-4">
+                <h3 className="font-bold">Lesson Graph V2</h3>
+                <p className="text-sm text-zinc-400">{lessonGraphRemote.connected ? "Waiting for validated V2 lesson state. Remote controls are paused." : "Waiting for the VR connection. Remote controls are paused."}</p>
+              </section>
+            )}
           </div>
         </div>
       </div>
