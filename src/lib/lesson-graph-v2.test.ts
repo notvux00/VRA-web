@@ -37,6 +37,22 @@ describe("lesson graph V2 wire contract", () => {
     expect(parseLessonStateV2({ ...JSON.parse(stateFixture), contract_version: "2" })).toBeNull();
   });
 
+  it.each(["running", "pausing", "paused", "completed", "failed", "cancelled"] as const)(
+    "retains node and activation identity in %s state snapshots",
+    (status) => {
+      const parsed = parseLessonStateV2({ ...state, status });
+      expect(parsed).toMatchObject({ node_id: "quest-1", activation_id: "activation-1", status });
+    },
+  );
+
+  it.each(["running", "pausing", "paused", "completed", "failed", "cancelled"] as const)(
+    "rejects blank node and activation identities in %s state snapshots",
+    (status) => {
+      expect(parseLessonStateV2({ ...state, status, node_id: " " })).toBeNull();
+      expect(parseLessonStateV2({ ...state, status, activation_id: "" })).toBeNull();
+    },
+  );
+
   it.each([
     ["missing version", { contract_version: undefined }],
     ["string version", { contract_version: "2" }],

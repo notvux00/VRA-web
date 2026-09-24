@@ -30,8 +30,8 @@ export function parseLessonStateV2(value: unknown): LessonStateV2 | null {
     || !nonblank(value.run_id) || !nonblank(value.graph_id)
     || !nonblank(value.lesson_id) || !nonblank(value.launch_token)
     || !integer(value.lesson_voice_revision) || !integer(value.child_phrase_revision)
-    || typeof value.node_id !== "string" || typeof value.node_type !== "string"
-    || !integer(value.node_index) || typeof value.activation_id !== "string"
+    || !nonblank(value.node_id) || typeof value.node_type !== "string"
+    || !integer(value.node_index) || !nonblank(value.activation_id)
     || !statuses.has(value.status as LessonRuntimeStatusV2)
     || typeof value.checkpoint_id !== "string" || !nonblank(value.updated_at_utc)
     || !integer(value.state_revision)
