@@ -6,13 +6,31 @@ import type {
   LessonCommandV2,
   LessonStateV2,
 } from "@/types/lesson-graph-v2";
-import { createLessonCommandV2, parseLessonStateV2 } from "@/lib/lesson-graph-v2";
+import {
+  createLessonCommandV2,
+  parseLessonStateV2,
+  selectLatestLessonStateV2,
+} from "@/lib/lesson-graph-v2";
 
 export const LESSON_REMOTE_TOPIC_V2 = "lesson-graph-v2.remote";
 export const LESSON_REMOTE_TIMEOUT_MS = 5000;
 
 export type LessonRemoteFeedbackV2 = LessonCommandReasonV2 | "UNCONFIRMED";
 export type LessonRemoteUiModeV2 = "legacy" | "v2-pending" | "v2";
+
+export interface LessonCommandNoResultOutcomeV2 {
+  session_id: string;
+  run_id?: string;
+  node_id?: string;
+  activation_id?: string;
+  command_id?: string;
+  command: LessonCommandKindV2;
+  binding_id: string;
+  accepted: null;
+  reason: LessonRemoteFeedbackV2;
+}
+
+export type LessonCommandOutcomeV2 = LessonCommandResultV2 | LessonCommandNoResultOutcomeV2;
 
 export interface ReliableLessonPacketOptionsV2 {
   reliable: true;
@@ -47,6 +65,7 @@ export interface LessonGraphRemoteSnapshotV2 {
   connected: boolean;
   pending: boolean;
   rejection: LessonRemoteFeedbackV2 | null;
+  commandOutcome: LessonCommandOutcomeV2 | null;
   identifiedV2: boolean;
 }
 
@@ -142,6 +161,7 @@ export class LessonGraphRemoteControllerV2 {
   private connected = false;
   private identifiedV2 = false;
   private rejection: LessonRemoteFeedbackV2 | null = null;
+  private commandOutcome: LessonCommandOutcomeV2 | null = null;
   private pendingCommand: PendingCommandV2 | null = null;
   private readonly sentCommandIds = new Set<string>();
   private readonly listeners = new Set<() => void>();
@@ -151,6 +171,7 @@ export class LessonGraphRemoteControllerV2 {
     connected: false,
     pending: false,
     rejection: null,
+    commandOutcome: null,
     identifiedV2: false,
   };
 
@@ -213,7 +234,6 @@ export class LessonGraphRemoteControllerV2 {
       this.identifiedV2 = true;
       const parsed = packet.contract_version === 2 ? parseLessonStateV2(candidate) : null;
       if (!parsed || parsed.session_id !== this.sessionId) {
-        this.state = null;
         this.emit();
         return;
       }
@@ -242,39 +262,30 @@ export class LessonGraphRemoteControllerV2 {
     bindingId = "",
   ): Promise<LessonCommandResultV2 | null> => {
     if (this.disposed || !this.connected || !this.sessionId || !this.state) {
-      this.rejection = "TRANSPORT_UNAVAILABLE";
-      this.emit();
-      return Promise.resolve(null);
+      return this.rejectAttempt("TRANSPORT_UNAVAILABLE", command, bindingId);
     }
     if (this.pendingCommand) {
-      this.rejection = "INVALID_STATE";
-      this.emit();
-      return Promise.resolve(null);
+      return this.rejectAttempt("INVALID_STATE", command, bindingId);
     }
 
     const eligibility = this.validateCommand(command, bindingId, this.state);
     if (eligibility) {
-      this.rejection = eligibility;
-      this.emit();
-      return Promise.resolve(null);
+      return this.rejectAttempt(eligibility, command, bindingId);
     }
 
     let payload: LessonCommandV2;
     try {
       payload = createLessonCommandV2(this.state, command, this.idFactory(), bindingId);
     } catch {
-      this.rejection = "MALFORMED";
-      this.emit();
-      return Promise.resolve(null);
+      return this.rejectAttempt("MALFORMED", command, bindingId);
     }
 
     if (this.sentCommandIds.has(payload.command_id)) {
-      this.rejection = "DUPLICATE";
-      this.emit();
-      return Promise.resolve(null);
+      return this.rejectAttempt("DUPLICATE", command, bindingId, payload.command_id);
     }
     this.sentCommandIds.add(payload.command_id);
     this.rejection = null;
+    this.commandOutcome = null;
 
     let resolveCompletion: (result: LessonCommandResultV2 | null) => void = () => {};
     const completion = new Promise<LessonCommandResultV2 | null>((resolve) => {
@@ -310,12 +321,14 @@ export class LessonGraphRemoteControllerV2 {
     this.connected = false;
     this.identifiedV2 = false;
     this.rejection = null;
+    this.commandOutcome = null;
     this.sentCommandIds.clear();
     this.snapshotValue = {
       state: null,
       connected: false,
       pending: false,
       rejection: null,
+      commandOutcome: null,
       identifiedV2: false,
     };
     this.listeners.clear();
@@ -348,25 +361,18 @@ export class LessonGraphRemoteControllerV2 {
 
   private applyState(incoming: LessonStateV2): void {
     if (incoming.session_id !== this.sessionId) return;
-    if (this.state && !this.newerState(incoming, this.state)) return;
+    const latest = selectLatestLessonStateV2(this.state, incoming, this.sessionId);
+    if (!latest || latest === this.state) return;
 
-    if (this.state && incoming.run_id !== this.state.run_id && this.pendingCommand) {
+    if (this.state && latest.run_id !== this.state.run_id && this.pendingCommand) {
       this.settlePending(null, "CANCELLED", false);
     }
-    this.state = incoming;
+    this.state = latest;
     this.emit();
   }
 
   private newerState(incoming: LessonStateV2, previous: LessonStateV2 | null): boolean {
-    if (!previous) return true;
-    if (incoming.run_id !== previous.run_id) {
-      const incomingTime = Date.parse(incoming.updated_at_utc);
-      const previousTime = Date.parse(previous.updated_at_utc);
-      return Number.isFinite(incomingTime) && Number.isFinite(previousTime)
-        ? incomingTime >= previousTime
-        : false;
-    }
-    return incoming.state_revision > previous.state_revision;
+    return selectLatestLessonStateV2(previous, incoming, this.sessionId) !== previous;
   }
 
   private matchesPending(result: LessonCommandResultV2, command: LessonCommandV2): boolean {
@@ -379,6 +385,41 @@ export class LessonGraphRemoteControllerV2 {
       && result.binding_id === command.binding_id;
   }
 
+  private createNoResultOutcome(
+    reason: LessonRemoteFeedbackV2,
+    command: LessonCommandKindV2,
+    bindingId: string,
+    commandId?: string,
+    target?: Pick<LessonCommandV2, "session_id" | "run_id" | "node_id" | "activation_id">,
+  ): LessonCommandNoResultOutcomeV2 {
+    const correlation = target ?? this.state;
+    return {
+      session_id: correlation?.session_id ?? this.sessionId ?? "",
+      ...(correlation ? {
+        run_id: correlation.run_id,
+        node_id: correlation.node_id,
+        activation_id: correlation.activation_id,
+      } : {}),
+      ...(commandId ? { command_id: commandId } : {}),
+      command,
+      binding_id: bindingId,
+      accepted: null,
+      reason,
+    };
+  }
+
+  private rejectAttempt(
+    reason: LessonRemoteFeedbackV2,
+    command: LessonCommandKindV2,
+    bindingId: string,
+    commandId?: string,
+  ): Promise<LessonCommandResultV2 | null> {
+    this.rejection = reason;
+    this.commandOutcome = this.createNoResultOutcome(reason, command, bindingId, commandId);
+    this.emit();
+    return Promise.resolve(null);
+  }
+
   private settlePending(
     result: LessonCommandResultV2 | null,
     rejection: LessonRemoteFeedbackV2 | null,
@@ -389,6 +430,13 @@ export class LessonGraphRemoteControllerV2 {
     this.pendingCommand = null;
     this.clock.clearTimeout(pending.timeout);
     this.rejection = rejection;
+    this.commandOutcome = result ?? this.createNoResultOutcome(
+      rejection ?? "UNCONFIRMED",
+      pending.command.command,
+      pending.command.binding_id,
+      pending.command.command_id,
+      pending.command,
+    );
     if (notify) this.emit();
     pending.resolve(result);
   }
@@ -408,6 +456,7 @@ export class LessonGraphRemoteControllerV2 {
       connected: this.connected,
       pending: this.pendingCommand !== null,
       rejection: this.rejection,
+      commandOutcome: this.commandOutcome,
       identifiedV2: this.identifiedV2,
     };
     this.listeners.forEach((listener) => listener());

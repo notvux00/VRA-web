@@ -24,6 +24,52 @@ function binding(value: unknown): value is LessonBindingV2 {
     && typeof value.can_visual_hint === "boolean";
 }
 
+interface UtcInstantV2 {
+  epochSeconds: number;
+  fractionalSeconds: string;
+}
+
+function parseUtcInstant(value: string): UtcInstantV2 | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?(Z|[+-]\d{2}:\d{2})$/i.exec(value);
+  if (!match) return null;
+
+  const [, yearText, monthText, dayText, hourText, minuteText, secondText, fraction = "", offsetText] = match;
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  const second = Number(secondText);
+  const utc = new Date(0);
+  utc.setUTCFullYear(year, month - 1, day);
+  utc.setUTCHours(hour, minute, second, 0);
+  if (utc.getUTCFullYear() !== year || utc.getUTCMonth() !== month - 1 || utc.getUTCDate() !== day
+    || utc.getUTCHours() !== hour || utc.getUTCMinutes() !== minute || utc.getUTCSeconds() !== second) return null;
+
+  let offsetMinutes = 0;
+  if (offsetText.toUpperCase() !== "Z") {
+    const offsetHours = Number(offsetText.slice(1, 3));
+    const offsetRemainderMinutes = Number(offsetText.slice(4, 6));
+    if (offsetHours > 23 || offsetRemainderMinutes > 59) return null;
+    const direction = offsetText[0] === "+" ? 1 : -1;
+    offsetMinutes = direction * (offsetHours * 60 + offsetRemainderMinutes);
+  }
+
+  return {
+    epochSeconds: utc.getTime() / 1000 - offsetMinutes * 60,
+    fractionalSeconds: fraction.replace(/0+$/, ""),
+  };
+}
+
+function compareUtcInstants(left: UtcInstantV2, right: UtcInstantV2): number {
+  if (left.epochSeconds !== right.epochSeconds) return left.epochSeconds < right.epochSeconds ? -1 : 1;
+  const precision = Math.max(left.fractionalSeconds.length, right.fractionalSeconds.length);
+  const leftFraction = left.fractionalSeconds.padEnd(precision, "0");
+  const rightFraction = right.fractionalSeconds.padEnd(precision, "0");
+  if (leftFraction === rightFraction) return 0;
+  return leftFraction < rightFraction ? -1 : 1;
+}
+
 export function parseLessonStateV2(value: unknown): LessonStateV2 | null {
   if (!record(value) || value.contract_version !== 2
     || !nonblank(value.session_id) || forbiddenPathChars.test(value.session_id)
@@ -65,6 +111,30 @@ export function parseLessonStateV2(value: unknown): LessonStateV2 | null {
       can_visual_hint: item.can_visual_hint,
     })),
   };
+}
+
+export function selectLatestLessonStateV2(
+  previous: LessonStateV2 | null,
+  incoming: unknown,
+  sessionId: string | null,
+): LessonStateV2 | null {
+  const current = sessionId && previous?.session_id === sessionId ? previous : null;
+  if (!sessionId) return null;
+
+  const candidate = parseLessonStateV2(incoming);
+  if (!candidate || candidate.session_id !== sessionId) return current;
+  if (!current) return candidate;
+
+  if (candidate.run_id === current.run_id && candidate.launch_token === current.launch_token) {
+    return candidate.state_revision > current.state_revision ? candidate : current;
+  }
+
+  const candidateTime = parseUtcInstant(candidate.updated_at_utc);
+  const currentTime = parseUtcInstant(current.updated_at_utc);
+  if (candidateTime === null || currentTime === null) return current;
+  const timeOrder = compareUtcInstants(candidateTime, currentTime);
+  if (timeOrder !== 0) return timeOrder > 0 ? candidate : current;
+  return candidate.state_revision > current.state_revision ? candidate : current;
 }
 
 export function createLessonCommandV2(

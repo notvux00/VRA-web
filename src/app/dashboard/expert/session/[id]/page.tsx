@@ -16,8 +16,17 @@ import { ChildProfile, AutoAlert, BehaviorLog } from "@/types";
 import { LiveKitRoomProvider } from "@/components/livekit/LiveKitRoomProvider";
 import { useLiveKitDataChannel, QuestStatusPayload } from "@/hooks/useLiveKitDataChannel";
 import { useLessonGraphRemoteV2 } from "@/hooks/useLessonGraphRemoteV2";
-import { resolveLessonRemoteUiModeV2 } from "@/lib/lesson-graph-remote-v2";
-import type { LessonCommandKindV2, LessonStateV2 } from "@/types/lesson-graph-v2";
+import { useLessonGraphTelemetryV2 } from "@/hooks/useLessonGraphTelemetryV2";
+import {
+  resolveLessonRemoteUiModeV2,
+  type LessonCommandOutcomeV2,
+} from "@/lib/lesson-graph-remote-v2";
+import type {
+  LessonAuditEventV2,
+  LessonCommandKindV2,
+  LessonStateV2,
+  NodeLogDataV2,
+} from "@/types/lesson-graph-v2";
 import type { LessonRemoteFeedbackV2 } from "@/lib/lesson-graph-remote-v2";
 
 import SessionHeader from "../../_components/live/SessionHeader";
@@ -28,33 +37,67 @@ import AlertsFooter from "../../_components/live/AlertsFooter";
 function LessonGraphRemoteControlsV2({
   state,
   connected,
+  stateConfirmed,
   pending,
   rejection,
+  commandOutcome,
+  nodeLogs,
+  auditEvents,
+  commandRejections,
+  telemetryError,
   onSend,
 }: {
   state: LessonStateV2;
   connected: boolean;
+  stateConfirmed: boolean;
   pending: boolean;
   rejection: LessonRemoteFeedbackV2 | null;
+  commandOutcome: LessonCommandOutcomeV2 | null;
+  nodeLogs: NodeLogDataV2[];
+  auditEvents: LessonAuditEventV2[];
+  commandRejections: LessonAuditEventV2[];
+  telemetryError: string | null;
   onSend: (command: LessonCommandKindV2, bindingId?: string) => void;
 }) {
   const [selectedHintBindingId, setSelectedHintBindingId] = useState("");
   const hintBindings = state.bindings.filter((binding) => binding.can_verbal_hint || binding.can_visual_hint);
   const selectedHintBinding = hintBindings.find((binding) => binding.binding_id === selectedHintBindingId) || hintBindings[0];
-  const canSend = connected && !pending;
-  const feedback = rejection === "UNCONFIRMED"
-    ? "No confirmation received. The graph state remains authoritative."
-    : rejection ? "Rejected: " + rejection
-    : pending ? "Waiting for the VR command result..."
+  const canSend = connected && stateConfirmed && !pending;
+  const commandTarget = commandOutcome
+    ? [
+      commandOutcome.run_id && `run ${commandOutcome.run_id}`,
+      commandOutcome.node_id && `node ${commandOutcome.node_id}`,
+      commandOutcome.activation_id && `activation ${commandOutcome.activation_id}`,
+    ].filter(Boolean).join(", ") || "the current session"
+    : "";
+  const feedback = pending ? "Waiting for the VR command result..."
+    : commandOutcome ? commandOutcome.accepted === true
+      ? `Accepted ${commandOutcome.command} (${commandOutcome.command_id}) for ${commandTarget}. Awaiting authoritative state.`
+      : commandOutcome.accepted === false
+        ? `Rejected ${commandOutcome.command} (${commandOutcome.command_id}): ${commandOutcome.reason} for ${commandTarget}.`
+        : commandOutcome.reason === "UNCONFIRMED"
+          ? `Unconfirmed ${commandOutcome.command}: ${commandOutcome.reason} for ${commandTarget}.`
+          : `${commandOutcome.command} not accepted: ${commandOutcome.reason} for ${commandTarget}.`
+    : rejection === "UNCONFIRMED"
+      ? "No confirmation received. The graph state remains authoritative."
+      : rejection ? "Rejected: " + rejection
+    : connected && !stateConfirmed ? "Waiting for the matching LiveKit state before commands are enabled."
     : connected ? "Connected to VR." : "Disconnected. Reconnect to send commands.";
+  const activeNodeEntry = auditEvents
+    .find((event) => event.event_type === "NODE_ENTERED"
+      && event.run_id === state.run_id
+      && event.node_id === state.node_id
+      && event.activation_id === state.activation_id);
 
   return (
     <section aria-label="Lesson Graph V2 controls" className="space-y-3 rounded-xl border border-emerald-500/30 p-4">
       <h3 className="font-bold text-emerald-300">Lesson Graph V2</h3>
       <p className="text-sm">Current node: {state.node_type || "Node"} / {state.node_id} / #{state.node_index + 1}</p>
       <p className="text-sm">Status: <span className="font-semibold">{state.status}</span></p>
+      <p className="text-xs text-zinc-400">Active since (UTC): {activeNodeEntry?.occurred_at_utc || state.updated_at_utc}</p>
       <p className="text-xs text-zinc-500">Free-text NPC speech is unavailable in V2 mode; commands stay tied to the active lesson node.</p>
       <div aria-live="polite" className="text-xs text-zinc-400">{feedback}</div>
+      {telemetryError && <p role="status" className="text-xs text-amber-300">Telemetry: {telemetryError}</p>}
       {hintBindings.length > 1 && (
         <label className="block space-y-1 text-sm">
           <span>Hint target</span>
@@ -79,6 +122,33 @@ function LessonGraphRemoteControlsV2({
         <button className="rounded border px-3 py-2 disabled:opacity-40" disabled={!canSend || state.status !== "running" || !selectedHintBinding?.can_verbal_hint} onClick={() => onSend("VERBAL_HINT", selectedHintBinding?.binding_id)}>Verbal hint</button>
         <button className="rounded border px-3 py-2 disabled:opacity-40" disabled={!canSend || state.status !== "running" || !selectedHintBinding?.can_visual_hint} onClick={() => onSend("VISUAL_HINT", selectedHintBinding?.binding_id)}>Visual hint</button>
       </div>
+      <div className="space-y-2 border-t border-zinc-800 pt-3">
+        <h4 className="text-sm font-semibold">Node history</h4>
+        {nodeLogs.length === 0 ? (
+          <p className="text-xs text-zinc-500">No V2 node history is recorded for this session yet.</p>
+        ) : (
+          <ol className="space-y-1 text-xs text-zinc-400">
+            {nodeLogs.map((log) => (
+              <li key={log.event_id}>
+                #{log.node_index + 1} {log.node_name || log.node_id}: {log.status}, {log.duration_seconds}s
+                ({log.entered_at_utc} – {log.exited_at_utc} UTC)
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
+      {commandRejections.length > 0 && (
+        <div className="space-y-2 border-t border-zinc-800 pt-3">
+          <h4 className="text-sm font-semibold">Recent rejected commands</h4>
+          <ul className="space-y-1 text-xs text-amber-300">
+            {commandRejections.slice(0, 5).map((event) => (
+              <li key={event.event_id}>
+                {event.command || "Command"}: {event.reason} ({event.occurred_at_utc} UTC)
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </section>
   );
 }
@@ -228,7 +298,22 @@ function LiveSessionContent() {
   const [mutedGroups, setMutedGroups] = useState<string[]>([]);
   const validSessionId = (Array.isArray(sessionId) ? sessionId[0] : sessionId) || null;
   const lessonGraphRemote = useLessonGraphRemoteV2(validSessionId);
-  const lessonRemoteMode = resolveLessonRemoteUiModeV2(lessonGraphRemote.identifiedV2, lessonGraphRemote.state, validSessionId);
+  const lessonGraphTelemetry = useLessonGraphTelemetryV2(validSessionId, lessonGraphRemote.state);
+  const lessonRemoteMode = resolveLessonRemoteUiModeV2(
+    lessonGraphRemote.identifiedV2 || lessonGraphTelemetry.state !== null,
+    lessonGraphTelemetry.state,
+    validSessionId,
+  );
+  const remoteStateMatchesTelemetry = Boolean(
+    lessonGraphRemote.state
+      && lessonGraphTelemetry.state
+      && lessonGraphRemote.state.session_id === lessonGraphTelemetry.state.session_id
+      && lessonGraphRemote.state.run_id === lessonGraphTelemetry.state.run_id
+      && lessonGraphRemote.state.launch_token === lessonGraphTelemetry.state.launch_token
+      && lessonGraphRemote.state.node_id === lessonGraphTelemetry.state.node_id
+      && lessonGraphRemote.state.activation_id === lessonGraphTelemetry.state.activation_id
+      && lessonGraphRemote.state.state_revision === lessonGraphTelemetry.state.state_revision,
+  );
   const { telemetry, activeAlerts, sessionTime, currentQuest } = useLiveTelemetry(
     isSessionActive && vrReady ? validSessionId : null,
     isSessionActive,
@@ -458,7 +543,9 @@ function LiveSessionContent() {
               />
             </div>
             <div className="absolute bottom-4 right-4 bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 backdrop-blur-md px-4 py-1.5 rounded font-bold text-xs uppercase tracking-widest shadow-[0_0_15px_rgba(16,185,129,0.2)] z-10">
-              {currentQuest}
+              {lessonRemoteMode === "v2" && lessonGraphTelemetry.state
+                ? `${lessonGraphTelemetry.state.node_type} / ${lessonGraphTelemetry.state.node_id}`
+                : lessonRemoteMode === "v2-pending" ? "Waiting for V2 lesson state" : currentQuest}
             </div>
           </div>
         </div>
@@ -504,12 +591,20 @@ function LiveSessionContent() {
               lessonQuests={lessonDetail?.quests || []}
             />}
               </>
-            ) : lessonRemoteMode === "v2" && lessonGraphRemote.state ? (
+            ) : lessonRemoteMode === "v2" && lessonGraphTelemetry.state ? (
               <LessonGraphRemoteControlsV2
-                state={lessonGraphRemote.state}
+                state={lessonGraphTelemetry.state}
                 connected={lessonGraphRemote.connected}
+                stateConfirmed={remoteStateMatchesTelemetry}
                 pending={lessonGraphRemote.pending}
                 rejection={lessonGraphRemote.rejection}
+                commandOutcome={lessonGraphRemote.commandOutcome?.session_id === validSessionId
+                  ? lessonGraphRemote.commandOutcome
+                  : null}
+                nodeLogs={lessonGraphTelemetry.nodeLogs}
+                auditEvents={lessonGraphTelemetry.auditEvents}
+                commandRejections={lessonGraphTelemetry.commandRejections}
+                telemetryError={lessonGraphTelemetry.error}
                 onSend={handleSendLessonCommandV2}
               />
             ) : (

@@ -1,5 +1,6 @@
 ﻿import { afterEach, describe, expect, it, vi } from "vitest";
 import type { LessonCommandResultV2, LessonStateV2 } from "@/types/lesson-graph-v2";
+import { selectLatestLessonStateV2 } from "@/lib/lesson-graph-v2";
 import {
   LESSON_REMOTE_TOPIC_V2,
   LessonGraphRemoteControllerV2,
@@ -97,6 +98,26 @@ describe("parseLessonCommandResultV2", () => {
   });
 });
 
+describe("selectLatestLessonStateV2", () => {
+  it("orders different runs by the full fractional UTC instant before comparing revisions", () => {
+    const earlierRun = { ...state, run_id: "run-old", launch_token: "launch-old", state_revision: 99,
+      updated_at_utc: "2026-09-24T08:00:00.1234567+00:00" };
+    const laterRun = { ...state, run_id: "run-new", launch_token: "launch-new", state_revision: 1,
+      updated_at_utc: "2026-09-24T08:00:00.1234568Z" };
+
+    expect(selectLatestLessonStateV2(laterRun, earlierRun, "session-1")).toEqual(laterRun);
+  });
+
+  it("treats equivalent offset timestamps as the same instant", () => {
+    const first = { ...state, run_id: "run-a", launch_token: "launch-a", state_revision: 3,
+      updated_at_utc: "2026-09-24T08:00:00.1234567+00:00" };
+    const equivalentInstant = { ...state, run_id: "run-b", launch_token: "launch-b", state_revision: 4,
+      updated_at_utc: "2026-09-24T10:00:00.1234567+02:00" };
+
+    expect(selectLatestLessonStateV2(first, equivalentInstant, "session-1")).toEqual(equivalentInstant);
+  });
+});
+
 describe("LessonGraphRemoteControllerV2", () => {
   it("requests authoritative state on connect over the reliable remote topic", () => {
     const { controller, published } = createHarness();
@@ -129,15 +150,17 @@ describe("LessonGraphRemoteControllerV2", () => {
       .toBe("v2-pending");
     controller.receive(statePacket(), LESSON_REMOTE_TOPIC_V2);
     expect(controller.snapshot.state).toEqual(state);
+    controller.receive(statePacket({ ...state, state_revision: 0 }), LESSON_REMOTE_TOPIC_V2);
+    expect(controller.snapshot.state).toEqual(state);
     controller.receive({
       contract_version: 2,
       event: "LESSON_STATE",
       state: { ...state, status: "waiting" },
     }, LESSON_REMOTE_TOPIC_V2);
     expect(controller.snapshot.identifiedV2).toBe(true);
-    expect(controller.snapshot.state).toBeNull();
+    expect(controller.snapshot.state).toEqual(state);
     expect(resolveLessonRemoteUiModeV2(controller.snapshot.identifiedV2, controller.snapshot.state, "session-1"))
-      .toBe("v2-pending");
+      .toBe("v2");
   });
 
   it("sends a command with the observed state and binding, without optimistic progress", async () => {
@@ -223,6 +246,34 @@ describe("LessonGraphRemoteControllerV2", () => {
     expect(controller.snapshot.pending).toBe(false);
   });
 
+  it("retains the correlated command result until a newer outcome or controller session reset", async () => {
+    const { controller } = createHarness();
+    controller.setConnected(true);
+    controller.receive(statePacket(), LESSON_REMOTE_TOPIC_V2);
+    const pause = controller.send("PAUSE");
+    const paused = { ...state, status: "paused" as const, state_revision: 2 };
+    const accepted = resultPacket({}, paused);
+
+    controller.receive(accepted, LESSON_REMOTE_TOPIC_V2);
+    await expect(pause).resolves.toEqual(accepted);
+    expect(controller.snapshot.commandOutcome).toEqual(accepted);
+
+    const resume = controller.send("RESUME");
+    expect(controller.snapshot.commandOutcome).toBeNull();
+    const rejected = resultPacket({
+      command: "RESUME",
+      command_id: "command-2",
+      accepted: false,
+      reason: "STALE_ACTIVATION",
+    }, paused);
+    controller.receive(rejected, LESSON_REMOTE_TOPIC_V2);
+    await expect(resume).resolves.toEqual(rejected);
+    expect(controller.snapshot.commandOutcome).toEqual(rejected);
+
+    controller.dispose();
+    expect(controller.snapshot.commandOutcome).toBeNull();
+  });
+
   it("marks a missing acknowledgement unconfirmed without changing state", async () => {
     vi.useFakeTimers();
     const { controller } = createHarness(5000);
@@ -233,6 +284,15 @@ describe("LessonGraphRemoteControllerV2", () => {
     await vi.advanceTimersByTimeAsync(5000);
 
     await expect(completion).resolves.toBeNull();
+    expect(controller.snapshot.commandOutcome).toMatchObject({
+      accepted: null,
+      reason: "UNCONFIRMED",
+      command: "PAUSE",
+      command_id: "command-1",
+      run_id: "run-1",
+      node_id: "quest-1",
+      activation_id: "activation-1",
+    });
     expect(controller.snapshot.rejection).toBe("UNCONFIRMED");
     expect(controller.snapshot.state).toEqual(state);
     expect(controller.snapshot.pending).toBe(false);
@@ -283,6 +343,84 @@ describe("LessonGraphRemoteControllerV2", () => {
     expect(controller.snapshot.rejection).toBe("TRANSPORT_UNAVAILABLE");
     await expect(controller.send("SKIP")).resolves.toBeNull();
     expect(published.filter(({ packet }) => packet.event === "LESSON_COMMAND")).toHaveLength(1);
+  });
+
+  it("returns the typed transport disposition with the pending command target", async () => {
+    const { controller } = createHarness();
+    controller.setConnected(true);
+    controller.receive(statePacket(), LESSON_REMOTE_TOPIC_V2);
+    const completion = controller.send("PAUSE");
+
+    controller.setConnected(false);
+
+    await expect(completion).resolves.toBeNull();
+    expect(controller.snapshot.commandOutcome).toMatchObject({
+      accepted: null,
+      reason: "TRANSPORT_UNAVAILABLE",
+      command: "PAUSE",
+      command_id: "command-1",
+      run_id: "run-1",
+      node_id: "quest-1",
+      activation_id: "activation-1",
+    });
+  });
+
+  it("returns run-switch cancellation for the command's original target", async () => {
+    const { controller } = createHarness();
+    controller.setConnected(true);
+    controller.receive(statePacket(), LESSON_REMOTE_TOPIC_V2);
+    const completion = controller.send("PAUSE");
+    const nextRun = {
+      ...state,
+      run_id: "run-2",
+      launch_token: "launch-2",
+      node_id: "quest-2",
+      activation_id: "activation-2",
+      updated_at_utc: "2026-09-24T00:01:00Z",
+      state_revision: 1,
+    };
+
+    controller.receive(statePacket(nextRun), LESSON_REMOTE_TOPIC_V2);
+
+    await expect(completion).resolves.toBeNull();
+    expect(controller.snapshot.commandOutcome).toMatchObject({
+      accepted: null,
+      reason: "CANCELLED",
+      command: "PAUSE",
+      command_id: "command-1",
+      run_id: "run-1",
+      node_id: "quest-1",
+      activation_id: "activation-1",
+    });
+  });
+
+  it("returns a separate INVALID_STATE disposition for a second attempt without changing the first target", async () => {
+    const { controller } = createHarness();
+    controller.setConnected(true);
+    controller.receive(statePacket(), LESSON_REMOTE_TOPIC_V2);
+    const firstAttempt = controller.send("PAUSE");
+    const secondAttempt = controller.send("SKIP");
+
+    await expect(secondAttempt).resolves.toBeNull();
+    expect(controller.snapshot.commandOutcome).toMatchObject({
+      accepted: null,
+      reason: "INVALID_STATE",
+      command: "SKIP",
+      run_id: "run-1",
+      node_id: "quest-1",
+      activation_id: "activation-1",
+    });
+    controller.setConnected(false);
+    await expect(firstAttempt).resolves.toBeNull();
+    expect(controller.snapshot.commandOutcome).toMatchObject({
+      accepted: null,
+      reason: "TRANSPORT_UNAVAILABLE",
+      command: "PAUSE",
+      command_id: "command-1",
+      run_id: "run-1",
+      node_id: "quest-1",
+      activation_id: "activation-1",
+    });
   });
 
   it("resets V2 identification when the page switches to a different session", () => {
