@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useMemo, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import { useRoomContext } from "@livekit/components-react";
 import { ConnectionState, RoomEvent } from "livekit-client";
 import {
@@ -29,6 +29,8 @@ export function useLessonGraphRemoteV2(sessionId: string | null) {
     controller.getSnapshot,
   );
 
+  const lifecycles = useRef(new Map<LessonGraphRemoteControllerV2, { generation: number; mounted: boolean }>());
+
   useEffect(() => {
     const handleData = (
       payload: Uint8Array,
@@ -56,7 +58,26 @@ export function useLessonGraphRemoteV2(sessionId: string | null) {
     };
   }, [controller, room]);
 
-  useEffect(() => () => controller.dispose(), [controller]);
+  useEffect(() => {
+    const activeLifecycles = lifecycles.current;
+    let current = activeLifecycles.get(controller);
+    if (!current) {
+      current = { generation: 0, mounted: false };
+      activeLifecycles.set(controller, current);
+    }
+    current.mounted = true;
+    const generation = ++current.generation;
+
+    return () => {
+      current.mounted = false;
+      queueMicrotask(() => {
+        if (current.generation === generation && !current.mounted) {
+          controller.dispose();
+          activeLifecycles.delete(controller);
+        }
+      });
+    };
+  }, [controller]);
 
   return {
     ...snapshot,
