@@ -80,6 +80,13 @@ function parseAuditEvent(value: unknown, sessionId?: string): LessonAuditEventV2
     && value.node_type === ""
     && value.activation_id === ""
     && value.node_index === -1;
+  const hasUnknownTargetRejection = record(value)
+    && value.event_type === "COMMAND_REJECTED"
+    && value.reason === "WRONG_NODE"
+    && nonblank(value.node_id)
+    && value.node_type === ""
+    && nonblank(value.activation_id)
+    && nonnegativeInteger(value.node_index);
   if (!record(value)
     || !nonblank(value.event_id)
     || !nonblank(value.event_type)
@@ -87,7 +94,7 @@ function parseAuditEvent(value: unknown, sessionId?: string): LessonAuditEventV2
     || !nonblank(value.run_id)
     || !nonblank(value.graph_id)
     || !nonblank(value.lesson_id)
-    || (!hasNode && !hasNoNode)
+    || (!hasNode && !hasNoNode && !hasUnknownTargetRejection)
     || !nonblank(value.occurred_at_utc)
     || !nonnegativeNumber(value.elapsed_seconds)
     || !string(value.status)

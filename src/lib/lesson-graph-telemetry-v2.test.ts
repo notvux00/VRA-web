@@ -37,6 +37,8 @@ const nodeLog = {
 
 const auditFixture = "{\"event_id\":\"event-1\",\"event_type\":\"NODE_COMPLETED\",\"session_id\":\"session-1\",\"run_id\":\"run-1\",\"graph_id\":\"graph-1\",\"lesson_id\":\"lesson-1\",\"node_id\":\"quest-1\",\"node_type\":\"Quest\",\"node_index\":2,\"activation_id\":\"activation-1\",\"occurred_at_utc\":\"2026-09-24T08:00:09.0000000+00:00\",\"elapsed_seconds\":14.0,\"status\":\"success\",\"command_id\":\"\",\"command\":\"\",\"binding_id\":\"\",\"reason\":\"\",\"launch_token\":\"launch-1\",\"lesson_voice_revision\":4,\"child_phrase_revision\":7}";
 const auditEvent = JSON.parse(auditFixture) as Record<string, unknown>;
+const unknownNodeRejectionFixture = "{\"event_id\":\"event-unknown-node\",\"event_type\":\"COMMAND_REJECTED\",\"session_id\":\"session-1\",\"run_id\":\"run-1\",\"graph_id\":\"graph-1\",\"lesson_id\":\"lesson-1\",\"node_id\":\"missing-node\",\"node_type\":\"\",\"node_index\":0,\"activation_id\":\"missing-activation\",\"occurred_at_utc\":\"2026-09-24T08:00:09.0000000+00:00\",\"elapsed_seconds\":14.0,\"status\":\"running\",\"command_id\":\"command-unknown\",\"command\":\"PAUSE\",\"binding_id\":\"\",\"reason\":\"WRONG_NODE\",\"launch_token\":\"launch-1\",\"lesson_voice_revision\":4,\"child_phrase_revision\":7}";
+const unknownNodeRejection = JSON.parse(unknownNodeRejectionFixture) as Record<string, unknown>;
 
 describe("Lesson Graph V2 telemetry consumption", () => {
   it("keeps legacy sessions with no node_logs readable", () => {
@@ -157,6 +159,20 @@ describe("Lesson Graph V2 telemetry consumption", () => {
       activation_id: "",
     };
     expect(parseLessonAuditEventsV2([lessonEvent])).toEqual([lessonEvent]);
+  });
+
+  it("lists Unity WRONG_NODE rejections that identify a target absent from the graph", () => {
+    const auditEvents = parseLessonAuditEventsV2([unknownNodeRejection], "session-1");
+    const commandRejections = auditEvents.filter(
+      (event) => event.event_type === "COMMAND_REJECTED" && event.reason.length > 0,
+    );
+
+    expect(auditEvents).toEqual([unknownNodeRejection]);
+    expect(commandRejections).toEqual([unknownNodeRejection]);
+    expect(parseLessonAuditEventsV2([{
+      ...unknownNodeRejection,
+      event_type: "NODE_COMPLETED",
+    }], "session-1")).toEqual([]);
   });
 
   it("cleans up prior-session subscriptions and ignores callbacks after a session switch", () => {
