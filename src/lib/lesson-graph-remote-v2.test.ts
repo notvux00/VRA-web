@@ -3,6 +3,7 @@ import type { LessonCommandResultV2, LessonStateV2 } from "@/types/lesson-graph-
 import {
   LESSON_REMOTE_TOPIC_V2,
   LessonGraphRemoteControllerV2,
+  parseLessonCommandResultV2,
   resolveLessonRemoteUiModeV2,
 } from "@/lib/lesson-graph-remote-v2";
 
@@ -74,6 +75,26 @@ function resultPacket(
 
 afterEach(() => {
   vi.useRealTimers();
+});
+
+describe("parseLessonCommandResultV2", () => {
+  it.each([
+    ["WRONG_RUN", { ...state, run_id: "runner-run", status: "paused" as const, state_revision: 2 }],
+    ["WRONG_SESSION", { ...state, session_id: "runner-session", status: "paused" as const, state_revision: 2 }],
+  ] as const)("accepts a %s rejection with the runner's authoritative identity", (reason, authoritativeState) => {
+    expect(parseLessonCommandResultV2(resultPacket({ accepted: false, reason }, authoritativeState)))
+      .toMatchObject({ accepted: false, reason, state: authoritativeState });
+  });
+
+  it("rejects mismatched runner identity for accepted results and unrelated rejections", () => {
+    const foreignRunState = { ...state, run_id: "runner-run" };
+
+    expect(parseLessonCommandResultV2(resultPacket({}, foreignRunState))).toBeNull();
+    expect(parseLessonCommandResultV2(resultPacket(
+      { accepted: false, reason: "STALE_ACTIVATION" },
+      foreignRunState,
+    ))).toBeNull();
+  });
 });
 
 describe("LessonGraphRemoteControllerV2", () => {
@@ -161,6 +182,25 @@ describe("LessonGraphRemoteControllerV2", () => {
     await expect(completion).resolves.toMatchObject({ accepted: false, reason: "STALE_ACTIVATION" });
     expect(controller.snapshot.rejection).toBe("STALE_ACTIVATION");
     expect(controller.snapshot.state).toEqual(state);
+  });
+
+  it.each([
+    ["WRONG_RUN", { ...state, run_id: "runner-run", status: "paused" as const, state_revision: 2 }],
+    ["WRONG_SESSION", { ...state, session_id: "runner-session", status: "paused" as const, state_revision: 2 }],
+  ] as const)("settles a %s rejection without adopting the foreign runner state", async (reason, authoritativeState) => {
+    const { controller } = createHarness();
+    controller.setConnected(true);
+    controller.receive(statePacket(), LESSON_REMOTE_TOPIC_V2);
+    const completion = controller.send("PAUSE");
+
+    controller.receive(resultPacket({ accepted: false, reason }, authoritativeState), LESSON_REMOTE_TOPIC_V2);
+    const snapshotAfterResult = controller.snapshot;
+    controller.dispose();
+
+    expect(snapshotAfterResult.pending).toBe(false);
+    await expect(completion).resolves.toMatchObject({ accepted: false, reason, state: authoritativeState });
+    expect(snapshotAfterResult.rejection).toBe(reason);
+    expect(snapshotAfterResult.state).toEqual(state);
   });
 
   it("ignores results from another session or run and settles a matching result only once", async () => {

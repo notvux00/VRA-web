@@ -107,7 +107,10 @@ export function parseLessonCommandResultV2(value: unknown): LessonCommandResultV
     || (!value.accepted && value.reason === "NONE")) return null;
 
   const state = parseLessonStateV2(value.state);
-  if (!state || state.session_id !== value.session_id || state.run_id !== value.run_id) return null;
+  const identityRejection = !value.accepted
+    && (value.reason === "WRONG_SESSION" || value.reason === "WRONG_RUN");
+  if (!state || (!identityRejection
+    && (state.session_id !== value.session_id || state.run_id !== value.run_id))) return null;
 
   return {
     contract_version: 2,
@@ -226,7 +229,11 @@ export class LessonGraphRemoteControllerV2 {
     const pending = this.pendingCommand;
     if (!result || !pending || !this.matchesPending(result, pending.command)) return;
 
-    this.state = this.newerState(result.state, this.state) ? result.state : this.state;
+    const resultStateMatchesCommand = result.state.session_id === pending.command.session_id
+      && result.state.run_id === pending.command.run_id;
+    if (resultStateMatchesCommand && this.newerState(result.state, this.state)) {
+      this.state = result.state;
+    }
     this.settlePending(result, result.accepted ? null : result.reason);
   };
 
