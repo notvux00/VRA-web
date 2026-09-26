@@ -11,6 +11,27 @@ export interface QuestStatusPayload {
   phrases_cached?: boolean;
 }
 
+export interface SpeakScriptPacketV2 {
+  contract_version: 2;
+  topic: "lesson-graph-v2.voice";
+  event: "SPEAK_SCRIPT";
+  activation_id: string;
+  sequence_id: string;
+  npc_binding_id: string;
+  text: string;
+}
+
+export interface SpeakScriptDonePacketV2 {
+  contract_version: 2;
+  topic: "lesson-graph-v2.voice";
+  event: "SPEAK_SCRIPT_DONE";
+  activation_id: string;
+  sequence_id: string;
+  npc_binding_id: string;
+  status: "SUCCESS" | "FAILED" | "CANCELLED";
+  reason?: string;
+}
+
 export function useLiveKitDataChannel(
   onQuestStatus?: (status: QuestStatusPayload) => void
 ) {
