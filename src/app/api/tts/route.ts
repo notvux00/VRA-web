@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { admin } from "@/lib/firebase/admin";
+import { admin, adminAuth } from "@/lib/firebase/admin";
 
 export async function POST(req: NextRequest) {
+  // Require valid session
+  const sessionCookie = req.cookies.get("session")?.value;
+  if (!sessionCookie) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  try {
+    await adminAuth.verifySessionCookie(sessionCookie, true);
+  } catch {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const { text, sessionId } = await req.json();
 

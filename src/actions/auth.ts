@@ -6,6 +6,7 @@ import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { redirect } from "next/navigation";
 import { QueryDocumentSnapshot, DocumentData } from "firebase-admin/firestore";
 import { getCollectionName } from "@/lib/utils/roles";
+import { requireRole, requireSession } from "@/lib/auth-guard";
 
 const SESSION_COOKIE_NAME = "session";
 const EXPIRES_IN = 60 * 60 * 24 * 5 * 1000; // 5 days
@@ -367,6 +368,7 @@ export async function getUserProfile(uid: string) {
 }
 
 export async function updateCenterStatus(centerId: string, status: "Active" | "Inactive") {
+  await requireRole("admin");
   try {
     await adminDb.collection("centers").doc(centerId).update({
       status: status,
@@ -380,6 +382,7 @@ export async function updateCenterStatus(centerId: string, status: "Active" | "I
 }
 
 export async function deleteCenter(centerId: string) {
+  await requireRole("admin");
   try {
     const centerDoc = await adminDb.collection("centers").doc(centerId).get();
     if (!centerDoc.exists) return { success: false, error: "Center not found" };
@@ -437,6 +440,7 @@ export async function getGlobalStats() {
  * Run this to fix accurate counts for all centers.
  */
 export async function syncAllCenterStats() {
+  await requireRole("admin");
   try {
     const centersSnap = await adminDb.collection("centers").get();
     
@@ -514,6 +518,7 @@ export async function getCenterManagers() {
  * Đổi mật khẩu cho bất kỳ user nào (dành cho Admin / Center Manager)
  */
 export async function resetUserPassword(uid: string, newPassword: string) {
+  await requireRole("admin", "center");
   try {
     if (!newPassword || newPassword.length < 6) {
       return { success: false, error: "Mật khẩu phải có ít nhất 6 ký tự." };
@@ -530,6 +535,7 @@ export async function resetUserPassword(uid: string, newPassword: string) {
  * Tạo tài khoản Admin mới
  */
 export async function createAdminAccount(data: { name: string; email: string; password: string; phone?: string }) {
+  await requireRole("admin");
   try {
     const userRecord = await adminAuth.createUser({
       email: data.email,
