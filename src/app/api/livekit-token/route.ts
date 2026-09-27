@@ -14,9 +14,9 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const apiKey = process.env.LIVEKIT_API_KEY || "API713e89647225";
-  const apiSecret = process.env.LIVEKIT_API_SECRET || "SECa713e89647225";
-  const wsUrl = process.env.LIVEKIT_URL || "wss://vra-9jrt51dr.livekit.cloud";
+  const apiKey = process.env.LIVEKIT_API_KEY;
+  const apiSecret = process.env.LIVEKIT_API_SECRET;
+  const wsUrl = process.env.LIVEKIT_URL;
 
   if (!apiKey || !apiSecret || !wsUrl) {
     return NextResponse.json(
