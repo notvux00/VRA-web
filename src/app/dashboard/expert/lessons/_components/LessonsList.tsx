@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import StartLessonButton from "./StartLessonButton";
 import { updateChildQuickPhrases } from "@/actions/expert";
+import { toProxyUrl } from "@/lib/utils/storage";
 
 interface QuestMetadata {
   id?: string;
@@ -232,7 +233,7 @@ export default function LessonsList({ initialLessons, child, pin, isVRConnected 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {grouped.map((group, groupIdx) => {
           const typeInfo = TYPE_LABELS[group.type] || TYPE_LABELS.practical;
-          const thumbnail = group.levels[0]?.thumbnail_url || null;
+          const thumbnail = toProxyUrl(group.levels[0]?.thumbnail_url) || null;
 
           return (
             <div
