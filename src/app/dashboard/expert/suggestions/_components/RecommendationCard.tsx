@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
 import type { AILessonRecommendation, RecommendationPriority } from "@/types";
 import { Target, Star, ChevronRight, X, BarChart2 } from "lucide-react";
 import StartLessonButton from "../../lessons/_components/StartLessonButton";
+import { toProxyUrl } from "@/lib/utils/storage";
 
 interface Props {
   rec: AILessonRecommendation;
@@ -46,13 +46,11 @@ export default function RecommendationCard({ rec, index, childId, pin }: Props) 
       {/* ── Thumbnail Area ── */}
       <div className="relative h-48 w-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
         {rec.thumbnailUrl ? (
-          <Image 
-            src={rec.thumbnailUrl} 
-            alt={rec.lessonTitle} 
-            fill
-            sizes="(max-width: 768px) 100vw, 300px"
-            priority={index < 4}
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={toProxyUrl(rec.thumbnailUrl) ?? ""}
+            alt={rec.lessonTitle}
+            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
            <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-zinc-500 to-transparent" />
@@ -131,12 +129,11 @@ export default function RecommendationCard({ rec, index, childId, pin }: Props) 
             <div className="flex items-start justify-between p-6 border-b border-zinc-100 dark:border-zinc-800">
               <div className="flex gap-4 items-center">
                 {rec.thumbnailUrl && (
-                  <Image 
-                    src={rec.thumbnailUrl} 
-                    alt="thumbnail" 
-                    width={64}
-                    height={64}
-                    className="rounded-xl object-cover" 
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={toProxyUrl(rec.thumbnailUrl) ?? ""}
+                    alt="thumbnail"
+                    className="w-16 h-16 rounded-xl object-cover flex-shrink-0"
                   />
                 )}
                 <div>

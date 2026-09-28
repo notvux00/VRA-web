@@ -2,7 +2,6 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
 import { 
   PlayCircle, Clock, BookOpen, Layers, 
   Beaker, GraduationCap, MapPin, Sliders, X,
@@ -245,13 +244,11 @@ export default function LessonsList({ initialLessons, child, pin, isVRConnected 
               {/* Thumbnail */}
               <div className="h-44 relative overflow-hidden bg-zinc-100 dark:bg-zinc-800 flex flex-col justify-center items-center">
                 {thumbnail ? (
-                  <Image
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
                     src={thumbnail}
                     alt={group.lessonName}
-                    fill
-                    sizes="(max-width: 768px) 100vw, 300px"
-                    priority={groupIdx < 4}
-                    className="object-cover group-hover:scale-110 transition-transform duration-700"
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   />
                 ) : (
                   <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-zinc-500 to-transparent" />
