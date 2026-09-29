@@ -109,22 +109,18 @@ export async function getChildSessions(childId: string) {
   }
 }
 
-// Utility to fetch sessions across multiple field names and potential index issues
-async function fetchSessionsForChild(childId: string) {
-  const targetId = childId.trim();
-  
-  // Attempt aggressive scan first for reliability if dataset is manageable
-  // In a real production app with millions of sessions, we would use indexes,
-  // but for this implementation, a scan of recent sessions is safer to avoid silent failures.
-  const snapshot = await adminDb.collection("sessions").orderBy("start_time", "desc").limit(500).get();
-  
-  const matches = snapshot.docs.filter(doc => {
-    const data = doc.data();
-    return data.child_profile_id === targetId || data.child_id === targetId || data.childId === targetId;
-  });
+// Fetch sessions cho một trẻ — dùng Firestore index thay vì full-scan
+// Yêu cầu composite index: sessions(child_profile_id ASC, start_time DESC)
+async function fetchSessionsForChild(childId: string, limitCount = 50) {
+  const snapshot = await adminDb.collection("sessions")
+    .where("child_profile_id", "==", childId.trim())
+    .orderBy("start_time", "desc")
+    .limit(limitCount)
+    .get();
 
-  return matches.map(doc => ({ id: doc.id, ...doc.data() })) as Session[];
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Session[];
 }
+
 
 export async function getChildStats(childId: string) {
   const session = await getSession();

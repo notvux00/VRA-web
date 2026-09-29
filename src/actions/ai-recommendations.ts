@@ -3,6 +3,7 @@
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { cookies } from "next/headers";
 import { unstable_cache } from "next/cache";
+import { checkRateLimit, formatRetryAfter } from "@/lib/rate-limiter";
 import type {
   AILessonRecommendation,
   AIRecommendationCache,
@@ -126,6 +127,15 @@ export async function generateAIRecommendations(
   const auth = await getAuthSession();
   if (!auth) return { success: false, error: "Unauthorized" };
 
+  // Rate limit: 5 lần generate / giờ / user
+  const rl = await checkRateLimit(auth.uid, "ai_recs", 5, 60 * 60 * 1000);
+  if (!rl.allowed) {
+    return {
+      success: false,
+      error: `Bạn đã gọi AI quá nhiều lần. Vui lòng thử lại sau ${formatRetryAfter(rl.retryAfterMs ?? 60000)}.`,
+    };
+  }
+
   try {
     // 1. Kiểm tra quyền
     const childDoc = await adminDb.collection("child_profiles").doc(childId).get();
@@ -222,6 +232,12 @@ export async function generateAIRecommendations(
     }
 
     // 6. Gọi Gemini 2.5 Flash
+    // Lấy các bài đã từng gợi ý từ cache cũ để tránh lặp lại
+    const prevCacheDoc = await adminDb.collection("ai_recommendations").doc(childId).get();
+    const previousRecommendationIds: string[] = prevCacheDoc.exists
+      ? ((prevCacheDoc.data()?.recommendations ?? []) as AILessonRecommendation[]).map((r) => r.lessonId)
+      : [];
+
     const geminiResult = await callGemini(
       apiKey,
       anonymizedChild,
@@ -230,7 +246,8 @@ export async function generateAIRecommendations(
       childId,
       auth.uid,
       basedOnSessionIds,
-      insufficientData
+      insufficientData,
+      previousRecommendationIds
     );
 
     // 7. Validate: lessonId phải tồn tại trong Firestore lessons
@@ -351,7 +368,8 @@ async function callGemini(
   childId: string,
   expertUid: string,
   basedOnSessionIds: string[],
-  insufficientData: boolean
+  insufficientData: boolean,
+  previousRecommendationIds: string[] = []
 ): Promise<AIRecommendationCache> {
   // Dynamic import để Next.js Server Action không bundle phía client
   const { GoogleGenerativeAI } = await import("@google/generative-ai");
@@ -376,14 +394,17 @@ Quy tắc bắt buộc:
 - Tất cả trường văn bản tự do (summary, targetSkill, reason, expectedBenefit, specialistNotes) PHẢI viết bằng tiếng Việt có dấu, văn phong lâm sàng ôn hòa, dễ hiểu với trị liệu viên Việt Nam.
 - CẤM TUYỆT ĐỐI VIỆC ĐƯA MÃ ID BÀI HỌC VÀO CÁC TRƯỜNG VĂN BẢN (reason, expectedBenefit, specialistNotes). Việc xuất hiện các mã như 'WashingHand_1', 'Farm_2' trong câu văn là VI PHẠM LỖI NGHIÊM TRỌNG. Thay vì dùng ID, CHỈ ĐƯỢC PHÉP dùng Tên bài học kết hợp với Cấp độ (Ví dụ: "Rửa tay cơ bản ở mức độ Dễ").`;
 
+  const previousSection = previousRecommendationIds.length > 0
+    ? `\n=== CÁC BÀI HỌC ĐÃ TỪNG GỢI Ý TRƯỚC (tránh lặp lại trừ khi thực sự cần thiết) ===\n${JSON.stringify(previousRecommendationIds)}\nLưu ý: Ưu tiên đề xuất các bài học KHÁC với danh sách trên. Chỉ lặp lại bài cũ khi trẻ có điểm thấp cần ôn tập.\n`
+    : "";
+
   const userPrompt = `Phân tích hồ sơ trẻ và lịch sử buổi học, sau đó gợi ý 3-5 bài học phù hợp nhất từ danh sách bài học được cung cấp.
 
 === HỒ SƠ TRẺ (ẩn danh) ===
 ${JSON.stringify(child, null, 2)}
 
 === LỊCH SỬ ${sessions.length} BUỔI HỌC GẦN NHẤT ===
-${JSON.stringify(sessions, null, 2)}
-
+${JSON.stringify(sessions, null, 2)}${previousSection}
 === DANH MỤC BÀI HỌC CÓ SẴN (chỉ chọn trong danh sách này) ===
 ${JSON.stringify(lessons, null, 2)}
 
@@ -408,11 +429,35 @@ Trả về JSON theo schema sau, KHÔNG kèm markdown:
   ]
 }`;
 
-  const result = await model.generateContent({
-    systemInstruction,
-    contents: [{ role: "user", parts: [{ text: userPrompt }] }],
-    generationConfig: { responseMimeType: "application/json" },
-  });
+  // Retry với exponential backoff khi Gemini quá tải (503/529)
+  const MAX_RETRIES = 3;
+  let lastError: unknown;
+  let result;
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      result = await model.generateContent({
+        systemInstruction,
+        contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+        generationConfig: { responseMimeType: "application/json" },
+      });
+      break; // Thành công → thoát vòng lặp
+    } catch (err: unknown) {
+      lastError = err;
+      const msg = err instanceof Error ? err.message : String(err);
+      const isOverloaded = msg.includes("503") || msg.includes("529") || msg.includes("overloaded") || msg.includes("high demand");
+
+      if (isOverloaded && attempt < MAX_RETRIES) {
+        const waitMs = 2000 * Math.pow(2, attempt - 1); // 2s, 4s, 8s
+        console.warn(`[Gemini] Overloaded, retry ${attempt}/${MAX_RETRIES} sau ${waitMs}ms...`);
+        await new Promise((res) => setTimeout(res, waitMs));
+        continue;
+      }
+      throw err; // Lỗi khác hoặc đã hết retry → ném lên
+    }
+  }
+
+  if (!result) throw lastError;
 
   const raw = result.response.text().trim();
   const parsed = JSON.parse(raw) as {
@@ -434,6 +479,7 @@ Trả về JSON theo schema sau, KHÔNG kèm markdown:
     isDemo: false,
   };
 }
+
 
 // ─── Demo Mode fallback (không cần API key) ───────────────────────────────────
 function buildDemoRecommendations(

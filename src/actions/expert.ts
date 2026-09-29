@@ -84,24 +84,25 @@ export async function getExpertStats() {
   if (!session) return { success: false, error: "Unauthorized" };
 
   try {
-    // 1. Total Assigned Children
-    const childrenSnap = await adminDb.collection("child_profiles")
-      .where("expertUid", "==", session.uid)
-      .count()
-      .get();
-    
-    // 2. Total Sessions Hosted by this Expert
-    const sessionsSnap = await adminDb.collection("sessions")
-      .where("hostedBy", "==", session.uid)
-      .count()
-      .get();
-
-    // 3. Active Sessions (Placeholder until status is fully implemented)
-    const activeSessionsSnap = await adminDb.collection("sessions")
-      .where("hostedBy", "==", session.uid)
-      .where("status", "==", "in-progress")
-      .count()
-      .get();
+    // Chạy 3 queries song song thay vì tuần tự
+    const [childrenSnap, sessionsSnap, activeSessionsSnap] = await Promise.all([
+      // 1. Total Assigned Children
+      adminDb.collection("child_profiles")
+        .where("expertUid", "==", session.uid)
+        .count()
+        .get(),
+      // 2. Total Sessions Hosted
+      adminDb.collection("sessions")
+        .where("hostedBy", "==", session.uid)
+        .count()
+        .get(),
+      // 3. Active Sessions
+      adminDb.collection("sessions")
+        .where("hostedBy", "==", session.uid)
+        .where("status", "==", "in-progress")
+        .count()
+        .get(),
+    ]);
 
     return {
       success: true,
@@ -115,6 +116,7 @@ export async function getExpertStats() {
     console.error("Error fetching expert stats:", error);
     return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
+
 }
 
 /**

@@ -152,7 +152,7 @@ export default async function SessionHistoryPage({ searchParams }: PageProps) {
                   <div className="hidden lg:block col-span-2 space-y-2 px-4">
                     <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest text-zinc-400">
                         <span>Tiến độ Quest</span>
-                        <span className="text-zinc-900 dark:text-white font-black">{questSuccess}/{questTotal}</span>
+                        <span className="text-zinc-900 dark:text-white font-black">{questTotal > 0 ? `${questSuccess}/${questTotal}` : "—"}</span>
                     </div>
                     <div className="h-2 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
                         <div 

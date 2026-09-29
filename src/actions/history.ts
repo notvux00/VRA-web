@@ -40,6 +40,7 @@ export async function getChildSessionHistory(childId: string): Promise<{ success
     const snapshot = await adminDb.collection("sessions")
       .where("child_profile_id", "==", childId)
       .orderBy("start_time", "desc")
+      .limit(100) // Giới hạn 100 session gần nhất
       .get();
 
     const sessions: Session[] = snapshot.docs.map(doc => {

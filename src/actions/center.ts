@@ -11,34 +11,25 @@ import { Expert, ChildProfile, Parent, Session } from "@/types";
  */
 export async function getCenterStats(centerId: string) {
   try {
-    // 1. Total Experts (expert)
-    const expertSnap = await adminDb.collection("experts")
-      .where("centerId", "==", centerId)
-      .count()
-      .get();
-    
-    // 2. Total Children
-    const childrenSnap = await adminDb.collection("child_profiles")
-      .where("centerId", "==", centerId)
-      .count()
-      .get();
-    
-    // 3. Total Sessions (Buổi học đã hoàn thành)
-    // Dùng get() và reduce để tính tổng an toàn thay vì AggregateField có thể bị lỗi tuỳ version SDK
-    const childrenSnapForSum = await adminDb.collection("child_profiles")
-      .where("centerId", "==", centerId)
-      .get();
-    
+    // Chạy song song 4 queries thay vì tuần tự
+    const [expertSnap, childrenSnap, childrenForSum, parentsSnap] = await Promise.all([
+      // 1. Total Experts
+      adminDb.collection("experts").where("centerId", "==", centerId).count().get(),
+      // 2. Total Children
+      adminDb.collection("child_profiles").where("centerId", "==", centerId).count().get(),
+      // 3. Sum sessionCount — chỉ lấy field cần, không lấy full doc
+      adminDb.collection("child_profiles")
+        .where("centerId", "==", centerId)
+        .select("sessionCount")
+        .get(),
+      // 4. Total Parents
+      adminDb.collection("parents").where("centerId", "==", centerId).count().get(),
+    ]);
+
     let totalSessions = 0;
-    childrenSnapForSum.forEach(doc => {
+    childrenForSum.forEach(doc => {
       totalSessions += (doc.data().sessionCount || 0);
     });
-
-    // 4. Total Parents
-    const parentsSnap = await adminDb.collection("parents")
-      .where("centerId", "==", centerId)
-      .count()
-      .get();
 
     return {
       success: true,
@@ -46,7 +37,7 @@ export async function getCenterStats(centerId: string) {
         totalExpert: expertSnap.data().count,
         totalChildren: childrenSnap.data().count,
         totalParents: parentsSnap.data().count,
-        totalSessions: totalSessions,
+        totalSessions,
       }
     };
   } catch (error: unknown) {
@@ -54,6 +45,7 @@ export async function getCenterStats(centerId: string) {
     return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
+
 
 /**
  * Fetch all Experts belonging to this center

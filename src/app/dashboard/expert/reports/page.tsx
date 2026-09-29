@@ -151,7 +151,7 @@ export default function ExpertReportsPage({ searchParams }: PageProps) {
   const stats = [
     { label: "Độ chính xác", value: `${accuracy}%`, icon: Target, color: "text-blue-600", bg: "bg-blue-50" },
     { label: "Thời lượng", value: session.duration >= 60 ? `${Math.floor(session.duration/60)}m ${Math.round(session.duration%60)}s` : `${Math.round(session.duration)}s`, icon: Timer, color: "text-amber-600", bg: "bg-amber-50" },
-    { label: "Nhiệm vụ đạt", value: `${questSuccess}/${questTotal}`, icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-50" },
+    { label: "Nhiệm vụ đạt", value: questTotal > 0 ? `${questSuccess}/${questTotal}` : "—", icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-50" },
     { label: "Loại bài tập", value: session.type === "practical" ? "Thực hành" : "Lý thuyết", icon: Zap, color: "text-purple-600", bg: "bg-purple-50" },
   ];
 

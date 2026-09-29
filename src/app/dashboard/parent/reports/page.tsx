@@ -95,7 +95,12 @@ export default function ParentReportsPage({ searchParams }: PageProps) {
     return (
       <div className="p-8 text-center space-y-4">
         <p className="text-rose-500 font-bold">{error || "Đã xảy ra lỗi khi tải báo cáo"}</p>
-        <Link href="/dashboard/parent/history" className="text-blue-500 hover:underline">Quay lại</Link>
+        <Link
+          href={childId ? `/dashboard/parent/history?childId=${childId}` : "/dashboard/parent/history"}
+          className="text-blue-500 hover:underline"
+        >
+          Quay lại
+        </Link>
       </div>
     );
   }
@@ -196,7 +201,7 @@ export default function ParentReportsPage({ searchParams }: PageProps) {
             </div>
             <div>
                <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-0.5">Nhiệm vụ đạt</p>
-               <p className="text-2xl font-black tracking-tighter">{questSuccess}/{questTotal}</p>
+               <p className="text-2xl font-black tracking-tighter">{questTotal > 0 ? `${questSuccess}/${questTotal}` : "—"}</p>
             </div>
          </div>
 
