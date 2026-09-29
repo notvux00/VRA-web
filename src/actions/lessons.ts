@@ -40,7 +40,7 @@ export interface LessonData {
  */
 export async function getLessons(): Promise<{ success: boolean; lessons?: LessonData[]; error?: string }> {
   try {
-    const snapshot = await adminDb.collection("lessons").get();
+    const snapshot = await adminDb.collection("lessons").limit(200).get(); // safety cap
 
     const lessons: LessonData[] = snapshot.docs.map((doc) => {
       const d = doc.data();

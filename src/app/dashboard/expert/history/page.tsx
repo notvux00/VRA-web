@@ -18,12 +18,13 @@ import React from "react";
 import { Session } from "@/types";
 
 interface PageProps {
-  searchParams: Promise<{ childId?: string }>;
+  searchParams: Promise<{ childId?: string; after?: string }>;
 }
 
 export default async function ExpertHistoryPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const childId = params.childId;
+  const after = params.after;
 
   if (!childId) {
     return (
@@ -41,7 +42,8 @@ export default async function ExpertHistoryPage({ searchParams }: PageProps) {
 
   const { children } = await getAssignedChildren() as { children: Record<string, unknown>[] | undefined };
   const child = children?.find(c => c.id === childId);
-  const { sessions, success, error } = await getChildSessionHistory(childId);
+  const PAGE_SIZE = 20;
+  const { sessions, success, error, hasMore, lastId } = await getChildSessionHistory(childId, PAGE_SIZE, after);
 
   // Calculate quick stats
   const totalSessions = sessions?.length || 0;

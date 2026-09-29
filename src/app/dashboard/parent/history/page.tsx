@@ -12,11 +12,11 @@ import Link from "next/link";
 import { Session } from "@/types";
 
 interface PageProps {
-  searchParams: Promise<{ childId?: string }>;
+  searchParams: Promise<{ childId?: string; after?: string }>;
 }
 
 export default async function SessionHistoryPage({ searchParams }: PageProps) {
-  const { childId: currentChildId } = await searchParams;
+  const { childId: currentChildId, after } = await searchParams;
   const { children, success: listSuccess } = await getParentChildren() as unknown as { children: import("@/types").ChildProfile[], success: boolean };
 
   if (!listSuccess || !children || children.length === 0) {
@@ -49,7 +49,8 @@ export default async function SessionHistoryPage({ searchParams }: PageProps) {
   const selectedChild = children.find(c => c.id === currentChildId);
   if (!selectedChild) return notFound();
 
-  const { sessions, success: sessionSuccess, error } = await getChildSessionHistory(currentChildId);
+  const PAGE_SIZE = 20;
+  const { sessions, success: sessionSuccess, error, hasMore, lastId } = await getChildSessionHistory(currentChildId, PAGE_SIZE, after);
 
   // Calculate quick stats
   const totalSessions = sessions?.length || 0;

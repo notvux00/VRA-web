@@ -3,69 +3,46 @@
 import { adminDb } from "@/lib/firebase/admin";
 import { Session, AutoAlert } from "@/types";
 
-// Utility to fetch sessions across multiple field names
-async function fetchSessionsForChild(childId: string) {
-  const targetId = childId.trim();
-  const snapshot = await adminDb.collection("sessions").orderBy("start_time", "desc").limit(500).get();
-  
-  const matches = snapshot.docs.filter(doc => {
-    const data = doc.data();
-    return data.child_profile_id === targetId || data.child_id === targetId || data.childId === targetId;
-  });
-
-  return matches.map(doc => ({ id: doc.id, ...doc.data() } as Session));
-}
-
 /**
- * Shared Analytics Action for both Parent and Expert Dashboards
- * Focuses on the LAST 5 SESSIONS with high-sensitivity weights
+ * Shared Analytics Action for both Parent and Expert Dashboards.
+ * Uses .where(child_profile_id) directly — no full-collection scan.
  */
 export async function getChildAlertStats(childId: string) {
   try {
-    const sessions = await fetchSessionsForChild(childId);
-    
-    // Focus on LAST 5 SESSIONS for maximum responsiveness
-    const recentSessions = sessions.slice(0, 5);
-    const totalRecent = recentSessions.length || 1;
-    const totalPenalties = { chudoong: 0, tutin: 0, taptrung: 0, ondinh: 0, binhtinh: 0 };
+    const snapshot = await adminDb
+      .collection("sessions")
+      .where("child_profile_id", "==", childId.trim())
+      .orderBy("start_time", "desc")
+      .limit(5)
+      .get();
 
-    recentSessions.forEach((s: Session) => {
-      const alerts = s.auto_alerts || [];
-      
-      // 1. CHỦ ĐỘNG (idle - Low: -30đ mỗi 5s, max -100đ)
-      const idleDuration = (alerts as AutoAlert[]).filter((a) => a.type === 'idle').reduce((acc: number, a) => acc + (a.duration_sec || 0), 0);
-      totalPenalties.chudoong += Math.min(100, Math.floor(idleDuration / 5) * 30);
+    const sessions = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Session));
+    const total = sessions.length || 1;
+    const p = { chudoong: 0, tutin: 0, taptrung: 0, ondinh: 0, binhtinh: 0 };
 
-      // 2. TỰ TIN (hesitation - Low: -60đ/lần, max -100đ)
-      const hesitationCount = (alerts as AutoAlert[]).filter((a) => a.type === 'hesitation').length;
-      totalPenalties.tutin += Math.min(100, hesitationCount * 60);
-
-      // 3. TẬP TRUNG (distraction - Medium: -50đ mỗi 5s, max -100đ)
-      const distractionDuration = (alerts as AutoAlert[]).filter((a) => a.type === 'distraction').reduce((acc: number, a) => acc + (a.duration_sec || 0), 0);
-      totalPenalties.taptrung += Math.min(100, Math.floor(distractionDuration / 5) * 50);
-
-      // 4. ỔN ĐỊNH (stimming_proxy - Medium: -80đ/lần, max -100đ)
-      const stimmingCount = (alerts as AutoAlert[]).filter((a) => a.type === 'stimming_proxy').length;
-      totalPenalties.ondinh += Math.min(100, stimmingCount * 80);
-
-      // 5. BÌNH TĨNH (freeze/meltdown - High: -150đ/lần, max -100đ -> thực tế là vế trái sẽ bị cap ở 100)
-      const stressCount = (alerts as AutoAlert[]).filter((a) =>
-        a.type === 'freeze' || a.type === 'meltdown_proxy' || a.group === 'stress_overwhelm'
-      ).length;
-      totalPenalties.binhtinh += Math.min(100, stressCount * 150);
+    sessions.forEach((s) => {
+      const alerts = (s.auto_alerts || []) as AutoAlert[];
+      const dur = (a: AutoAlert) => (a.duration_sec as number) || 0;
+      const idleSec = alerts.filter(a => a.type === "idle").reduce((acc, a) => acc + dur(a), 0);
+      p.chudoong  += Math.min(100, Math.floor(idleSec / 5) * 30);
+      p.tutin     += Math.min(100, alerts.filter(a => a.type === "hesitation").length * 60);
+      const distSec = alerts.filter(a => a.type === "distraction").reduce((acc, a) => acc + dur(a), 0);
+      p.taptrung  += Math.min(100, Math.floor(distSec / 5) * 50);
+      p.ondinh    += Math.min(100, alerts.filter(a => a.type === "stimming_proxy").length * 80);
+      p.binhtinh  += Math.min(100, alerts.filter(a => a.type === "freeze" || a.type === "meltdown_proxy" || a.group === "stress_overwhelm").length * 150);
     });
 
     const radarData = [
-      { subject: 'TẬP TRUNG', A: Math.max(0, 100 - (totalPenalties.taptrung / totalRecent)), fullMark: 100 },
-      { subject: 'BÌNH TĨNH', A: Math.max(0, 100 - (totalPenalties.binhtinh / totalRecent)), fullMark: 100 },
-      { subject: 'CHỦ ĐỘNG', A: Math.max(0, 100 - (totalPenalties.chudoong / totalRecent)), fullMark: 100 },
-      { subject: 'TỰ TIN', A: Math.max(0, 100 - (totalPenalties.tutin / totalRecent)), fullMark: 100 },
-      { subject: 'ỔN ĐỊNH', A: Math.max(0, 100 - (totalPenalties.ondinh / totalRecent)), fullMark: 100 },
+      { subject: "TẬP TRUNG", A: Math.max(0, 100 - p.taptrung / total), fullMark: 100 },
+      { subject: "BÌNH TĨNH", A: Math.max(0, 100 - p.binhtinh / total), fullMark: 100 },
+      { subject: "CHỦ ĐỘNG",  A: Math.max(0, 100 - p.chudoong / total),  fullMark: 100 },
+      { subject: "TỰ TIN",   A: Math.max(0, 100 - p.tutin / total),   fullMark: 100 },
+      { subject: "ỔN ĐỊNH",  A: Math.max(0, 100 - p.ondinh / total),  fullMark: 100 },
     ];
 
     return { success: true, radarData };
   } catch (error: unknown) {
     console.error("Error fetching child alert stats:", error);
-    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }

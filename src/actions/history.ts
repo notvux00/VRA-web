@@ -18,7 +18,11 @@ async function getAuthSession() {
   }
 }
 
-export async function getChildSessionHistory(childId: string): Promise<{ success: boolean; sessions?: Session[]; error?: string }> {
+export async function getChildSessionHistory(
+  childId: string,
+  limit = 20,
+  afterId?: string
+): Promise<{ success: boolean; sessions?: Session[]; hasMore?: boolean; lastId?: string; error?: string }> {
   const authSession = await getAuthSession();
   if (!authSession) return { success: false, error: "Unauthorized" };
 
@@ -37,11 +41,18 @@ export async function getChildSessionHistory(childId: string): Promise<{ success
     }
 
     // 2. Fetch Sessions
-    const snapshot = await adminDb.collection("sessions")
+    // Cursor-based pagination
+    let query = adminDb.collection("sessions")
       .where("child_profile_id", "==", childId)
       .orderBy("start_time", "desc")
-      .limit(100) // Giới hạn 100 session gần nhất
-      .get();
+      .limit(limit + 1); // fetch one extra to detect hasMore
+
+    if (afterId) {
+      const cursorDoc = await adminDb.collection("sessions").doc(afterId).get();
+      if (cursorDoc.exists) query = query.startAfter(cursorDoc);
+    }
+
+    const snapshot = await query.get();
 
     const sessions: Session[] = snapshot.docs.map(doc => {
       const data = doc.data();
@@ -69,7 +80,10 @@ export async function getChildSessionHistory(childId: string): Promise<{ success
       } as Session;
     });
 
-    return { success: true, sessions };
+    const hasMore = sessions.length > limit;
+    if (hasMore) sessions.pop(); // remove the extra doc
+    const lastId = sessions.length > 0 ? sessions[sessions.length - 1].id : undefined;
+    return { success: true, sessions, hasMore, lastId };
   } catch (error: unknown) {
     console.error("Error fetching session history:", error);
     return { success: false, error: (error instanceof Error ? error.message : String(error)) };

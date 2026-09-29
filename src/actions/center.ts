@@ -54,6 +54,8 @@ export async function getCenterExperts(centerId: string) {
   try {
     const snapshot = await adminDb.collection("experts")
       .where("centerId", "==", centerId)
+      .orderBy("name")
+      .limit(100)
       .get();
     
     const experts = snapshot.docs.map(doc => ({
@@ -121,7 +123,7 @@ export async function getCenterChildren(centerId: string) {
   try {
     const snapshot = await adminDb.collection("child_profiles")
       .where("centerId", "==", centerId)
-      // .orderBy("createdAt", "desc") // Temporarily disabled for index issues
+      .limit(200)
       .get();
     
     const children = snapshot.docs.map(doc => ({
