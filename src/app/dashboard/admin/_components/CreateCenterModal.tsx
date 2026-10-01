@@ -1,5 +1,6 @@
 import React from "react";
 import { Building, Loader2, Plus } from "lucide-react";
+import { PasswordInput } from "@/components/shared/PasswordInput";
 
 interface NewCenterData {
   name: string;
@@ -106,7 +107,7 @@ export default function CreateCenterModal({
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest px-1">Mật khẩu</label>
-                <input
+                <PasswordInput
                   type="password" required placeholder="••••••••"
                   className="w-full bg-white dark:bg-zinc-900 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 transition-all shadow-inner"
                   value={newCenter.password}

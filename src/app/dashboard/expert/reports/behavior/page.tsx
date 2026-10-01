@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 
-import React, { useEffect, useState, use } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { getSessionDetail } from "@/actions/history";
 import { Session } from "@/types";
 import { 
@@ -16,13 +16,16 @@ import {
   Calendar
 } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 interface PageProps {
   searchParams: Promise<{ sessionId?: string; childId?: string }>;
 }
 
-export default function BehaviorLogPage({ searchParams }: PageProps) {
-  const { sessionId, childId } = use(searchParams);
+function BehaviorLogPageContent() {
+  const searchParams = useSearchParams();
+  const sessionId = searchParams.get("sessionId");
+  const childId = searchParams.get("childId");
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(!!sessionId);
   const [error, setError] = useState<string | null>(null);
@@ -150,5 +153,14 @@ export default function BehaviorLogPage({ searchParams }: PageProps) {
         )}
       </div>
     </div>
+  );
+}
+
+
+export default function BehaviorLogPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center animate-pulse">Đang tải báo cáo...</div>}>
+      <BehaviorLogPageContent />
+    </Suspense>
   );
 }

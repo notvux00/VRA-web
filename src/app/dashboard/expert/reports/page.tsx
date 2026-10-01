@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 
-import React, { useEffect, useState, use } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { getSessionDetail } from "@/actions/history";
 import { Session, QuestLog } from "@/types";
 import { 
@@ -20,6 +20,7 @@ import {
   LucideIcon, AlertCircle, History
 } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { 
   AreaChart, 
   Area, 
@@ -41,8 +42,10 @@ interface PageProps {
   searchParams: Promise<{ sessionId?: string; childId?: string }>;
 }
 
-export default function ExpertReportsPage({ searchParams }: PageProps) {
-  const { sessionId, childId } = use(searchParams);
+function ExpertReportsPageContent() {
+  const searchParams = useSearchParams();
+  const sessionId = searchParams.get("sessionId");
+  const childId = searchParams.get("childId");
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(!!sessionId);
   const [error, setError] = useState<string | null>(null);
@@ -487,5 +490,14 @@ export default function ExpertReportsPage({ searchParams }: PageProps) {
          </div>
       </div>
     </div>
+  );
+}
+
+
+export default function ExpertReportsPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center animate-pulse">Đang tải báo cáo...</div>}>
+      <ExpertReportsPageContent />
+    </Suspense>
   );
 }

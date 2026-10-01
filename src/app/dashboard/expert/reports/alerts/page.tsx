@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, use } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { getSessionDetail } from "@/actions/history";
 import { Session } from "@/types";
 import { 
@@ -16,13 +16,16 @@ import {
   Brain
 } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 interface PageProps {
   searchParams: Promise<{ sessionId?: string; childId?: string }>;
 }
 
-export default function AlertsDetailPage({ searchParams }: PageProps) {
-  const { sessionId, childId } = use(searchParams);
+function AlertsDetailPageContent() {
+  const searchParams = useSearchParams();
+  const sessionId = searchParams.get("sessionId");
+  const childId = searchParams.get("childId");
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(!!sessionId);
   const [error, setError] = useState<string | null>(null);
@@ -170,5 +173,14 @@ function StatCard({ label, value, color, textColor = "text-white" }: { label: st
        <p className={`text-[9px] font-black uppercase tracking-widest opacity-80 mb-1 ${textColor}`}>{label}</p>
        <p className={`text-2xl font-black ${textColor}`}>{value}</p>
     </div>
+  );
+}
+
+
+export default function AlertsDetailPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center animate-pulse">Đang tải báo cáo...</div>}>
+      <AlertsDetailPageContent />
+    </Suspense>
   );
 }

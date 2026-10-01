@@ -1,5 +1,6 @@
 import React from "react";
 import { UserPlus, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { PasswordInput } from "@/components/shared/PasswordInput";
 
 interface NewManagerData {
   name: string;
@@ -68,7 +69,7 @@ export default function AddManagerModal({
 
           <div className="space-y-1.5">
             <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest px-1">Mật khẩu</label>
-            <input
+            <PasswordInput
               type="password" required placeholder="••••••••"
               className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 transition-all font-medium"
               value={newManager.password}

@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
 import { createSession } from "@/actions/auth";
+import { PasswordInput } from "@/components/shared/PasswordInput";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -80,7 +81,7 @@ export default function LoginPage() {
           </div>
           <div className="space-y-1.5 pt-1">
             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Mật khẩu</label>
-            <input
+            <PasswordInput
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

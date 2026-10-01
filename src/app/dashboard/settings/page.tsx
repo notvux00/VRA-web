@@ -5,6 +5,7 @@ import { User, Shield, Key, CheckCircle, AlertCircle, Loader2 } from "lucide-rea
 import { useAuth } from "@/contexts/AuthContext";
 import { updateUserProfile, updateUserPassword } from "@/actions/user";
 import { EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
+import { PasswordInput } from "@/components/shared/PasswordInput";
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -172,7 +173,7 @@ export default function SettingsPage() {
               <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Mật khẩu hiện tại</label>
               <div className="relative">
                 <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
-                <input 
+                <PasswordInput 
                   type="password" 
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
@@ -185,7 +186,7 @@ export default function SettingsPage() {
 
             <div className="space-y-2 pt-2 border-t border-zinc-50 dark:border-zinc-800">
               <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Mật khẩu mới</label>
-              <input 
+              <PasswordInput 
                 type="password" 
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
@@ -197,7 +198,7 @@ export default function SettingsPage() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Xác nhận mật khẩu mới</label>
-              <input 
+              <PasswordInput 
                 type="password" 
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { UserPlus, X, Mail, Lock, User, Briefcase, Loader2, AlertCircle, CheckCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { createExpert } from "@/actions/center";
+import { PasswordInput } from "@/components/shared/PasswordInput";
 
 interface AddExpertModalProps {
   isOpen: boolean;
@@ -104,7 +105,7 @@ export default function AddExpertModal({ isOpen, onClose, onSuccess }: AddExpert
                 <label className="text-xs font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest pl-1">Mật khẩu</label>
                 <div className="relative group">
                   <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-blue-600 transition-colors" />
-                  <input 
+                  <PasswordInput 
                     type="password" 
                     value={formData.password}
                     onChange={(e) => setFormData({...formData, password: e.target.value})}

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { X, User, Mail, Lock, Loader2, AlertCircle, CheckCircle, Shield } from "lucide-react";
 import { createParent } from "@/actions/center";
+import { PasswordInput } from "@/components/shared/PasswordInput";
 
 interface AddParentModalProps {
   isOpen: boolean;
@@ -115,7 +116,7 @@ export default function AddParentModal({ isOpen, onClose, onSuccess, centerId }:
                 <label className="text-xs font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest pl-1">Mật khẩu khởi tạo</label>
                 <div className="relative group">
                   <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-emerald-600 transition-colors" />
-                  <input 
+                  <PasswordInput 
                     type="password" 
                     value={formData.password}
                     onChange={(e) => setFormData({...formData, password: e.target.value})}
