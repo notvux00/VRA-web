@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { admin, adminAuth } from "@/lib/firebase/admin";
+import { checkRateLimit, formatRetryAfter } from "@/lib/rate-limiter";
 
 export async function POST(req: NextRequest) {
   // Require valid session
@@ -7,10 +8,21 @@ export async function POST(req: NextRequest) {
   if (!sessionCookie) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  let uid: string;
   try {
-    await adminAuth.verifySessionCookie(sessionCookie, true);
+    const claims = await adminAuth.verifySessionCookie(sessionCookie);
+    uid = claims.uid;
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Rate limit: 60 lần chuyển giọng nói / 10 phút / user (đủ cho một phiên trị liệu dùng nhiều câu)
+  const rl = await checkRateLimit(uid, "tts", 60, 10 * 60 * 1000);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: `Quá nhiều yêu cầu chuyển giọng nói. Vui lòng thử lại sau ${formatRetryAfter(rl.retryAfterMs ?? 60000)}.` },
+      { status: 429 }
+    );
   }
 
   try {

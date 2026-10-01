@@ -1,6 +1,10 @@
 import { AccessToken } from "livekit-server-sdk";
 import { NextRequest, NextResponse } from "next/server";
 import { adminAuth } from "@/lib/firebase/admin";
+import { checkRateLimit, formatRetryAfter } from "@/lib/rate-limiter";
+
+// Parents don't join live VR sessions directly — only staff-side roles do.
+const ALLOWED_ROLES = ["admin", "center", "expert", "therapist"];
 
 export async function GET(req: NextRequest) {
   // Verify session cookie — reject unauthenticated callers
@@ -8,10 +12,24 @@ export async function GET(req: NextRequest) {
   if (!sessionCookie) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  let uid: string;
   try {
-    await adminAuth.verifySessionCookie(sessionCookie, true);
+    const claims = await adminAuth.verifySessionCookie(sessionCookie);
+    if (!ALLOWED_ROLES.includes(claims.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    uid = claims.uid;
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Rate limit: 20 lần cấp token / 10 phút / user (đủ cho join/reconnect nhiều lần)
+  const rl = await checkRateLimit(uid, "livekit_token", 20, 10 * 60 * 1000);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: `Quá nhiều yêu cầu. Vui lòng thử lại sau ${formatRetryAfter(rl.retryAfterMs ?? 60000)}.` },
+      { status: 429 }
+    );
   }
 
   const room = req.nextUrl.searchParams.get("room");

@@ -5,11 +5,12 @@ import {
   Baby, Ruler, Scale, 
   Activity, History, Info, ShieldCheck, BarChart3
 } from "lucide-react";
-
-export const dynamic = "force-dynamic";
 import Link from "next/link";
 import React from "react";
 import { ChildGoal } from "@/types";
+
+export const dynamic = "force-dynamic";
+
 import LessonParametersEditor from "../_components/stats/LessonParametersEditor";
 import GoalSettingsEditor from "../_components/stats/GoalSettingsEditor";
 import AlertProfileEditor from "@/components/shared/AlertProfileEditor";

@@ -23,26 +23,33 @@ export default function ChildIndependenceChart({ sessions }: ChildIndependenceCh
   const mounted = useIsMounted();
 
   // Process data: Total hints of each type per session
-  const data = [...sessions].reverse().slice(-7).map(s => {
-    const logs = s.quest_logs || [];
+    const chronologicalSessions = [...sessions].reverse();
+  const groupedData = chronologicalSessions.reduce((acc, s) => {
+    const date = new Date((s as any).start_time).toLocaleDateString("vi-VN", { day: '2-digit', month: '2-digit' });
+    
+    const logs = (s as any).quest_logs || [];
     let verbal = 0;
     let visual = 0;
     let physical = 0;
 
-    logs.forEach((log: unknown) => {
+    logs.forEach((log: any) => {
       verbal += (log.hints_verbal || 0);
       visual += (log.hints_visual || 0);
       physical += (log.hints_physical || 0);
     });
 
-    return {
-      date: new Date(s.start_time).toLocaleDateString("vi-VN", { day: '2-digit', month: '2-digit' }),
-      verbal,
-      visual,
-      physical,
-      total: verbal + visual + physical
-    };
-  });
+    if (!acc[date]) {
+      acc[date] = { date, verbal: 0, visual: 0, physical: 0, total: 0 };
+    }
+    acc[date].verbal += verbal;
+    acc[date].visual += visual;
+    acc[date].physical += physical;
+    acc[date].total += (verbal + visual + physical);
+    return acc;
+  }, {} as Record<string, any>);
+
+  const data = Object.values(groupedData).slice(-7);
+
 
   if (!mounted) {
     return <div className="h-[400px] w-full bg-zinc-50 dark:bg-zinc-800/10 rounded-3xl animate-pulse" />;

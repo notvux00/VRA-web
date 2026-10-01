@@ -21,13 +21,23 @@ interface ChildIntensityChartProps {
 export default function ChildIntensityChart({ sessions }: ChildIntensityChartProps) {
   const mounted = useIsMounted();
 
-  const barData = [...sessions].reverse().slice(-7).map(s => {
-    const totalSeconds = Math.round(s.duration || 0);
-    const mins = Math.floor(totalSeconds / 60);
-    const secs = totalSeconds % 60;
+    const chronologicalSessions = [...sessions].reverse();
+  const groupedData = chronologicalSessions.reduce((acc, s) => {
+    const date = new Date((s as any).start_time).toLocaleDateString("vi-VN", { day: '2-digit', month: '2-digit' });
+    const totalSeconds = Math.round((s as any).duration || 0);
+    if (!acc[date]) {
+      acc[date] = { date, duration: 0 };
+    }
+    acc[date].duration += totalSeconds;
+    return acc;
+  }, {} as Record<string, any>);
+
+  const barData = Object.values(groupedData).slice(-7).map((item: any) => {
+    const mins = Math.floor(item.duration / 60);
+    const secs = item.duration % 60;
     return {
-      date: new Date(s.start_time).toLocaleDateString("vi-VN", { day: '2-digit', month: '2-digit' }),
-      duration: totalSeconds,
+      date: item.date,
+      duration: item.duration,
       formattedTime: `${mins}p ${secs}s`
     };
   });

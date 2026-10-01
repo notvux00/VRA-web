@@ -22,14 +22,35 @@ export async function getChildAlertStats(childId: string) {
 
     sessions.forEach((s) => {
       const alerts = (s.auto_alerts || []) as AutoAlert[];
+      const logs = (s.quest_logs || []) as any[];
+      
+      let verbal = 0, visual = 0, physical = 0, failures = 0;
+      logs.forEach(log => {
+        verbal += log.hints_verbal || 0;
+        visual += log.hints_visual || 0;
+        physical += log.hints_physical || 0;
+        if (log.completion_status !== "success") failures++;
+      });
+
       const dur = (a: AutoAlert) => (a.duration_sec as number) || 0;
       const idleSec = alerts.filter(a => a.type === "idle").reduce((acc, a) => acc + dur(a), 0);
-      p.chudoong  += Math.min(100, Math.floor(idleSec / 5) * 30);
-      p.tutin     += Math.min(100, alerts.filter(a => a.type === "hesitation").length * 60);
+      
+      // Proactiveness: penalized by idle time and verbal hints
+      p.chudoong  += Math.min(100, Math.floor(idleSec / 5) * 30 + (verbal * 15) + (failures * 10));
+      
+      // Confidence: penalized by hesitation and physical hints
+      p.tutin     += Math.min(100, alerts.filter(a => a.type === "hesitation").length * 60 + (physical * 20));
+      
+      // Focus: penalized by distraction and visual hints
       const distSec = alerts.filter(a => a.type === "distraction").reduce((acc, a) => acc + dur(a), 0);
-      p.taptrung  += Math.min(100, Math.floor(distSec / 5) * 50);
-      p.ondinh    += Math.min(100, alerts.filter(a => a.type === "stimming_proxy").length * 80);
-      p.binhtinh  += Math.min(100, alerts.filter(a => a.type === "freeze" || a.type === "meltdown_proxy" || a.group === "stress_overwhelm").length * 150);
+      p.taptrung  += Math.min(100, Math.floor(distSec / 5) * 50 + (visual * 15));
+      
+      // Stability: penalized by stimming and low overall score
+      const lowScorePenalty = s.score && s.score < 60 ? (60 - s.score) : 0;
+      p.ondinh    += Math.min(100, alerts.filter(a => a.type === "stimming_proxy").length * 80 + lowScorePenalty);
+      
+      // Calmness: penalized by meltdowns, freezes, and low overall score
+      p.binhtinh  += Math.min(100, alerts.filter(a => a.type === "freeze" || a.type === "meltdown_proxy" || a.group === "stress_overwhelm").length * 150 + lowScorePenalty);
     });
 
     const radarData = [

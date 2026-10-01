@@ -6,7 +6,9 @@ export async function GET(req: NextRequest) {
   const sessionCookie = req.cookies.get("session")?.value;
   if (!sessionCookie) return new NextResponse(null, { status: 401 });
   try {
-    await adminAuth.verifySessionCookie(sessionCookie, true);
+    // No revocation check here — this only gates read access to non-sensitive
+    // lesson images, so a local JWT verify (no network round-trip) is enough.
+    await adminAuth.verifySessionCookie(sessionCookie);
   } catch {
     return new NextResponse(null, { status: 401 });
   }
@@ -21,13 +23,13 @@ export async function GET(req: NextRequest) {
     const bucket = admin.storage().bucket(bucketName);
     const file = bucket.file(path);
 
-    const [exists] = await file.exists();
-    if (!exists) return new NextResponse(null, { status: 404 });
-
-    const [metadata] = await file.getMetadata();
+    // Fetch metadata and content together instead of exists() -> getMetadata() -> download()
+    // in sequence; download() itself throws (caught below) when the file is missing.
+    const [[metadata], [buffer]] = await Promise.all([
+      file.getMetadata(),
+      file.download(),
+    ]);
     const contentType = (metadata.contentType as string) || "image/jpeg";
-
-    const [buffer] = await file.download();
 
     return new NextResponse(new Uint8Array(buffer), {
       headers: {
@@ -38,6 +40,8 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (err) {
+    const code = (err as { code?: number })?.code;
+    if (code === 404) return new NextResponse(null, { status: 404 });
     console.error("[ImageProxy] Error:", err);
     return new NextResponse(null, { status: 500 });
   }

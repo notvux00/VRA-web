@@ -5,6 +5,7 @@ import RecentSessions from "./_components/RecentSessions";
 import ProfilePicker from "./_components/ProfilePicker";
 import HeatmapChart from "./_components/HeatmapChart";
 import { Phone, AlertCircle, Baby } from "lucide-react";
+import { Suspense } from "react";
 
 interface PageProps {
   searchParams: Promise<{ childId?: string }>;
@@ -90,7 +91,9 @@ export default async function ParentDashboard({ searchParams }: PageProps) {
 
       </div>
 
-      <ParentStats childId={selectedChild.id} />
+      <Suspense fallback={<div className="h-32 bg-zinc-100 dark:bg-zinc-800 animate-pulse rounded-2xl w-full"></div>}>
+        <ParentStats childId={selectedChild.id} />
+      </Suspense>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
         <div className="xl:col-span-2 space-y-10">
@@ -98,7 +101,9 @@ export default async function ParentDashboard({ searchParams }: PageProps) {
           <FocusChart childId={selectedChild.id} />
         </div>
         <div className="space-y-10">
-          <RecentSessions childId={selectedChild.id} />
+          <Suspense fallback={<div className="h-96 bg-zinc-100 dark:bg-zinc-800 animate-pulse rounded-2xl w-full"></div>}>
+            <RecentSessions childId={selectedChild.id} />
+          </Suspense>
         </div>
       </div>
     </div>
