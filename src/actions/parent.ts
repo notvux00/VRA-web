@@ -2,7 +2,8 @@
 
 import { cookies } from "next/headers";
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
-import { getChildAlertStats as getRadarData } from "./analytics";
+import { getCachedChildSessions } from "./history";
+import { calculateRadarData, calculateTrendData } from "@/lib/analytics/statsProcessor";
 import { ChildProfile, Session, QuestLog, AutoAlert, FirestoreTimestamp } from "@/types";
 
 const SESSION_COOKIE_NAME = "session";
@@ -88,19 +89,7 @@ export async function getChildSessions(childId: string) {
       return { success: false, error: "Access denied" };
     }
 
-    const sessionsSnapshot = await adminDb
-      .collection("sessions")
-      .where("child_profile_id", "==", childId)
-      .orderBy("start_time", "desc")
-      .limit(10)
-      .get();
-
-    const sessions: Session[] = sessionsSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-      start_time: doc.data().start_time?.toDate?.()?.toISOString() || doc.data().startTime || doc.data().start_time || new Date().toISOString(),
-      finish_time: doc.data().finish_time?.toDate?.()?.toISOString() || doc.data().endTime || doc.data().finish_time || new Date().toISOString(),
-    } as Session));
+    const sessions = await getCachedChildSessions(childId);
 
     return { success: true, sessions };
   } catch (error: unknown) {
@@ -111,14 +100,8 @@ export async function getChildSessions(childId: string) {
 
 // Fetch sessions cho một trẻ — dùng Firestore index thay vì full-scan
 // Yêu cầu composite index: sessions(child_profile_id ASC, start_time DESC)
-async function fetchSessionsForChild(childId: string, limitCount = 50) {
-  const snapshot = await adminDb.collection("sessions")
-    .where("child_profile_id", "==", childId.trim())
-    .orderBy("start_time", "desc")
-    .limit(limitCount)
-    .get();
-
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Session[];
+async function fetchSessionsForChild(childId: string) {
+  return await getCachedChildSessions(childId);
 }
 
 
@@ -141,10 +124,10 @@ export async function getChildStats(childId: string) {
     const sessions = await fetchSessionsForChild(childId);
     
     const totalSessions = sessions.length;
-    const totalDurationSeconds = sessions.reduce((acc, s: Session) => acc + (s.duration || 0), 0);
+    const totalDurationSeconds = sessions.reduce((acc: number, s: Session) => acc + (s.duration || 0), 0);
     const totalDurationMinutes = totalDurationSeconds / 60;
     const avgScore = totalSessions > 0 
-      ? sessions.reduce((acc, s: Session) => acc + (s.score || 0), 0) / totalSessions 
+      ? sessions.reduce((acc: number, s: Session) => acc + (s.score || 0), 0) / totalSessions 
       : 0;
 
     const maxDuration = sessions.length > 0 ? Math.max(...sessions.map((s: Session) => s.duration || 0)) : 0;
@@ -166,7 +149,7 @@ export async function getChildStats(childId: string) {
           
         return formatDate(d);
       })
-      .filter(d => d !== null) as string[];
+      .filter((d: any) => d !== null) as string[];
 
     const uniqueDates = Array.from(new Set(sessionDates)).sort((a, b) => b.localeCompare(a));
 
@@ -399,89 +382,9 @@ export async function getChildDashboardAnalytics(childId: string) {
     const sessions = await fetchSessionsForChild(childId);
     if (sessions.length === 0) return { success: true, radarData: [], trendData: [] };
 
-    // 1. Calculate Radar Data
-    let totalQuests = 0;
-    let successfulQuests = 0;
-    let zeroHintQuests = 0;
-    let totalResponseTime = 0;
-    let totalScore = 0;
-
-    sessions.forEach((s: Session) => {
-      const logs = s.quest_logs || [];
-      totalQuests += logs.length;
-      totalScore += (s.score || 0);
-      
-      logs.forEach((log: QuestLog) => {
-        if (log.completion_status === "success") successfulQuests++;
-        if ((log.hints_physical || 0) + (log.hints_verbal || 0) + (log.hints_visual || 0) === 0) {
-          zeroHintQuests++;
-        }
-        totalResponseTime += (log.response_time || 0);
-      });
-    });
-
-    const avgAccuracy = totalQuests > 0 ? (successfulQuests / totalQuests) * 100 : 0;
-    const avgIndependence = totalQuests > 0 ? (zeroHintQuests / totalQuests) * 100 : 0;
-    const avgResponseTime = totalQuests > 0 ? totalResponseTime / totalQuests : 0;
-    const avgCompletion = totalScore / sessions.length;
-    
-    // 1. Calculate Radar Data (Strictly follow RADAR_CHART_METRICS.md - Focus on LAST 5 SESSIONS)
-    const recentSessions = sessions.slice(0, 5);
-    const totalRecent = recentSessions.length || 1;
-    const totalPenalties = { chudoong: 0, tutin: 0, taptrung: 0, ondinh: 0, binhtinh: 0 };
-
-    recentSessions.forEach((s: Session) => {
-      const alerts = s.auto_alerts || [];
-      
-      // 1. CHỦ ĐỘNG (idle - Low: -30đ mỗi 5s, max -100đ)
-      const idleDur = (alerts as AutoAlert[]).filter((a) => a.type === 'idle').reduce((acc: number, a) => acc + (a.duration_sec || 0), 0);
-      totalPenalties.chudoong += Math.min(100, Math.floor(idleDur / 5) * 30);
-
-      // 2. TỰ TIN (hesitation - Low: -60đ/lần, max -100đ)
-      const hesitationCount = (alerts as AutoAlert[]).filter((a) => a.type === 'hesitation').length;
-      totalPenalties.tutin += Math.min(100, hesitationCount * 60);
-
-      // 3. TẬP TRUNG (distraction - Medium: -50đ mỗi 5s, max -100đ)
-      const distractionDur = (alerts as AutoAlert[]).filter((a) => a.type === 'distraction').reduce((acc: number, a) => acc + (a.duration_sec || 0), 0);
-      totalPenalties.taptrung += Math.min(100, Math.floor(distractionDur / 5) * 50);
-
-      // 4. ỔN ĐỊNH (stimming_proxy - Medium: -80đ/lần, max -100đ)
-      const stimmingCount = (alerts as AutoAlert[]).filter((a) => a.type === 'stimming_proxy').length;
-      totalPenalties.ondinh += Math.min(100, stimmingCount * 80);
-
-      // 5. BÌNH TĨNH (freeze/meltdown - High: -150đ/lần, max -100đ)
-      const stressCount = (alerts as AutoAlert[]).filter((a) =>
-        a.type === 'freeze' || a.type === 'meltdown_proxy' || a.group === 'stress_overwhelm'
-      ).length;
-      totalPenalties.binhtinh += Math.min(100, stressCount * 150);
-    });
-
-    const radarData = [
-      { subject: 'TẬP TRUNG', A: Math.max(0, 100 - (totalPenalties.taptrung / totalRecent)), fullMark: 100 },
-      { subject: 'BÌNH TĨNH', A: Math.max(0, 100 - (totalPenalties.binhtinh / totalRecent)), fullMark: 100 },
-      { subject: 'CHỦ ĐỘNG', A: Math.max(0, 100 - (totalPenalties.chudoong / totalRecent)), fullMark: 100 },
-      { subject: 'TỰ TIN', A: Math.max(0, 100 - (totalPenalties.tutin / totalRecent)), fullMark: 100 },
-      { subject: 'ỔN ĐỊNH', A: Math.max(0, 100 - (totalPenalties.ondinh / totalRecent)), fullMark: 100 },
-    ];
-
-    // 2. Trend Data (Last 10 sessions)
-    const trendData = sessions.slice(0, 10).reverse().map((s: Session) => {
-      let dateStr = "";
-      if ((s.start_time as FirestoreTimestamp | undefined) && typeof s.start_time !== 'string' && (s.start_time as { toDate(): Date }).toDate) {
-        dateStr = (s.start_time as { toDate(): Date }).toDate().toLocaleDateString("vi-VN", { day: 'numeric', month: 'short' });
-      } else {
-        const rawDate = s.start_time || (s as Session & { startTime?: string }).startTime;
-        if (typeof rawDate === 'string') {
-          const [y, m, d] = rawDate.split('T')[0].split('-');
-          dateStr = `${d} thg ${m}`;
-        }
-      }
-      return {
-        date: dateStr || "---",
-        score: s.score || 0,
-        duration: Math.round((s.duration || 0) / 60)
-      };
-    });
+    // Use unified analytics processor
+    const radarData = calculateRadarData(sessions as Session[]);
+    const trendData = calculateTrendData(sessions as Session[]);
 
     return { success: true, radarData, trendData };
   } catch (error: unknown) {

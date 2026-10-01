@@ -1,6 +1,7 @@
 "use server";
 
 import { adminDb } from "@/lib/firebase/admin";
+import { unstable_cache } from "next/cache";
 
 export interface QuestMetadata {
   id?: string;
@@ -38,8 +39,9 @@ export interface LessonData {
  * Fetch toàn bộ bài học từ Firestore collection "lessons".
  * Sắp xếp theo lesson_index → level_index để hiển thị đúng thứ tự.
  */
-export async function getLessons(): Promise<{ success: boolean; lessons?: LessonData[]; error?: string }> {
-  try {
+const getCachedLessons = unstable_cache(
+  async () => {
+    console.log("🔥 [CACHE MISS] Đang tải danh sách bài học từ Firestore...");
     const snapshot = await adminDb.collection("lessons").limit(200).get(); // safety cap
 
     const lessons: LessonData[] = snapshot.docs.map((doc) => {
@@ -63,9 +65,20 @@ export async function getLessons(): Promise<{ success: boolean; lessons?: Lesson
         scenario: d.scenario || "",
       };
     });
-    // Sắp xếp trong memory (tránh yêu cầu Composite Index trên Firestore)
+    // Sắp xếp trong memory
     lessons.sort((a, b) => a.lesson_index - b.lesson_index || a.level_index - b.level_index);
+    return lessons;
+  },
+  ["lessons-list"],
+  {
+    revalidate: 86400, // cache for 24 hours
+    tags: ["lessons"],
+  }
+);
 
+export async function getLessons(): Promise<{ success: boolean; lessons?: LessonData[]; error?: string }> {
+  try {
+    const lessons = await getCachedLessons();
     return { success: true, lessons };
   } catch (error: unknown) {
     console.error("Error fetching lessons:", error);

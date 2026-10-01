@@ -2,7 +2,23 @@
 
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { cookies } from "next/headers";
+import { unstable_cache } from "next/cache";
 import { Session, FirestoreTimestamp } from "@/types";
+
+export const getCachedChildSessions = unstable_cache(
+  async (childId: string) => {
+    console.log("🔥 [CACHE MISS] Fetching sessions for child: ", childId);
+    const snap = await adminDb
+      .collection("sessions")
+      .where("child_profile_id", "==", childId.trim())
+      .orderBy("start_time", "desc")
+      .limit(50)
+      .get();
+    return snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Session[];
+  },
+  ["child-sessions-stats"],
+  { revalidate: 3600, tags: ["sessions"] }
+);
 
 const SESSION_COOKIE_NAME = "session";
 
