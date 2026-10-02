@@ -69,10 +69,10 @@ const getCachedLessons = unstable_cache(
     lessons.sort((a, b) => a.lesson_index - b.lesson_index || a.level_index - b.level_index);
     return lessons;
   },
-  ["lessons-list"],
+  ["lessons-list-v2"],
   {
     revalidate: 86400, // cache for 24 hours
-    tags: ["lessons"],
+    tags: ["lessons", "v2"],
   }
 );
 
