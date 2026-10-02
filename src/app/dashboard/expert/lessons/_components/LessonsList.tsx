@@ -50,13 +50,13 @@ const TYPE_LABELS: Record<string, { label: string; color: string; icon: React.Re
     color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20",
     icon: <Beaker size={12} />,
   },
-  theory: {
+  theoretical: {
     label: "Lý thuyết",
     color: "bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400 border-blue-200 dark:border-blue-500/20",
     icon: <GraduationCap size={12} />,
   },
   quiz: {
-    label: "Kiểm tra",
+    label: "Bài tập",
     color: "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 border-amber-200 dark:border-amber-500/20",
     icon: <GraduationCap size={12} />,
   },
@@ -257,9 +257,10 @@ export default function LessonsList({ initialLessons, child, pin, isVRConnected 
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
                 <div className="absolute bottom-4 left-6 flex items-center gap-2">
                   <span
-                    className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border backdrop-blur-md ${typeInfo.color}`}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border backdrop-blur-md whitespace-nowrap ${typeInfo.color}`}
                   >
-                    {typeInfo.icon} {typeInfo.label}
+                    {typeInfo.icon}
+                    {typeInfo.label}
                   </span>
                 </div>
               </div>
