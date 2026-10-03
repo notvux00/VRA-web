@@ -71,6 +71,8 @@ export async function createSession(idToken: string) {
     // 4. Update Custom Claims if they don't match Firestore
     if (decodedIdToken.role !== role) {
       await adminAuth.setCustomUserClaims(uid, { role });
+      // Signal the client that claims were updated so it can refresh the token and retry
+      return { success: false, error: "CLAIMS_UPDATED" };
     }
     
     // Only process if the user recently signed in

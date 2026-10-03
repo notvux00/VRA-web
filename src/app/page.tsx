@@ -20,7 +20,11 @@ export default function LoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const idToken = await userCredential.user.getIdToken();
       
-      const response = await createSession(idToken);
+      let response = await createSession(idToken);
+      if (response.error === "CLAIMS_UPDATED") {
+        const newToken = await userCredential.user.getIdToken(true);
+        response = await createSession(newToken);
+      }
       if (response.success) {
         window.location.href = "/dashboard";
       } else {
