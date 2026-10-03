@@ -101,21 +101,13 @@ export async function createSession(idToken: string) {
 }
 
 export async function removeSession() {
-  const sessionCookie = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
-  if (!sessionCookie) return { success: true };
-
-  try {
-    const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie);
-    await adminAuth.revokeRefreshTokens(decodedClaims.sub);
-  } catch (error) {
-    // Ignore error if cookie is invalid
-  }
-
   (await cookies()).delete(SESSION_COOKIE_NAME);
   redirect("/");
 }
 
 export async function setParentRole(uid: string) {
+  const session = await requireSession();
+  if (session.uid !== uid && session.role !== "admin") throw new Error("Unauthorized");
   try {
     // Update both Firestore and Auth Claims
     const userRef = adminDb.collection("parents").doc(uid);
@@ -141,6 +133,7 @@ export async function setParentRole(uid: string) {
 }
 
 export async function updateUserRole(uid: string, role: string) {
+  await requireRole("admin");
   try {
     const colName = getCollectionName(role);
     await adminDb.collection(colName).doc(uid).set({
@@ -157,6 +150,7 @@ export async function updateUserRole(uid: string, role: string) {
 }
 
 export async function assignRoleByEmail(email: string, role: string) {
+  await requireRole("admin");
   try {
     const userRecord = await adminAuth.getUserByEmail(email);
     await adminAuth.setCustomUserClaims(userRecord.uid, { role });
@@ -177,6 +171,7 @@ export async function createCenter(centerData: {
   phone?: string;
   centerEmail?: string;
 }) {
+  await requireRole("admin");
   try {
     // 1. Create a unique Center ID
     const centerId = "CT-" + Math.random().toString(36).substring(2, 7).toUpperCase();
@@ -234,6 +229,7 @@ export async function createCenter(centerData: {
 }
 
 export async function addCenterManager(centerId: string, managerData: { name: string; email: string; password?: string }) {
+  await requireRole("admin");
   try {
     // 1. Check if user exists or create them
     let uid: string;
@@ -286,6 +282,7 @@ export async function addCenterManager(centerId: string, managerData: { name: st
 }
 
 export async function getCenters() {
+  await requireRole("admin");
   try {
     const snapshot = await adminDb.collection("centers").orderBy("createdAt", "desc").get();
     const centers = snapshot.docs.map(doc => ({
@@ -300,6 +297,7 @@ export async function getCenters() {
 }
 
 export async function getCenterDetails(centerId: string) {
+  await requireRole("admin", "center");
   try {
     const centerDoc = await adminDb.collection("centers").doc(centerId).get();
     if (!centerDoc.exists) return { success: false, error: "Center not found" };
@@ -329,6 +327,7 @@ export async function getCenterDetails(centerId: string) {
 }
 
 export async function getUserProfile(uid: string) {
+  await requireSession();
   try {
     // 1. Phân loại collection theo Role
     const userRecord = await adminAuth.getUser(uid);
@@ -404,6 +403,7 @@ export async function deleteCenter(centerId: string) {
 }
 
 export async function getGlobalStats() {
+  await requireRole("admin");
   try {
     // 1. Get Centers Count
     const centersSnap = await adminDb.collection("centers").count().get();
@@ -484,6 +484,7 @@ export async function syncAllCenterStats() {
  * Lấy danh sách tài khoản System Admin
  */
 export async function getAdminAccounts() {
+  await requireRole("admin");
   try {
     const snapshot = await adminDb.collection("system_admins").orderBy("updatedAt", "desc").get();
     const admins = snapshot.docs.map(doc => ({
@@ -501,6 +502,7 @@ export async function getAdminAccounts() {
  * Lấy danh sách tài khoản Center Manager
  */
 export async function getCenterManagers() {
+  await requireRole("admin");
   try {
     const snapshot = await adminDb.collection("center_managers").orderBy("updatedAt", "desc").get();
     const managers = snapshot.docs.map(doc => ({

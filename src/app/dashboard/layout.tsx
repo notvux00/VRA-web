@@ -1,89 +1,28 @@
-// @ts-nocheck
-"use client";
+import { cookies } from "next/headers";
+import { adminAuth } from "@/lib/firebase/admin";
+import ClientLayout from "./ClientLayout";
 
-import React, { useState, Suspense } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { usePathname, useSearchParams } from "next/navigation";
-import Sidebar from "./_components/Sidebar";
-import Header from "./_components/Header";
-import { getNavigationByRole, getRoleName } from "./_components/Navigation";
-import VRConnectionMonitor from "@/app/dashboard/expert/_components/VRConnectionMonitor";
-import VraChatbot from "@/app/dashboard/_components/VraChatbot";
-import { useParams } from "next/navigation";
+const SESSION_COOKIE_NAME = "session";
 
-function DashboardContent({ children }: { children: React.ReactNode }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { user, role, userName } = useAuth();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const params = useParams();
+export default async function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME)?.value;
 
-  const childIdStr = searchParams.get("childId") || (params?.id as string) || "";
-  const pin = searchParams.get("pin");
-  const isVRConnected = searchParams.get("vr") === "connected";
-  const navigation = getNavigationByRole(role || "");
-  const roleName = getRoleName(role || "");
-
-  // Netflix-style behavior: Hide UI if it's the selection screen
-  const isProfileSelection =
-    (role === "parent" && pathname === "/dashboard/parent" && !childIdStr) ||
-    ((role === "expert" || role === "therapist") && pathname === "/dashboard/expert" && !childIdStr);
-
-  const isLiveSession = pathname?.includes("/dashboard/expert/session/");
-
-  if (isProfileSelection || isLiveSession) {
-    return (
-      <div className="min-h-screen bg-zinc-50 dark:bg-black font-sans transition-colors duration-300 flex items-center justify-center overflow-hidden">
-        <main className="w-full h-full">
-          {children}
-        </main>
-      </div>
-    );
+  if (!sessionCookie) {
+    throw new Error("Unauthorized: No session");
   }
 
-  return (
-    <div className="h-screen bg-zinc-50 dark:bg-black text-zinc-900 dark:text-zinc-100 flex overflow-hidden font-sans transition-colors duration-300">
+  try {
+    // Xác thực token hợp lệ không
+    await adminAuth.verifySessionCookie(sessionCookie);
+  } catch (error) {
+    throw new Error("Unauthorized: Invalid session");
+  }
 
-      <Sidebar
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-        navigation={navigation}
-      />
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-
-        <Header
-          sidebarOpen={sidebarOpen}
-          setSidebarOpen={setSidebarOpen}
-          user={user}
-          role={role || ""}
-          roleName={roleName}
-          userName={userName ?? undefined}
-        />
-
-        {/* Dynamic Page Content */}
-        <main className="flex-1 overflow-y-auto bg-zinc-50 dark:bg-black dark:bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] dark:from-zinc-900/40 dark:via-black dark:to-black">
-          {children}
-
-          {/* Trực ban theo dõi kết nối VR Xuyên suốt mọi trang */}
-          {isVRConnected && pin && <VRConnectionMonitor pin={pin} />}
-        </main>
-      </div>
-
-      <VraChatbot childId={childIdStr} />
-    </div>
-  );
-}
-
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <React.Suspense fallback={
-      <div className="h-screen w-screen flex items-center justify-center bg-zinc-50 dark:bg-black">
-        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-      </div>
-    }>
-      <DashboardContent>{children}</DashboardContent>
-    </React.Suspense>
-  );
+  // Pass qua Client Layout
+  return <ClientLayout>{children}</ClientLayout>;
 }

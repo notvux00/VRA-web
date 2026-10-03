@@ -40,7 +40,7 @@ export async function getChildSessionHistory(
   afterId?: string
 ): Promise<{ success: boolean; sessions?: Session[]; hasMore?: boolean; lastId?: string; error?: string }> {
   const authSession = await getAuthSession();
-  if (!authSession) return { success: false, error: "Unauthorized" };
+  if (!authSession) throw new Error("Unauthorized: No session");
 
   try {
     // 1. Verify Access
@@ -108,7 +108,7 @@ export async function getChildSessionHistory(
 
 export async function getSessionDetail(sessionId: string): Promise<{ success: boolean; session?: Session; error?: string }> {
   const authSession = await getAuthSession();
-  if (!authSession) return { success: false, error: "Unauthorized" };
+  if (!authSession) throw new Error("Unauthorized: No session");
 
   try {
     const doc = await adminDb.collection("sessions").doc(sessionId).get();

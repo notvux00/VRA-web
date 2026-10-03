@@ -1,7 +1,22 @@
 "use server";
 
-import { adminDb } from "@/lib/firebase/admin";
+import { adminDb, adminAuth } from "@/lib/firebase/admin";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
+
+const SESSION_COOKIE_NAME = "session";
+
+async function getSession() {
+  const sessionCookie = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
+  if (!sessionCookie) return null;
+
+  try {
+    const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie);
+    return decodedClaims;
+  } catch (error) {
+    return null;
+  }
+}
 
 export interface Schedule {
   id?: string;
@@ -19,6 +34,9 @@ export interface Schedule {
 
 export async function getSchedules(childId: string): Promise<{ success: boolean; schedules?: Schedule[]; error?: string }> {
   try {
+    const session = await getSession();
+    if (!session) throw new Error("Unauthorized: No session");
+
     const snapshot = await adminDb
       .collection("schedules")
       .where("childId", "==", childId)
@@ -38,6 +56,9 @@ export async function getSchedules(childId: string): Promise<{ success: boolean;
 
 export async function createSchedule(data: Omit<Schedule, "id" | "createdAt" | "updatedAt">): Promise<{ success: boolean; id?: string; error?: string }> {
   try {
+    const session = await getSession();
+    if (!session) throw new Error("Unauthorized: No session");
+
     const docRef = await adminDb.collection("schedules").add({
       ...data,
       createdAt: new Date().toISOString(),
@@ -55,6 +76,9 @@ export async function createSchedule(data: Omit<Schedule, "id" | "createdAt" | "
 
 export async function updateSchedule(id: string, data: Partial<Schedule>): Promise<{ success: boolean; error?: string }> {
   try {
+    const session = await getSession();
+    if (!session) throw new Error("Unauthorized: No session");
+
     await adminDb.collection("schedules").doc(id).update({
       ...data,
       updatedAt: new Date().toISOString(),
@@ -71,6 +95,9 @@ export async function updateSchedule(id: string, data: Partial<Schedule>): Promi
 
 export async function deleteSchedule(id: string): Promise<{ success: boolean; error?: string }> {
   try {
+    const session = await getSession();
+    if (!session) throw new Error("Unauthorized: No session");
+
     await adminDb.collection("schedules").doc(id).delete();
     
     revalidatePath("/dashboard/expert/schedule");

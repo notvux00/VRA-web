@@ -3,13 +3,14 @@
 import { adminAuth, adminDb, admin } from "@/lib/firebase/admin";
 import { revalidatePath } from "next/cache";
 import { Expert, ChildProfile, Parent, Session } from "@/types";
-// import { getCollectionName } from "@/lib/utils/roles"; // Unused
+import { requireRole } from "@/lib/auth-guard";
 
 
 /**
  * Fetch stats for the Center Dashboard
  */
 export async function getCenterStats(centerId: string) {
+  await requireRole("center", "admin");
   try {
     // Chạy song song 4 queries thay vì tuần tự
     const [expertSnap, childrenSnap, childrenForSum, parentsSnap] = await Promise.all([
@@ -51,6 +52,7 @@ export async function getCenterStats(centerId: string) {
  * Fetch all Experts belonging to this center
  */
 export async function getCenterExperts(centerId: string) {
+  await requireRole("center", "admin");
   try {
     const snapshot = await adminDb.collection("experts")
       .where("centerId", "==", centerId)
@@ -74,6 +76,7 @@ export async function getCenterExperts(centerId: string) {
  * Create a new Expert account
  */
 export async function createExpert(centerId: string, data: { name: string, email: string, password: string, specialization?: string }) {
+  await requireRole("center", "admin");
   try {
     // 1. Create User in Firebase Auth
     const userRecord = await adminAuth.createUser({
@@ -120,6 +123,7 @@ export async function createExpert(centerId: string, data: { name: string, email
  * Fetch all children managed by this center
  */
 export async function getCenterChildren(centerId: string) {
+  await requireRole("center", "admin");
   try {
     const snapshot = await adminDb.collection("child_profiles")
       .where("centerId", "==", centerId)
@@ -156,6 +160,7 @@ export async function createChildProfile(
     diagnosis_notes?: string
   }
 ) {
+  await requireRole("center", "admin");
   try {
     // 1. Generate a One-Time Link Code (6 capital letters/numbers)
     const linkCode = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -227,6 +232,7 @@ export async function createChildProfile(
 }
 
 export async function assignExpertToChild(childId: string, expertUid: string) {
+  await requireRole("center", "admin");
   try {
     const childRef = adminDb.collection("child_profiles").doc(childId);
     
@@ -244,6 +250,7 @@ export async function assignExpertToChild(childId: string, expertUid: string) {
 }
 
 export async function unassignExpertFromChild(childId: string, expertUid: string) {
+  await requireRole("center", "admin");
   try {
     const childRef = adminDb.collection("child_profiles").doc(childId);
     
@@ -265,6 +272,7 @@ export async function unassignExpertFromChild(childId: string, expertUid: string
  * Toggle Status for expert (Active/Inactive)
  */
 export async function toggleExpertStatus(uid: string, currentStatus: string) {
+  await requireRole("center", "admin");
   try {
     const nextStatus = currentStatus === "Active" ? "Inactive" : "Active";
     await adminDb.collection("experts").doc(uid).update({
@@ -283,6 +291,7 @@ export async function toggleExpertStatus(uid: string, currentStatus: string) {
  * Toggle Status for Child (Active/Inactive)
  */
 export async function toggleChildStatus(childId: string, currentStatus: string) {
+  await requireRole("center", "admin");
   try {
     const nextStatus = currentStatus === "Active" ? "Inactive" : "Active";
     await adminDb.collection("child_profiles").doc(childId).update({
@@ -301,6 +310,7 @@ export async function toggleChildStatus(childId: string, currentStatus: string) 
  * Get Child Detail with full info
  */
 export async function getChildDetail(childId: string) {
+  await requireRole("center", "admin");
   try {
     const doc = await adminDb.collection("child_profiles").doc(childId).get();
     if (!doc.exists) return { success: false, error: "Child not found" };
@@ -314,6 +324,7 @@ export async function getChildDetail(childId: string) {
  * Get Expert Detail with full info
  */
 export async function getExpertDetail(uid: string) {
+  await requireRole("center", "admin");
   try {
     const doc = await adminDb.collection("experts").doc(uid).get();
     if (!doc.exists) return { success: false, error: "Expert not found" };
@@ -339,6 +350,7 @@ export async function getExpertDetail(uid: string) {
  * Fetch all Parents belonging to this center
  */
 export async function getCenterParents(centerId: string) {
+  await requireRole("center", "admin");
   try {
     const snapshot = await adminDb.collection("parents")
       .where("centerId", "==", centerId)
@@ -362,6 +374,7 @@ export async function getCenterParents(centerId: string) {
  * Create a new Parent account
  */
 export async function createParent(centerId: string, data: { name: string, email: string, password: string }) {
+  await requireRole("center", "admin");
   try {
     // 1. Create User in Firebase Auth
     const userRecord = await adminAuth.createUser({
@@ -403,6 +416,7 @@ export async function createParent(centerId: string, data: { name: string, email
  * Link a Parent to a Child Profile
  */
 export async function linkParentToChild(childId: string, parentUid: string) {
+  await requireRole("center", "admin");
   try {
     const childRef = adminDb.collection("child_profiles").doc(childId);
     
@@ -425,6 +439,7 @@ export async function linkParentToChild(childId: string, parentUid: string) {
  * Get Recent Sessions for a Center
  */
 export async function getCenterSessions(centerId: string, limit: number = 10) {
+  await requireRole("center", "admin");
   try {
     const snapshot = await adminDb.collection("sessions")
       .where("centerId", "==", centerId)

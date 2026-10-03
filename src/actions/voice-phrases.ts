@@ -24,7 +24,7 @@ async function getExpertSession() {
 
 async function assertChildAccess(childId: string) {
   const session = await getExpertSession();
-  if (!session) throw new Error("Unauthorized");
+  if (!session) throw new Error("Unauthorized: No session");
   const child = await adminDb.collection("child_profiles").doc(childId).get();
   if (!child.exists) throw new Error("Child profile not found");
   const data = child.data();

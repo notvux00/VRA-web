@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
+import { removeSession } from "@/actions/auth";
 
 // We keep track of the Firebase user. For Role, we rely on the session cookie server-side, 
 // but we can also store the user state here for client fast-reactivity.
@@ -13,6 +14,7 @@ interface AuthContextType {
   role: string | null;
   userName: string | null;
   loading: boolean;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -22,6 +24,7 @@ const AuthContext = createContext<AuthContextType>({
   role: null,
   userName: null,
   loading: true,
+  logout: async () => {},
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -31,6 +34,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [role, setRole] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const logout = async () => {
+    try {
+      // 1. Xoá Firebase Auth
+      await auth.signOut();
+    } catch (error) {
+      console.error("Lỗi đăng xuất Firebase:", error);
+    }
+    
+    // 2. Xoá Cache Client
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("authProfileCache");
+    }
+
+    try {
+      // 3. Xoá Session Cookie trên Server
+      await removeSession();
+    } catch (error: any) {
+      console.error("Lỗi xoá session:", error);
+      
+      // Next.js redirect() throws an error with digest NEXT_REDIRECT.
+      // If we catch it, we need to let it bubble or do a hard redirect.
+      if (error?.digest?.startsWith('NEXT_REDIRECT') || error?.message?.includes('NEXT_REDIRECT')) {
+        throw error;
+      }
+      
+      // Fallback redirect nếu removeSession lỗi khác
+      if (typeof window !== "undefined") {
+        window.location.href = "/";
+      }
+    }
+  };
 
   useEffect(() => {
     // 1. Initial hydration từ localStorage giúp giao diện mượt trơn không bị giật
@@ -97,7 +132,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, centerId, centerName, role, userName, loading }}>
+    <AuthContext.Provider value={{ user, centerId, centerName, role, userName, loading, logout }}>
       {children}
     </AuthContext.Provider>
   );

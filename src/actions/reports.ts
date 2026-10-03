@@ -1,10 +1,28 @@
 "use server";
 
-import { adminDb } from "@/lib/firebase/admin";
+import { adminDb, adminAuth } from "@/lib/firebase/admin";
 import { Session, ChildProfile } from "@/types";
+import { cookies } from "next/headers";
+
+const SESSION_COOKIE_NAME = "session";
+
+async function getSession() {
+  const sessionCookie = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
+  if (!sessionCookie) return null;
+
+  try {
+    const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie);
+    return decodedClaims;
+  } catch (error) {
+    return null;
+  }
+}
 
 export async function getCenterReportsData(centerId: string) {
   try {
+    const session = await getSession();
+    if (!session) throw new Error("Unauthorized: No session");
+
     const childrenSnap = await adminDb.collection("child_profiles")
       .where("centerId", "==", centerId)
       .get();

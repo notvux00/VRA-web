@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { LogOut, Settings, ChevronDown, User as UserIcon } from "lucide-react";
-import { removeSession } from "@/actions/auth";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface UserMenuProps {
   user: { email?: string; [key: string]: unknown } | null | undefined;
@@ -25,8 +25,10 @@ export default function UserMenu({ user, userName, roleName }: UserMenuProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const { logout } = useAuth();
+
   const handleLogout = async () => {
-    await removeSession();
+    await logout();
   };
 
   return (

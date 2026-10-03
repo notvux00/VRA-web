@@ -42,7 +42,7 @@ async function getSession() {
 
 export async function getParentChildren() {
   const session = await getSession();
-  if (!session) return { success: false, error: "Unauthorized" };
+  if (!session) throw new Error("Unauthorized: No session");
 
   try {
     const childrenSnapshot = await adminDb
@@ -75,7 +75,7 @@ export async function getParentChildren() {
 
 export async function getChildSessions(childId: string) {
   const session = await getSession();
-  if (!session) return { success: false, error: "Unauthorized" };
+  if (!session) throw new Error("Unauthorized: No session");
 
   try {
     const childDoc = await adminDb.collection("child_profiles").doc(childId).get();
@@ -107,7 +107,7 @@ async function fetchSessionsForChild(childId: string) {
 
 export async function getChildStats(childId: string) {
   const session = await getSession();
-  if (!session) return { success: false, error: "Unauthorized" };
+  if (!session) throw new Error("Unauthorized: No session");
 
   try {
     const childDoc = await adminDb.collection("child_profiles").doc(childId).get();
@@ -285,7 +285,7 @@ export async function getChildStats(childId: string) {
 
 export async function getChildLatestNote(childId: string) {
   const session = await getSession();
-  if (!session) return { success: false, error: "Unauthorized" };
+  if (!session) throw new Error("Unauthorized: No session");
 
   try {
     const notesSnapshot = await adminDb
@@ -340,7 +340,7 @@ export async function getChildLatestNote(childId: string) {
 
 export async function getChildProfileDetail(childId: string) {
   const session = await getSession();
-  if (!session) return { success: false, error: "Unauthorized" };
+  if (!session) throw new Error("Unauthorized: No session");
 
   try {
     const childDoc = await adminDb.collection("child_profiles").doc(childId).get();
@@ -376,7 +376,7 @@ export async function getChildProfileDetail(childId: string) {
 
 export async function getChildDashboardAnalytics(childId: string) {
   const session = await getSession();
-  if (!session) return { success: false, error: "Unauthorized" };
+  if (!session) throw new Error("Unauthorized: No session");
 
   try {
     const sessions = await fetchSessionsForChild(childId);
@@ -395,7 +395,7 @@ export async function getChildDashboardAnalytics(childId: string) {
 
 export async function getChildHeatmapData(childId: string) {
   const session = await getSession();
-  if (!session) return { success: false, error: "Unauthorized" };
+  if (!session) throw new Error("Unauthorized: No session");
 
   try {
     const sessions = await fetchSessionsForChild(childId);

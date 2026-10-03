@@ -67,7 +67,7 @@ export async function getCachedAIRecommendations(
   childId: string
 ): Promise<GenerateAIRecommendationsResult> {
   const auth = await getAuthSession();
-  if (!auth) return { success: false, error: "Unauthorized" };
+  if (!auth) throw new Error("Unauthorized: No session");
 
   try {
     // Kiểm tra quyền truy cập
@@ -125,7 +125,7 @@ export async function generateAIRecommendations(
   childId: string
 ): Promise<GenerateAIRecommendationsResult> {
   const auth = await getAuthSession();
-  if (!auth) return { success: false, error: "Unauthorized" };
+  if (!auth) throw new Error("Unauthorized: No session");
 
   // Rate limit: 5 lần generate / giờ / user
   const rl = await checkRateLimit(auth.uid, "ai_recs", 5, 60 * 60 * 1000);

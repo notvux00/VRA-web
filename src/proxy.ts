@@ -32,9 +32,10 @@ export async function proxy(request: NextRequest) {
   const isDashboard = path.startsWith("/dashboard");
   const isAuthPage = path === "/";
 
-  if (!session && isDashboard) {
-    return redirectTo("/", request);
-  }
+  // Tạm tắt redirect ở middleware để nhường cho error.tsx xử lý màn hình "Phiên làm việc đã hết hạn"
+  // if (!session && isDashboard) {
+  //   return redirectTo("/", request);
+  // }
 
   if (session && isAuthPage) {
     return redirectTo("/dashboard", request);
@@ -79,7 +80,8 @@ export async function proxy(request: NextRequest) {
     }
   } catch (error) {
     console.error("Proxy Auth Error:", error);
-    const response = redirectTo("/", request);
+    // Nhường xử lý hiển thị lỗi cho error.tsx trong app/dashboard/layout.tsx
+    const response = NextResponse.next();
     response.cookies.delete("session");
     return response;
   }

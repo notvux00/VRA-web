@@ -26,7 +26,7 @@ function getRoomId(uid1: string, uid2: string, childId: string) {
 
 export async function getConversationPartners() {
   const session = await getSession();
-  if (!session) return { success: false, error: "Unauthorized" };
+  if (!session) throw new Error("Unauthorized: No session");
 
   try {
     if (session.role === "parent") {
@@ -128,7 +128,7 @@ export async function getConversationPartners() {
 
 export async function sendMessage(receiverId: string, content: string, childId: string) {
   const session = await getSession();
-  if (!session) return { success: false, error: "Unauthorized" };
+  if (!session) throw new Error("Unauthorized: No session");
 
   try {
     const roomId = getRoomId(session.uid, receiverId, childId);
@@ -156,7 +156,7 @@ export async function sendMessage(receiverId: string, content: string, childId: 
 
 export async function getMessages(partnerId: string, childId: string) {
   const session = await getSession();
-  if (!session) return { success: false, error: "Unauthorized" };
+  if (!session) throw new Error("Unauthorized: No session");
 
   try {
     const roomId = getRoomId(session.uid, partnerId, childId);
@@ -180,7 +180,7 @@ export async function getMessages(partnerId: string, childId: string) {
 
 export async function markMessagesAsRead(partnerId: string, childId: string) {
   const session = await getSession();
-  if (!session) return { success: false, error: "Unauthorized" };
+  if (!session) throw new Error("Unauthorized: No session");
 
   try {
     const roomId = getRoomId(session.uid, partnerId, childId);

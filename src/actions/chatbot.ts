@@ -29,7 +29,7 @@ export async function chatWithBot(
 ): Promise<{ success: boolean; text?: string; error?: string }> {
   try {
     const auth = await getAuthSession();
-    if (!auth) return { success: false, error: "Unauthorized" };
+    if (!auth) throw new Error("Unauthorized: No session");
 
     // ── Input sanitization ────────────────────────────────────────────
     const cleanMessage = message?.trim().slice(0, 1000); // Max 1000 ký tự/tin nhắn

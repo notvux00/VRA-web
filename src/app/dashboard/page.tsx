@@ -8,7 +8,7 @@ export default async function DashboardPage() {
   const sessionCookie = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
 
   if (!sessionCookie) {
-    redirect("/");
+    throw new Error("Unauthorized: No session");
   }
 
   try {
@@ -21,7 +21,7 @@ export default async function DashboardPage() {
     if (role === "parent") redirect("/dashboard/parent");
 
   } catch {
-    redirect("/");
+    throw new Error("Unauthorized: Invalid session");
   }
 
   // Fallback if role is not found yet (e.g. sync delay)

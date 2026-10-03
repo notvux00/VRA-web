@@ -24,7 +24,7 @@ async function getSession() {
  */
 export async function getAssignedChildren() {
   const session = await getSession();
-  if (!session) return { success: false, error: "Unauthorized" };
+  if (!session) throw new Error("Unauthorized: No session");
 
   try {
     const snapshot = await adminDb.collection("child_profiles")
@@ -48,7 +48,7 @@ export async function getAssignedChildren() {
  */
 export async function updateChildGoals(childId: string, goals: ChildGoal[]) {
   const session = await getSession();
-  if (!session) return { success: false, error: "Unauthorized" };
+  if (!session) throw new Error("Unauthorized: No session");
 
   try {
     const childRef = adminDb.collection("child_profiles").doc(childId);
@@ -81,7 +81,7 @@ export async function updateChildGoals(childId: string, goals: ChildGoal[]) {
  */
 export async function getExpertStats() {
   const session = await getSession();
-  if (!session) return { success: false, error: "Unauthorized" };
+  if (!session) throw new Error("Unauthorized: No session");
 
   try {
     // Chạy 3 queries song song thay vì tuần tự
@@ -125,7 +125,7 @@ export async function getExpertStats() {
  */
 export async function getAssignedChildDetail(childId: string) {
   const session = await getSession();
-  if (!session) return { success: false, error: "Unauthorized" };
+  if (!session) throw new Error("Unauthorized: No session");
 
   try {
     const doc = await adminDb.collection("child_profiles").doc(childId).get();
@@ -152,7 +152,7 @@ export async function getAssignedChildDetail(childId: string) {
  */
 export async function updateAlertProfile(childId: string, alertProfile: AlertProfile) {
   const session = await getSession();
-  if (!session) return { success: false, error: "Unauthorized" };
+  if (!session) throw new Error("Unauthorized: No session");
 
   try {
     const childRef = adminDb.collection("child_profiles").doc(childId);
@@ -195,7 +195,7 @@ export async function finalizeSession(childId: string, sessionId: string, data: 
   behaviorLogs: BehaviorLog[]
 }) {
   const session = await getSession();
-  if (!session) return { success: false, error: "Unauthorized" };
+  if (!session) throw new Error("Unauthorized: No session");
 
   try {
     const sessionRef = adminDb.collection("sessions").doc(sessionId);
@@ -268,7 +268,7 @@ export async function updateDefaultLessonParams(childId: string, lessonParams: {
   };
 }) {
   const session = await getSession();
-  if (!session) return { success: false, error: "Unauthorized" };
+  if (!session) throw new Error("Unauthorized: No session");
 
   try {
     const childRef = adminDb.collection("child_profiles").doc(childId);
@@ -302,7 +302,7 @@ export async function updateDefaultLessonParams(childId: string, lessonParams: {
  */
 export async function updateChildQuickPhrases(childId: string, quickPhrases: Record<string, unknown>) {
   const session = await getSession();
-  if (!session) return { success: false, error: "Unauthorized" };
+  if (!session) throw new Error("Unauthorized: No session");
 
   try {
     const childRef = adminDb.collection("child_profiles").doc(childId);
@@ -334,7 +334,7 @@ export async function updateChildQuickPhrases(childId: string, quickPhrases: Rec
  */
 export async function syncAndGetChildPhrases(childId: string, lessonDocId: string) {
   const session = await getSession();
-  if (!session) return { success: false, error: "Unauthorized" };
+  if (!session) throw new Error("Unauthorized: No session");
 
   try {
     const childRef = adminDb.collection("child_profiles").doc(childId);
@@ -384,7 +384,7 @@ export async function importChildSettings(
   settings: { quick_phrases?: Record<string, unknown>; default_lesson_params?: Record<string, unknown> }
 ) {
   const session = await getSession();
-  if (!session) return { success: false, error: "Unauthorized" };
+  if (!session) throw new Error("Unauthorized: No session");
 
   try {
     const childRef = adminDb.collection("child_profiles").doc(childId);
